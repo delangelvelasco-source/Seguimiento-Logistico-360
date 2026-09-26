@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowRight, CheckCircle2, ClipboardCheck, Clock3, FileCheck2, Flag, RotateCcw, ShieldCheck, Truck, UserCheck, Wrench } from "lucide-react";
+import { Activity, ArrowRight, Camera, CheckCircle2, ClipboardCheck, Clock3, FileCheck2, Flag, RotateCcw, ShieldCheck, Truck, UserCheck, Wrench } from "lucide-react";
 
 const STEPS=[
   {id:"caseta",role:"Caseta",title:"Ingreso y validación",icon:Truck,color:"blue",state:"en_caseta"},
