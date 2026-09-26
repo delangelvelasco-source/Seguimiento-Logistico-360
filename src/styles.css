@@ -92,3 +92,21 @@
 .scan-error{display:block;color:#ff9c9c;font-size:9px;margin-top:7px}
 .expected-plate{font-size:9px;color:#687992;margin-top:8px}
 .expected-plate strong{color:#a9b9cf}
+
+.practice-appointment-card{margin:12px 0 16px;padding:14px;border:1px solid #28405f;border-radius:13px;background:#0d1827}
+.practice-appointment-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+.practice-appointment-head>div{display:flex;gap:9px;align-items:flex-start;color:#83a9ff}
+.practice-appointment-head strong,.practice-appointment-head span{display:block}
+.practice-appointment-head strong{color:#dbe5f4;font-size:12px}
+.practice-appointment-head span{color:#72829a;font-size:9px;margin-top:3px}
+.practice-appointment-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.practice-appointment-grid label{font-size:9px;color:#71819a;text-transform:uppercase}
+.practice-appointment-grid input,.practice-appointment-grid select{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:9px;border-radius:8px;border:1px solid #263b56;background:#09111e;color:#dce6f4}
+.practice-wide{grid-column:1/-1}
+.practice-generated-cita{margin-top:10px;padding:11px;border:1px solid #2c624d;border-radius:9px;background:#0d2119}
+.practice-generated-cita span,.practice-generated-cita strong,.practice-generated-cita small{display:block}
+.practice-generated-cita span{font-size:8px;color:#70b98e;text-transform:uppercase}
+.practice-generated-cita strong{font-size:16px;color:#8ee3ad;margin:3px 0}
+.practice-generated-cita small{font-size:9px;color:#789b88}
+.practice-cita-actions{margin-top:6px}
+@media(max-width:700px){.practice-appointment-grid{grid-template-columns:1fr 1fr}.practice-wide{grid-column:1/-1}}
