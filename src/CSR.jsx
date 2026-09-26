@@ -9,10 +9,10 @@ export default function CSR({warehouseId}){
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas].join(" ").toLowerCase().includes(query.toLowerCase()));
  async function confirm(u){
   setError("");const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
-  const {error}=await supabase.from("unidades").update({csr_confirmacion_at:now,csr_usuario_id:user?.id||null,estado_identificacion:"cuadrada",estado:"rampa_asignada",updated_at:now}).eq("id",u.id);
+  const {error}=await supabase.from("unidades").update({csr_confirmacion_at:now,csr_usuario_id:user?.id||null,estado_identificacion:"cuadrada",estado:"espera_turno",updated_at:now}).eq("id",u.id);
   if(error){setError(error.message);return}
-  await supabase.from("movimientos").insert({unidad_id:u.id,usuario_id:user?.id,tipo:"csr_validacion",estado_anterior:u.estado,estado_nuevo:"rampa_asignada",notas:u.cita_confirmada?"CSR validó cita y datos":"CSR validó atención sin cita",ocurrido_at:now});
-  setMessage("Validación CSR completada. La unidad queda lista para Operación.");await load();
+  await supabase.from("movimientos").insert({unidad_id:u.id,usuario_id:user?.id,tipo:"csr_validacion",estado_anterior:u.estado,estado_nuevo:"espera_turno",notas:u.cita_confirmada?"CSR validó cita y datos":"CSR validó atención sin cita",ocurrido_at:now});
+  setMessage("Validación CSR completada. La unidad queda en espera de asignación por Operación.");await load();
  }
  async function flag(u){
   setError("");const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
