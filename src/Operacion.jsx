@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock3, Play, RefreshCw, Search, SquareCheckBig, TimerReset, Wrench } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-const ACTIVE_STATES = ["rampa_asignada","en_operacion"];
+const ACTIVE_STATES = ["espera_turno","rampa_asignada","en_operacion"];
 
 export default function Operacion({warehouseId}) {
   const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[saving,setSaving]=useState("");
