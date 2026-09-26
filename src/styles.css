@@ -110,3 +110,18 @@
 .practice-generated-cita small{font-size:9px;color:#789b88}
 .practice-cita-actions{margin-top:6px}
 @media(max-width:700px){.practice-appointment-grid{grid-template-columns:1fr 1fr}.practice-wide{grid-column:1/-1}}
+
+.practice-client-selector{margin:16px 0;padding:13px;border:1px solid #263955;border-radius:13px;background:#0d1827}
+.practice-client-selector>div:first-child b,.practice-client-selector>div:first-child span{display:block}
+.practice-client-selector>div:first-child b{font-size:11px}.practice-client-selector>div:first-child span{font-size:9px;color:#71819a;margin-top:3px}
+.client-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.client-choice{min-height:52px;text-align:left;border:1px solid #263a55;border-radius:9px;background:#0a121f;color:#dbe5f4;padding:9px;cursor:pointer;font-size:10px}
+.client-choice small{display:block;color:#6f819a;font-size:8px;margin-top:4px}
+.client-choice.active{border-color:#557fd0;background:#13233b;box-shadow:0 0 0 1px #385d9c}
+.practice-action-area{display:grid;gap:10px}
+.practice-action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.practice-action-grid button{min-height:44px;justify-content:center}
+.practice-input-card select{display:block;width:100%;margin-top:6px;padding:10px;background:#0a111d;color:#e1e8f3;border:1px solid #2a3c55;border-radius:8px}
+.practice-input-card input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;background:#0a111d;color:#e1e8f3;border:1px solid #2a3c55;border-radius:8px}
+.scan-open-btn{justify-content:center;margin-top:10px}
+@media(max-width:650px){.client-buttons{grid-template-columns:1fr}.practice-action-grid{grid-template-columns:1fr}}
