@@ -28,6 +28,16 @@ export default function Guardia({warehouseId}) {
   await supabase.from("movimientos").insert({unidad_id:u.id,usuario_id:user?.id,tipo:"salida_autorizada",estado_anterior:u.estado,estado_nuevo:"liberada",notas:"Guardia autorizó salida después de validar sellos",ocurrido_at:now});
   setMessage("Salida autorizada para "+u.folio+".");await load();setSaving("");
  }
+ async function exitUnit(u){
+  if(!u.salida_autorizada){setError("Primero autoriza la salida.");return}
+  setSaving(u.id);setError("");setMessage("");
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  const {error:e}=await supabase.from("unidades").update({ubicacion_tipo:"fuera",ubicacion_at:now,ubicacion_por:user?.id||null,salida_caseta_at:now,guardia_salida_usuario_id:user?.id||null,updated_at:now}).eq("id",u.id);
+  if(e){setError(e.message);setSaving("");return}
+  await supabase.from("movimientos").insert({unidad_id:u.id,usuario_id:user?.id,tipo:"salida_fisica",estado_anterior:u.estado,estado_nuevo:"liberada",notas:"Salida física registrada por Guardia",ocurrido_at:now});
+  if(u.operacion_360_id)await supabase.from("operaciones_360").update({estado_general:"finalizada",updated_at:now}).eq("id",u.operacion_360_id);
+  setMessage("Salida física registrada para "+u.folio+".");await load();setSaving("");
+ }
  async function block(u){
   const motivo=window.prompt("Motivo del bloqueo de salida","Diferencia de sello / documento");
   if(!motivo)return;
@@ -44,7 +54,7 @@ export default function Guardia({warehouseId}) {
   {loading?<div className="empty">Cargando Guardia…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=>{const list=seals[u.id]||[],ok=list.length>0&&list.every(s=>s.resultado==="coincide"&&!s.requiere_revision&&s.verificado_at);return <div className="dispatch-card" key={u.id}>
    <div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · Documentación validada</span></div><span className={ok?"tag":"tag"}>{ok?"Sello verificado":"Revisión pendiente"}</span></div>
    <div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Sellos</b>{list.length}</span></div>
-   <div className="button-row"><button className="secondary-btn" onClick={()=>reviewSeal(u)}><LockKeyhole size={15}/>Verificar sellos</button><button className="secondary-btn" onClick={()=>block(u)}><LockKeyhole size={15}/>Bloquear salida</button><button className="login-btn compact" onClick={()=>authorize(u)} disabled={!ok||saving===u.id}><Unlock size={15}/>{saving===u.id?"Guardando…":"Autorizar salida"}</button></div>
+   <div className="button-row"><button className="secondary-btn" onClick={()=>reviewSeal(u)}><LockKeyhole size={15}/>Verificar sellos</button><button className="secondary-btn" onClick={()=>block(u)}><LockKeyhole size={15}/>Bloquear salida</button><button className="login-btn compact" onClick={()=>authorize(u)} disabled={!ok||u.salida_autorizada||saving===u.id}><Unlock size={15}/>{u.salida_autorizada?"Salida autorizada":"Autorizar salida"}</button>{u.salida_autorizada&&<button className="secondary-btn" onClick={()=>exitUnit(u)} disabled={saving===u.id}><CheckCircle2 size={15}/>Registrar salida física</button>}</div>
   </div>})}</div>:<div className="empty">No hay unidades listas para Guardia.</div>}
  </div></section>
 }
