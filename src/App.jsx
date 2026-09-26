@@ -65,6 +65,7 @@ function App() {
   const [createUser,setCreateUser]=useState({username:"",password:"",nombre:"",rol:"guardia",almacen_id:""});
   const [createUserLoading,setCreateUserLoading]=useState(false);
   const [createUserMessage,setCreateUserMessage]=useState("");
+  const [passwordDrafts,setPasswordDrafts]=useState({});
 
   const isInviteFlow=typeof window!=="undefined" && /(^|[#?&])type=invite([&#]|$)/.test(window.location.hash+window.location.search);
 
@@ -143,6 +144,17 @@ function App() {
     setUsers(prev=>prev.map(x=>x.id===u.id?{...x}:x));
   }
 
+  async function changeUserPassword(userId){
+    const password=passwordDrafts[userId]||"";
+    if(password.length<8){setUsersError("La contraseña debe tener al menos 8 caracteres.");return}
+    setUsersError("");
+    const {data,error}=await supabase.functions.invoke("admin-cambiar-password",{body:{user_id:userId,password}});
+    if(error){setUsersError(error.message);return}
+    if(data?.error){setUsersError(data.error);return}
+    setCreateUserMessage("Contraseña guardada correctamente.");
+    setPasswordDrafts(prev=>({...prev,[userId]:""}));
+  }
+
   async function createInternalUser(e){
     e.preventDefault();setCreateUserLoading(true);setCreateUserMessage("");setUsersError("");
     const {data,error}=await supabase.functions.invoke("admin-crear-usuario",{body:createUser});
@@ -170,7 +182,7 @@ function App() {
 <div><label>Nombre<input value={createUser.nombre} onChange={e=>setCreateUser({...createUser,nombre:e.target.value})} placeholder="Nombre del usuario" required/></label></div>
 <div><label>Rol<select value={createUser.rol} onChange={e=>setCreateUser({...createUser,rol:e.target.value,almacen_id:["admin_global","transportista","cliente","aduanas"].includes(e.target.value)?"":createUser.almacen_id})}>{roleOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label></div>
 <div><label>Almacén<select value={createUser.almacen_id} onChange={e=>setCreateUser({...createUser,almacen_id:e.target.value})} disabled={["admin_global","transportista","cliente","aduanas"].includes(createUser.rol)}><option value="">Sin asignar</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></label></div>
-<button className="login-btn invite-btn" disabled={createUserLoading}><UserPlus size={16}/>{createUserLoading?"Creando…":"Crear usuario"}</button></form>{inviteMessage&&<div className="notice success"><strong>{inviteMessage}</strong></div>}{usersError&&<div className="notice error"><strong>Error</strong><span>{usersError}</span></div>}{usersLoading?<div className="empty">Cargando usuarios…</div>:<div className="users-table-wrap"><table className="users-table"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Almacén</th><th>Estado</th><th></th></tr></thead><tbody>{users.map(u=><tr key={u.id}><td><strong>{u.nombre||"Sin nombre"}</strong></td><td><input value={u.username||""} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,username:e.target.value.toLowerCase()}:x))} placeholder="usuario"/></td><td><select value={u.rol} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,rol:e.target.value}:x))}>{roleOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></td><td><select value={u.almacen_id||""} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,almacen_id:e.target.value||null}:x))} disabled={["admin_global","transportista","cliente","aduanas"].includes(u.rol)}><option value="">Sin asignar</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></td><td><button className={u.activo?"state-btn active":"state-btn inactive"} onClick={()=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,activo:!x.activo}:x))}>{u.activo?<><UserCheck size={14}/>Activo</>:<><UserX size={14}/>Inactivo</>}</button></td><td><button className="save-btn" onClick={()=>updateUser(u)}><Save size={14}/>Guardar</button></td></tr>)}</tbody></table></div>}</div></section>}{canAccess("caseta")&&effectiveWarehouseId&&<Caseta warehouseId={effectiveWarehouseId}/>}
+<button className="login-btn invite-btn" disabled={createUserLoading}><UserPlus size={16}/>{createUserLoading?"Creando…":"Crear usuario"}</button></form>{inviteMessage&&<div className="notice success"><strong>{inviteMessage}</strong></div>}{usersError&&<div className="notice error"><strong>Error</strong><span>{usersError}</span></div>}{usersLoading?<div className="empty">Cargando usuarios…</div>:<div className="users-table-wrap"><table className="users-table"><thead><tr><th>Nombre</th><th>Usuario</th><th>Contraseña</th><th>Rol</th><th>Almacén</th><th>Estado</th><th></th></tr></thead><tbody>{users.map(u=><tr key={u.id}><td><strong>{u.nombre||"Sin nombre"}</strong></td><td><input value={u.username||""} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,username:e.target.value.toLowerCase()}:x))} placeholder="usuario"/></td><td className="user-password-cell"><input type="password" value={passwordDrafts[u.id]||""} onChange={e=>setPasswordDrafts(prev=>({...prev,[u.id]:e.target.value}))} placeholder="Nueva contraseña" minLength={8}/><button type="button" className="table-save-btn" onClick={()=>changeUserPassword(u.id)} disabled={(passwordDrafts[u.id]||"").length<8}>Guardar</button></td><td><select value={u.rol} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,rol:e.target.value}:x))}>{roleOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></td><td><select value={u.almacen_id||""} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,almacen_id:e.target.value||null}:x))} disabled={["admin_global","transportista","cliente","aduanas"].includes(u.rol)}><option value="">Sin asignar</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></td><td><button className={u.activo?"state-btn active":"state-btn inactive"} onClick={()=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,activo:!x.activo}:x))}>{u.activo?<><UserCheck size={14}/>Activo</>:<><UserX size={14}/>Inactivo</>}</button></td><td><button className="save-btn" onClick={()=>updateUser(u)}><Save size={14}/>Guardar</button></td></tr>)}</tbody></table></div>}</div></section>}{canAccess("caseta")&&effectiveWarehouseId&&<Caseta warehouseId={effectiveWarehouseId}/>}
 {canAccess("rampas")&&effectiveWarehouseId&&<Rampas warehouseId={effectiveWarehouseId} canEdit={true}/>}
 {canAccess("dispatch")&&effectiveWarehouseId&&<Dispatch warehouseId={effectiveWarehouseId}/>}
 {canAccess("csr")&&effectiveWarehouseId&&<CSR warehouseId={effectiveWarehouseId}/>}
