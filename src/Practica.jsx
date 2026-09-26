@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, ArrowRight, CheckCircle2, ClipboardCheck, Clock3, FileCheck2, Flag, RotateCcw, ShieldCheck, Truck, UserCheck, Wrench } from "lucide-react";
 
 const STEPS=[
@@ -38,7 +38,7 @@ export default function Practica(){
   const active=data.step;
   const current=STEPS[Math.min(active,STEPS.length-1)];
 
-  useMemo(()=>{
+  useEffect(()=>{
     if(!startedAt)return;
     const id=setInterval(()=>setElapsed(Math.floor((Date.now()-startedAt)/1000)),1000);
     return()=>clearInterval(id);
