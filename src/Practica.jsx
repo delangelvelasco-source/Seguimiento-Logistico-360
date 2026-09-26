@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowRight, CheckCircle2, ClipboardCheck, Clock3, FileCheck2, Flag, RotateCcw, ShieldCheck, Truck, UserCheck, Wrench } from "lucide-react";
 
 const STEPS=[
@@ -35,6 +35,13 @@ export default function Practica(){
   const [startedAt,setStartedAt]=useState(null);
   const [elapsed,setElapsed]=useState(0);
   const [message,setMessage]=useState("Listo para iniciar una operación de práctica.");
+  const [citaFolio,setCitaFolio]=useState(INITIAL.cita);
+  const [plate,setPlate]=useState("");
+  const [plateStatus,setPlateStatus]=useState("pendiente");
+  const [cameraOpen,setCameraOpen]=useState(false);
+  const [cameraError,setCameraError]=useState("");
+  const videoRef=useRef(null);
+  const streamRef=useRef(null);
   const active=data.step;
   const current=STEPS[Math.min(active,STEPS.length-1)];
 
@@ -48,8 +55,34 @@ export default function Practica(){
     setData(d=>({...d,events:[...d.events,{at:new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",second:"2-digit"}),role,text},]}));
   }
 
+  async function openCamera(){
+    setCameraError("");
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+      streamRef.current=stream;
+      setCameraOpen(true);
+      setTimeout(()=>{if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play().catch(()=>{});}},0);
+    }catch(e){setCameraError("No fue posible acceder a la cámara. Revisa el permiso de cámara del navegador.");}
+  }
+  function closeCamera(){streamRef.current?.getTracks().forEach(t=>t.stop());streamRef.current=null;setCameraOpen(false);}
+  function capturePlate(){
+    const video=videoRef.current;
+    if(!video || video.readyState<2){setCameraError("Espera a que la cámara esté lista.");return;}
+    // En modo práctica la lectura se valida contra la placa esperada del escenario.
+    setPlate(data.tracto.toUpperCase());
+    setPlateStatus("coincide");
+    addEvent("Placa capturada y validada: "+data.tracto.toUpperCase(),"Caseta");
+    setMessage("🟢 Placa coincide con el transporte esperado. Evidencia capturada en práctica.");
+    closeCamera();
+  }
+  function validatePlate(value){
+    const v=value.trim().toUpperCase();setPlate(v);
+    if(!v){setPlateStatus("pendiente");return;}
+    setPlateStatus(v===data.tracto.toUpperCase()?"coincide":"no_coincide");
+  }
   function start(){
     setData({...INITIAL,status:"en_curso",step:0,events:[]});
+    setCitaFolio(INITIAL.cita);setPlate("");setPlateStatus("pendiente");closeCamera();
     setStartedAt(Date.now());
     setElapsed(0);
     setMessage("Simulación iniciada. Trabaja la operación perfil por perfil.");
@@ -57,6 +90,10 @@ export default function Practica(){
 
   function action(){
     if(data.status==="pendiente"){start();return}
+    if(data.step===0 && (!citaFolio.trim() || plateStatus!=="coincide")){
+      setMessage("Para pasar Caseta debes ingresar el folio de cita y obtener una placa coincidente.");
+      return;
+    }
     if(data.status==="finalizada"){return}
     const s=STEPS[data.step];
     const actions={
@@ -78,7 +115,7 @@ export default function Practica(){
     }
   }
 
-  function reset(){setData(INITIAL);setStartedAt(null);setElapsed(0);setMessage("Listo para iniciar una operación de práctica.");}
+  function reset(){setData(INITIAL);setCitaFolio(INITIAL.cita);setPlate("");setPlateStatus("pendiente");closeCamera();setStartedAt(null);setElapsed(0);setMessage("Listo para iniciar una operación de práctica.");}
 
   const minutes=Math.floor(elapsed/60),seconds=String(elapsed%60).padStart(2,"0");
   const progress=data.status==="finalizada"?100:Math.round((data.step/STEPS.length)*100);
@@ -108,7 +145,7 @@ export default function Practica(){
         <div className="practice-card">
           <div className="practice-card-title"><div><Flag size={17}/><strong>{data.status==="finalizada"?"Operación finalizada":current.role}</strong></div><span>{data.status==="pendiente"?"Pendiente":data.status==="finalizada"?"Completada":"Perfil activo"}</span></div>
           {data.status==="pendiente"&&<p className="practice-copy">Inicia una operación ficticia para probar el recorrido completo como si cada área estuviera tomando el turno.</p>}
-          {data.status!=="pendiente"&&data.status!=="finalizada"&&<><div className="practice-role"><div className="practice-role-icon"><current.icon size={22}/></div><div><strong>{current.role}</strong><span>{current.title}</span></div></div><div className="practice-data-grid"><div><small>Operador</small><b>{data.operador}</b></div><div><small>Línea</small><b>{data.linea}</b></div><div><small>Cita</small><b>{data.cita}</b></div><div><small>Referencia</small><b>{data.referencia}</b></div><div><small>SID / RID</small><b>{data.sid} / {data.rid}</b></div><div><small>Rampa</small><b>{data.rampa}</b></div></div></>}
+          {data.status!=="pendiente"&&data.status!=="finalizada"&&<><div className="practice-caseta-tools">{data.step===0&&<><div className="practice-input-card"><label>Folio de cita<input value={citaFolio} onChange={e=>setCitaFolio(e.target.value.toUpperCase())} placeholder="CIT-260926-014" required/></label><span>Obligatorio para validar el ingreso.</span></div><div className="practice-scanner"><div className="practice-scanner-head"><div><b>Escáner de placas</b><span>Cámara móvil · validación contra transporte esperado</span></div><span className={"scan-status "+plateStatus}>{plateStatus==="coincide"?"🟢 Coincide":plateStatus==="no_coincide"?"🔴 No coincide":"⚪ Pendiente"}</span></div>{cameraOpen?<div className="camera-box"><video ref={videoRef} playsInline muted/><button type="button" className="login-btn" onClick={capturePlate}><Camera size={16}/>Capturar y validar placa</button><button type="button" className="secondary-btn" onClick={closeCamera}>Cerrar cámara</button></div>:<div className="scanner-actions"><button type="button" className="secondary-btn" onClick={openCamera}><Camera size={17}/>Abrir cámara</button><label className="plate-manual">Lectura / corrección<input value={plate} onChange={e=>validatePlate(e.target.value)} placeholder="ABC-128-X"/></label></div>}{cameraError&&<small className="scan-error">{cameraError}</small>}<div className="expected-plate">Esperada: <strong>{data.tracto}</strong>{plate&&<> · Detectada: <strong>{plate}</strong></>}</div></div></>}<div className="practice-role"><div className="practice-role-icon"><current.icon size={22}/></div><div><strong>{current.role}</strong><span>{current.title}</span></div></div><div className="practice-data-grid"><div><small>Operador</small><b>{data.operador}</b></div><div><small>Línea</small><b>{data.linea}</b></div><div><small>Cita</small><b>{data.cita}</b></div><div><small>Referencia</small><b>{data.referencia}</b></div><div><small>SID / RID</small><b>{data.sid} / {data.rid}</b></div><div><small>Rampa</small><b>{data.rampa}</b></div></div></>}
           {data.status==="finalizada"&&<div className="practice-success"><CheckCircle2 size={28}/><div><strong>Flujo completo validado</strong><span>Caseta → Dispatch → CSR → Operación → Documentación → Guardia</span></div></div>}
           <div className="practice-message">{message}</div>
           <button className="login-btn practice-main-btn" onClick={action} disabled={data.status==="finalizada"}>{data.status==="pendiente"?"Iniciar simulación":data.status==="finalizada"?"Simulación terminada":"Ejecutar paso de "+current.role}<ArrowRight size={17}/></button>
