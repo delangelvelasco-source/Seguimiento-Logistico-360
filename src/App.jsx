@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import Rampas from "./Rampas";\nimport { Activity, ArrowRight, Box, CheckCircle2, ClipboardList, Clock3, Factory, LayoutDashboard, LogIn, MapPin, Menu, ShieldCheck, Truck, Users, X, UserPlus, Save, UserCheck, UserX, RefreshCw, Wrench } from "lucide-react";
+import Rampas from "./Rampas";
+import { Activity, ArrowRight, Box, CheckCircle2, ClipboardList, Clock3, Factory, LayoutDashboard, LogIn, MapPin, Menu, ShieldCheck, Truck, Users, X, UserPlus, Save, UserCheck, UserX, RefreshCw, Wrench } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 const stages = [["caseta","Caseta","Ingreso y validación"],["dispatch","Dispatch","Cita y transporte"],["csr","CSR","Validación documental"],["operacion","Operación","Rampa y proceso"],["guardia","Guardia","Salida y liberación"]];
