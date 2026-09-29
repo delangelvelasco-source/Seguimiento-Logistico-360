@@ -376,8 +376,17 @@ export default function Caseta({ warehouseId }) {
     await load();setLoading(false);
   }
 
-  const transportistas=recent.filter(u=>u.tipo_acceso==="unidad");
-  const otrosAccesos=recent.filter(u=>u.tipo_acceso!=="unidad");
+  // Mantener las unidades dentro primero; las que ya salieron pasan automáticamente al final de la cola.
+  const ordenarCola=(items)=>[...items].sort((a,b)=>{
+    const aDentro=a.estado==="dentro"?0:1;
+    const bDentro=b.estado==="dentro"?0:1;
+    if(aDentro!==bDentro)return aDentro-bDentro;
+    const ta=new Date(a.entrada_at||0).getTime();
+    const tb=new Date(b.entrada_at||0).getTime();
+    return tb-ta;
+  });
+  const transportistas=ordenarCola(recent.filter(u=>u.tipo_acceso==="unidad"));
+  const otrosAccesos=ordenarCola(recent.filter(u=>u.tipo_acceso!=="unidad"));
   const renderAccessRow=(u)=><tr key={u.id}>
     <td><strong>{u.folio}</strong></td>
     <td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td>
@@ -385,7 +394,7 @@ export default function Caseta({ warehouseId }) {
     <td>{u.gafete_numero||"—"}</td>
     <td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
     <td>{u.salida_at?new Date(u.salida_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td>
-    <td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td>
+    <td><span className={`exact-status ${u.estado==="dentro"?"inside":"exited"}`}><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td>
     <td>{u.estado==="dentro"?<button type="button" className="secondary-btn" onClick={()=>registrarSalida(u)} disabled={exitLoading===u.id}><LogOut size={15}/>{exitLoading===u.id?"Registrando…":"Registrar salida"}</button>:<span>✓ Cerrado</span>}</td>
   </tr>;
 
