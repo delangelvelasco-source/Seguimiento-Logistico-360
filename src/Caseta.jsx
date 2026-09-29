@@ -58,10 +58,20 @@ export default function Caseta({ warehouseId }) {
   async function registrarSalida(acceso){
     if(!acceso?.id||acceso.estado!=="dentro")return;
     setExitLoading(acceso.id);setError("");setMessage("");
-    const {error:salidaError}=await supabase.from("accesos_caseta").update({salida_at:new Date().toISOString(),estado:"fuera",updated_at:new Date().toISOString()}).eq("id",acceso.id).eq("estado","dentro");
-    if(salidaError){setError("No se pudo registrar la salida: "+salidaError.message);setExitLoading("");return;}
-    setMessage("Salida registrada. El acceso quedó cerrado.");
-    await load();setExitLoading("");
+    try{
+      const {data:resultado,error:salidaError}=await supabase.rpc("registrar_salida_caseta",{p_acceso_id:acceso.id});
+      if(salidaError)throw salidaError;
+      if(!resultado?.ok){
+        setError(resultado?.mensaje||"El acceso ya estaba cerrado o no existe.");
+        return;
+      }
+      setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
+      await load();
+    }catch(err){
+      setError("No se pudo registrar la salida: "+(err?.message||"error desconocido"));
+    }finally{
+      setExitLoading("");
+    }
   }
 
   function abrirScannerPlaca(){ cameraInputRef.current?.click(); }
