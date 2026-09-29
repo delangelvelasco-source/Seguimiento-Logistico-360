@@ -457,9 +457,13 @@ export default function Caseta({ warehouseId }) {
         setMessage(`${accessType==="visitante"?"Visitante":"Proveedor"} registrado con gafete interno ${asignacion?.gafete_numero||"asignado"}.`);
       }
       const etiquetas={visitante:"Visitante",proveedor:"Proveedor",otro:"Otro acceso",personal_interno:"Personal interno",eventual:"Eventual"};
-      setMessage(`${etiquetas[accessType]||"Acceso"} registrado. Folio ${folioAccesoNuevo}. Acceso abierto.`);
+      const etiqueta=etiquetas[accessType]||"Acceso";
+      setError("");
+      setMessage(`✓ ${etiqueta} registrado correctamente. Folio ${folioAccesoNuevo}. Acceso abierto.`);
       setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
-      await load();setLoading(false);return;
+      setLoading(false);
+      await load();
+      return;
     }
 
     const {data:resultado,error:registroError}=await supabase.rpc("registrar_ingreso_caseta_completo", {
