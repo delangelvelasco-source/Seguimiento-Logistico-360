@@ -345,3 +345,10 @@
 .access-type.active{transform:translateY(-1px);color:#fff;box-shadow:0 10px 24px #0003}
 .access-type.active b{color:#fff}.access-type.unit.active{border-color:#2f8cff;background:linear-gradient(135deg,#12365e,#102044)}.access-type.visitor.active{border-color:#28a99a;background:linear-gradient(135deg,#103c3c,#10292e)}.access-type.provider.active{border-color:#a579e8;background:linear-gradient(135deg,#342152,#211b38)}
 @media(max-width:620px){.access-selector{gap:6px}.access-type{min-height:62px;gap:7px;padding:7px}.access-type svg{width:18px}.access-type b{font-size:10px}.access-type small{font-size:7px}}
+
+/* Caseta · búsqueda de cita y precarga */
+.cita-first-field{position:relative}
+.cita-input{padding-right:52px}
+.cita-search-btn{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:#eaf2ff;color:#1769e0;display:grid;place-items:center;cursor:pointer}
+.cita-search-btn:disabled{opacity:.45;cursor:not-allowed}
+.cita-found{display:flex;align-items:center;gap:6px;margin-top:7px;color:#168a52;font-weight:700;font-size:12px}
