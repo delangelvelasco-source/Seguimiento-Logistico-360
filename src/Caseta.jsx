@@ -268,8 +268,8 @@ export default function Caseta({ warehouseId }) {
     }
 
     const {data:unit,error:unitError}=await supabase.from("unidades").insert({
-      operador_nombre:form.nombre.trim(),linea_transporte:form.empresa.trim(),tracto_placas:form.tracto_placas.trim().toUpperCase(),
-      caja_placas:form.caja_placas.trim().toUpperCase()||null,estado:"en_caseta",almacen_id:warehouseId,caseta_usuario_id:user?.id||null,
+      operador_nombre:form.nombre.trim(),linea_transporte:form.empresa.trim(),tracto_numero:form.tracto_numero.trim()||null,tracto_placas:form.tracto_placas.trim().toUpperCase(),
+      caja_numero:form.caja_numero.trim()||null,caja_placas:form.caja_placas.trim().toUpperCase()||null,estado:"en_caseta",almacen_id:warehouseId,caseta_usuario_id:user?.id||null,
       operacion_tipo:form.operacion_tipo,ubicacion_tipo:"caseta"
     }).select("id,folio").single();
     if(unitError){setError(unitError.message);setLoading(false);return}
