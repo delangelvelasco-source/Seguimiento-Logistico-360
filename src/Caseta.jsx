@@ -90,7 +90,8 @@ export default function Caseta({ warehouseId }) {
       try{
         await supabase.realtime.setAuth();
         if(!activo)return;
-        if(channel){try{await supabase.removeChannel(channel);}catch{}}\n        channel=supabase.channel("caseta:"+warehouseId,{config:{private:true}})
+        if(channel){try{await supabase.removeChannel(channel);}catch{}}
+        channel=supabase.channel("caseta:"+warehouseId,{config:{private:true}})
           .on("broadcast",{event:"INSERT"},refrescarInmediato)
           .on("broadcast",{event:"UPDATE"},refrescarInmediato)
           .on("broadcast",{event:"DELETE"},refrescarInmediato)
