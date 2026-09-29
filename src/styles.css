@@ -338,3 +338,10 @@
 @media(min-width:901px){
   .caseta-exact{max-width:1180px;margin-left:auto;margin-right:auto}
 }
+
+.access-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+.access-type{display:flex;align-items:center;justify-content:center;gap:12px;min-height:72px;border:1px solid #29405c;border-radius:14px;background:#0b1725;color:#93a5bc;cursor:pointer;transition:.18s}
+.access-type span{text-align:left}.access-type b,.access-type small{display:block}.access-type b{font-size:13px;color:#d8e3f0}.access-type small{font-size:9px;margin-top:3px;color:#6e819a}
+.access-type.active{transform:translateY(-1px);color:#fff;box-shadow:0 10px 24px #0003}
+.access-type.active b{color:#fff}.access-type.unit.active{border-color:#2f8cff;background:linear-gradient(135deg,#12365e,#102044)}.access-type.visitor.active{border-color:#28a99a;background:linear-gradient(135deg,#103c3c,#10292e)}.access-type.provider.active{border-color:#a579e8;background:linear-gradient(135deg,#342152,#211b38)}
+@media(max-width:620px){.access-selector{gap:6px}.access-type{min-height:62px;gap:7px;padding:7px}.access-type svg{width:18px}.access-type b{font-size:10px}.access-type small{font-size:7px}}
