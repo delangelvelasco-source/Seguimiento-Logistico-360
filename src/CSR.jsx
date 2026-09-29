@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import { CalendarPlus, CheckCircle2, ClipboardCheck, FileCheck2, RefreshCw, Search, Send, XCircle } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 export default function CSR({warehouseId}){
  const [units,setUnits]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState("");
  const [practice,setPractice]=useState({cliente:"WABCO",operacion:"recibo",fecha:new Date().toISOString().slice(0,10),hora:"10:00",unidades:"1",pallets:"0",referencia:"REF-WABCO-45821"});
- const [practiceAppointment,setPracticeAppointment]=useState(null);
+ const [practiceAppointment,setPracticeAppointment]=useState(null),[qrData,setQrData]=useState("");
  const [practiceMsg,setPracticeMsg]=useState("");
  async function load(){if(!warehouseId)return;setLoading(true);const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,csr_confirmacion_at,operacion_360_id").eq("almacen_id",warehouseId).eq("estado","validando").order("dispatch_registro_at",{ascending:false}).limit(50);if(error)setError(error.message);else setUnits(data||[]);setLoading(false)}
  useEffect(()=>{load();try{const saved=localStorage.getItem("seguimiento360_practice_cita");if(saved)setPracticeAppointment(JSON.parse(saved))}catch{}},[warehouseId]);
@@ -17,6 +18,7 @@ export default function CSR({warehouseId}){
   const cita={folio,cliente:practice.cliente,operacion:practice.operacion,fecha:practice.fecha,hora:practice.hora,unidades:Number(practice.unidades)||1,pallets:Number(practice.pallets)||0,referencia:practice.referencia,created_at:stamp.toISOString()};
   localStorage.setItem("seguimiento360_practice_cita",JSON.stringify(cita));
   setPracticeAppointment(cita);
+  QRCode.toDataURL(JSON.stringify({tipo:"cita360",folio:cita.folio,almacen_id:warehouseId}),{width:280,margin:2,errorCorrectionLevel:"M"}).then(setQrData).catch(()=>setQrData(""));
   setPracticeMsg("Cita de práctica generada. Ahora puedes llevar este folio al simulador de Caseta.");
  }
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas].join(" ").toLowerCase().includes(query.toLowerCase()));
@@ -48,6 +50,6 @@ export default function CSR({warehouseId}){
   </div>
   <button className="login-btn compact" type="button" onClick={generarCitaPractica}><CalendarPlus size={16}/>Separar cita y generar folio</button>
   {practiceMsg&&<div className="notice success"><CheckCircle2 size={16}/><strong>{practiceMsg}</strong></div>}
-  {practiceAppointment&&<div className="practice-generated-cita"><span>Folio generado</span><strong>{practiceAppointment.folio}</strong><small>{practiceAppointment.cliente} · {practiceAppointment.operacion} · {practiceAppointment.fecha} · {practiceAppointment.hora} · {practiceAppointment.unidades} unidad(es)</small></div>}
+  {practiceAppointment&&<div className="practice-generated-cita"><span>Folio generado</span><strong>{practiceAppointment.folio}</strong><small>{practiceAppointment.cliente} · {practiceAppointment.operacion} · {practiceAppointment.fecha} · {practiceAppointment.hora} · {practiceAppointment.unidades} unidad(es)</small>{qrData&&<div className="cita-qr-wrap"><img src={qrData} alt={"QR "+practiceAppointment.folio}/><small>Escanea este QR en Caseta para cargar la cita.</small></div>}</div>}
  </div>{error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
