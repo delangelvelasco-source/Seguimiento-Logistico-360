@@ -27,30 +27,24 @@ export default function Caseta({ warehouseId }) {
   const [scannerError,setScannerError]=useState("");
   const [scanner,setScanner]=useState(null);
   const [citaEncontrada,setCitaEncontrada]=useState(null);
+  const loadSeqRef=useRef(0);
 
   async function load(showMessage=false){
     if(!warehouseId){
       if(showMessage)setMessage("No hay un almacén activo seleccionado.");
       return;
     }
+
+    const seq=++loadSeqRef.current;
     if(showMessage)setRefreshLoading(true);
 
-    let targetWarehouseId=warehouseId;
-    try{
-      const {data:{user}}=await supabase.auth.getUser();
-      if(user?.id){
-        const {data:perfil}=await supabase.from("usuarios").select("almacen_id,rol,activo").eq("id",user.id).maybeSingle();
-        if(perfil?.activo && perfil?.rol==="caseta" && perfil.almacen_id){
-          targetWarehouseId=perfil.almacen_id;
-        }
-      }
-    }catch{}
+    // El almacén recibido por App ya está validado para el usuario.
+    // No hacemos consultas de perfil cada segundo: el monitor debe ser ligero.
+    const targetWarehouseId=warehouseId;
 
     let filas=null;
     let ultimoError=null;
 
-    // Fuente principal: RPC segura del monitor. Así todos los navegadores
-    // reciben exactamente la misma lectura autorizada del almacén.
     const {data:rpcData,error:rpcError}=await supabase.rpc(
       "listar_accesos_caseta_monitor",
       {p_almacen_id:targetWarehouseId}
@@ -61,7 +55,6 @@ export default function Caseta({ warehouseId }) {
     }else{
       ultimoError=rpcError;
 
-      // Respaldo directo autenticado.
       const {data:directData,error:directError}=await supabase
         .from("accesos_caseta")
         .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
@@ -76,15 +69,19 @@ export default function Caseta({ warehouseId }) {
       }
     }
 
+    // Nunca borres el último estado correcto por un fallo temporal de red/RPC.
     if(!Array.isArray(filas)){
-      setRecent([]);
-      if(showMessage)setMessage("No se pudo sincronizar el monitor: "+(ultimoError?.message||"respuesta no disponible"));
-      setRefreshLoading(false);
+      if(showMessage)setMessage("Sincronización temporalmente no disponible.");
+      if(showMessage)setRefreshLoading(false);
       return;
     }
-    setRecent(filas);
-    if(showMessage)setMessage("Monitor sincronizado.");
-    if(showMessage)setRefreshLoading(false);
+
+    // Una respuesta vieja nunca puede sobrescribir una respuesta más reciente.
+    if(seq===loadSeqRef.current){
+      setRecent(filas);
+      if(showMessage)setMessage("Monitor sincronizado.");
+      if(showMessage)setRefreshLoading(false);
+    }
   }
   useEffect(()=>{
     if(!warehouseId)return;
@@ -106,7 +103,8 @@ export default function Caseta({ warehouseId }) {
     let channel;
     const conectarTiempoReal=async()=>{
       try{
-        await supabase.realtime.setAuth();
+        const {data:{session}}=await supabase.auth.getSession();
+        if(session?.access_token) await supabase.realtime.setAuth(session.access_token);
         if(!activo)return;
         if(channel){try{await supabase.removeChannel(channel);}catch{}}
         channel=supabase.channel("caseta:"+warehouseId,{config:{private:true}})
