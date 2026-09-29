@@ -37,22 +37,42 @@ export default function Caseta({ warehouseId }) {
     // El monitor usa una RPC segura para consultar el estado completo del almacén.
     // Así no depende de que la sesión del navegador tenga una política RLS distinta
     // a la tablet y ambos dispositivos ven exactamente la misma operación.
-    const {data,error}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:warehouseId});
-    if(error){
-      setRecent([]);
-      if(showMessage)setMessage("No se pudo sincronizar el monitor: "+error.message);
-      return;
+    // Fuente principal: RPC segura. Respaldo automático: consulta directa autenticada.
+    // Esto evita que un fallo/latencia del RPC deje el monitor mostrando falsamente 0.
+    let filas=null;
+    let ultimoError=null;
+    const {data:rpcData,error:rpcError}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:warehouseId});
+    if(!rpcError && Array.isArray(rpcData) && rpcData.length>0){
+      filas=rpcData;
     }else{
-      const ids=(data||[]).map(x=>x.id);
-      let asignaciones=[];
-      if(ids.length){
-        const {data:asig}=await supabase.from("gafetes_asignaciones_caseta").select("acceso_id,numero").in("acceso_id",ids);
-        asignaciones=asig||[];
+      ultimoError=rpcError;
+      const {data:directData,error:directError}=await supabase
+        .from("accesos_caseta")
+        .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
+        .eq("almacen_id",warehouseId)
+        .order("entrada_at",{ascending:false})
+        .limit(50);
+      if(!directError && Array.isArray(directData)){
+        filas=directData;
+      }else{
+        ultimoError=directError||ultimoError;
       }
-      const gafeteMap=new Map(asignaciones.map(x=>[x.acceso_id,x.numero]));
-      setRecent((data||[]).map(x=>({...x,gafete_numero:gafeteMap.get(x.id)||null})));
-      if(showMessage)setMessage("Ingresos actualizados correctamente.");
     }
+    if(!Array.isArray(filas)){
+      setRecent([]);
+      if(showMessage)setMessage("No se pudo sincronizar el monitor: "+(ultimoError?.message||"respuesta no disponible"));
+      setRefreshLoading(false);
+      return;
+    }
+    const ids=filas.map(x=>x.id);
+    let asignaciones=[];
+    if(ids.length){
+      const {data:asig}=await supabase.from("gafetes_asignaciones_caseta").select("acceso_id,numero").in("acceso_id",ids);
+      asignaciones=asig||[];
+    }
+    const gafeteMap=new Map(asignaciones.map(x=>[x.acceso_id,x.numero]));
+    setRecent(filas.map(x=>({...x,gafete_numero:gafeteMap.get(x.id)||null})));
+    if(showMessage)setMessage("Monitor sincronizado.");
     if(showMessage)setRefreshLoading(false);
   }
   useEffect(()=>{
