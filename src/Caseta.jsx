@@ -52,12 +52,35 @@ export default function Caseta({ warehouseId }) {
   }
   useEffect(()=>{
     if(!warehouseId)return;
+    let activo=true;
+    let recargando=false;
+
+    // Carga inicial inmediata.
     load();
+
+    // Realtime: cualquier alta, cambio de estado o salida se refleja en cuanto
+    // Supabase emite el evento, sin depender del botón Actualizar.
+    const refrescarInmediato=async()=>{
+      if(!activo || recargando)return;
+      recargando=true;
+      try{await load();}finally{recargando=false;}
+    };
+
     const channel=supabase.channel("caseta-tiempo-real-"+warehouseId)
-      .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},()=>load())
+      .on("postgres_changes",{
+        event:"*",
+        schema:"public",
+        table:"accesos_caseta",
+        filter:"almacen_id=eq."+warehouseId
+      },refrescarInmediato)
       .subscribe();
-    const interval=setInterval(()=>load(),2000);
+
+    // Respaldo de alta frecuencia por si el navegador pierde temporalmente
+    // la conexión Realtime. No requiere recargar la página.
+    const interval=setInterval(()=>refrescarInmediato(),1000);
+
     return ()=>{
+      activo=false;
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
