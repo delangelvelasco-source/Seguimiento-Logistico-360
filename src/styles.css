@@ -125,3 +125,67 @@
 .practice-input-card input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;background:#0a111d;color:#e1e8f3;border:1px solid #2a3c55;border-radius:8px}
 .scan-open-btn{justify-content:center;margin-top:10px}
 @media(max-width:650px){.client-buttons{grid-template-columns:1fr}.practice-action-grid{grid-template-columns:1fr}}
+
+/* Caseta · interfaz operativa profesional */
+.caseta-page{margin:26px 32px 0;display:grid;gap:14px}
+.caseta-header-card{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:22px 24px;border:1px solid #22324a;border-radius:18px;background:linear-gradient(135deg,#101b2c,#0b121f);box-shadow:0 14px 40px #0005}
+.caseta-header-main{display:flex;align-items:center;gap:14px}
+.caseta-icon{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#315fba,#6649b8);box-shadow:0 8px 24px #315fba44}
+.caseta-header-card h2{margin:4px 0 4px;font-size:24px;letter-spacing:-.025em}
+.caseta-header-card p{margin:0;color:#7f8da3;font-size:12px}
+.caseta-live{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #245d46;border-radius:999px;background:#0c1d17;color:#73dda6;font-size:11px;font-weight:800;white-space:nowrap}
+.caseta-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(330px,.7fr);gap:14px;align-items:start}
+.caseta-main-panel,.caseta-recent-panel{padding:20px}
+.caseta-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.caseta-section-head>div{display:flex;align-items:center;gap:10px}
+.caseta-section-head strong,.caseta-section-head small{display:block}
+.caseta-section-head strong{font-size:13px}
+.caseta-section-head small{color:#65758d;font-size:10px;margin-top:3px}
+.caseta-step{width:31px;height:31px;display:grid;place-items:center;border-radius:9px;background:#13233b;border:1px solid #2a4162;color:#8fb0f8;font-size:10px;font-weight:900}
+.caseta-count{min-width:28px;height:28px;padding:0 8px;display:grid;place-items:center;border-radius:999px;background:#13233b;border:1px solid #2a4162;color:#a9bff0;font-size:10px;font-weight:900}
+.caseta-form-pro{display:grid;gap:12px}
+.field-group{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.caseta-form-pro label{display:block;color:#91a0b6;font-size:10px;font-weight:700;letter-spacing:.02em}
+.required-mark{color:#7fa7ff;margin-left:3px}
+.caseta-form-pro input,.caseta-form-pro select{display:block;width:100%;margin-top:6px;padding:12px 13px;border:1px solid #24364f;border-radius:10px;background:#080f1b;color:#edf3fc;outline:none;font-size:13px;transition:.18s}
+.caseta-form-pro input::placeholder{color:#506078}
+.caseta-form-pro input:focus,.caseta-form-pro select:focus{border-color:#557fd0;box-shadow:0 0 0 3px #557fd01c}
+.caseta-divider{display:flex;align-items:center;gap:10px;padding:14px 0 2px;border-top:1px solid #1a283c;margin-top:2px}
+.caseta-divider>span{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:#10243b;color:#82a9ff;font-size:9px;font-weight:900}
+.caseta-divider strong,.caseta-divider small{display:block}
+.caseta-divider strong{font-size:11px}
+.caseta-divider small{color:#65758d;font-size:9px;margin-top:2px}
+.evidence-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.evidence-btn{min-height:74px;display:flex;align-items:center;gap:11px;text-align:left;padding:12px;border-radius:13px;color:#fff;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+.evidence-btn:hover{transform:translateY(-1px)}
+.evidence-btn.plate{border:1px solid #355d98;background:linear-gradient(135deg,#142b4d,#171d43)}
+.evidence-btn.id{border:1px solid #256a67;background:linear-gradient(135deg,#0d302f,#10252e)}
+.evidence-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:11px;background:#ffffff12;flex:0 0 auto}
+.evidence-btn strong,.evidence-btn small{display:block}
+.evidence-btn strong{font-size:12px}
+.evidence-btn small{font-size:9px;color:#a8b6ca;margin-top:3px}
+.evidence-arrow{margin-left:auto;font-size:24px;color:#7188ab}
+.evidence-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.evidence-preview{display:flex;align-items:center;gap:9px;padding:8px;border:1px solid #213149;border-radius:11px;background:#0a111d}
+.evidence-preview img{width:58px;height:45px;object-fit:cover;border-radius:7px}
+.evidence-preview strong,.evidence-preview small{display:block}
+.evidence-preview strong{font-size:9px}
+.evidence-preview small{font-size:8px;color:#667891;margin-top:2px}
+.caseta-submit{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:3px;padding:14px 16px;border:1px solid #527fdc;border-radius:11px;background:linear-gradient(135deg,#416fd0,#6950cf);color:#fff;font-weight:900;font-size:12px;box-shadow:0 12px 28px #416fd033;cursor:pointer}
+.caseta-submit span{margin-left:auto;font-size:18px;line-height:0}
+.caseta-submit:disabled{opacity:.65;cursor:wait}
+.caseta-list-pro{display:grid;gap:8px}
+.caseta-row-pro{display:grid;grid-template-columns:1.1fr 1fr auto;gap:9px;align-items:center;padding:12px;border:1px solid #1b2b40;border-radius:11px;background:#0b131f}
+.caseta-row-pro:hover{border-color:#2d4464}
+.recent-folio strong,.recent-folio span,.recent-data b,.recent-data small{display:block}
+.recent-folio strong{font-size:11px;color:#e4ebf6}
+.recent-folio span,.recent-data small{font-size:9px;color:#65758d;margin-top:3px}
+.recent-data{text-align:right}
+.recent-data b{font-size:10px;color:#9eb7e8}
+.recent-status{font-size:8px;padding:5px 7px;border-radius:999px;border:1px solid #245d46;background:#0c1d17;color:#6fe0a5;white-space:nowrap}
+.caseta-empty{min-height:190px;display:grid;place-items:center;align-content:center;text-align:center;border:1px dashed #26374e;border-radius:13px;background:#0a111d;color:#61718a;padding:20px}
+.caseta-empty svg{color:#5576aa;margin-bottom:7px}
+.caseta-empty strong{color:#aab7ca;font-size:11px}
+.caseta-empty span{max-width:230px;font-size:9px;line-height:1.5;margin-top:4px}
+@media(max-width:900px){.caseta-page{margin:18px 16px 0}.caseta-layout{grid-template-columns:1fr}.caseta-recent-panel{order:2}}
+@media(max-width:600px){.caseta-header-card{padding:17px;align-items:flex-start}.caseta-header-card h2{font-size:20px}.caseta-live{font-size:9px;padding:7px 8px}.caseta-main-panel,.caseta-recent-panel{padding:15px}.field-group,.evidence-grid,.evidence-preview-grid{grid-template-columns:1fr}.caseta-section-head{margin-bottom:14px}.caseta-section-head .secondary-btn{font-size:9px;padding:7px 9px}}
