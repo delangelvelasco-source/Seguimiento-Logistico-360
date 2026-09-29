@@ -76,7 +76,7 @@ export default function Caseta({ warehouseId }) {
         // directamente el acceso autenticado. El gafete sigue aislado en su tabla interna.
         const {data:actualizado,error:updateError}=await supabase
           .from("accesos_caseta")
-          .update({salida_at:new Date().toISOString(),estado:"fuera",updated_at:new Date().toISOString()})
+          .update({salida_at:new Date().toISOString(),estado:"salio",updated_at:new Date().toISOString()})
           .eq("id",acceso.id)
           .eq("estado","dentro")
           .select("id,folio,estado,salida_at")
