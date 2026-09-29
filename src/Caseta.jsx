@@ -5,7 +5,11 @@ import { supabase } from "./lib/supabase";
 export default function Caseta({ warehouseId }) {
   const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
-  const [recent,setRecent]=useState([]);\n  const [scannerOpen,setScannerOpen]=useState(false);\n  const [scannerError,setScannerError]=useState("");\n  const videoRef=useRef(null);\n  const streamRef=useRef(null);
+  const [recent,setRecent]=useState([]);
+  const [scannerOpen,setScannerOpen]=useState(false);
+  const [scannerError,setScannerError]=useState("");
+  const videoRef=useRef(null);
+  const streamRef=useRef(null);
 
   async function load(){
     const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,created_at").eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(12);
@@ -13,7 +17,41 @@ export default function Caseta({ warehouseId }) {
   }
   useEffect(()=>{if(warehouseId)load()},[warehouseId]);
 
-  async function abrirScanner(){\n    setScannerError("");\n    setScannerOpen(true);\n    try{\n      if(!navigator.mediaDevices?.getUserMedia) throw new Error("La cámara no está disponible en este navegador.");\n      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});\n      streamRef.current=stream;\n      if(videoRef.current){videoRef.current.srcObject=stream; await videoRef.current.play();}\n    }catch(err){setScannerError(err?.message||"No se pudo abrir la cámara.");}\n  }\n  function cerrarScanner(){\n    streamRef.current?.getTracks?.().forEach(t=>t.stop());\n    streamRef.current=null;\n    setScannerOpen(false);\n  }\n  function capturarScanner(){\n    const video=videoRef.current;\n    if(!video||!video.videoWidth){setScannerError("Espera a que la cámara esté lista.");return;}\n    const canvas=document.createElement("canvas");\n    canvas.width=video.videoWidth; canvas.height=video.videoHeight;\n    canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);\n    // La imagen queda disponible para validación visual; OCR de placa se incorpora en la siguiente fase.\n    const imagen=canvas.toDataURL("image/jpeg",0.9);\n    setForm(f=>({...f,referencia:f.referencia||"CAPTURA-CAMARA"}));\n    cerrarScanner();\n    setMessage("Captura realizada. Verifica visualmente la placa y confirma los datos antes de registrar el ingreso.");\n  }\n\n  async function registrar(e){
+  function abrirScanner(){ setScannerError(""); setScannerOpen(true); }
+  useEffect(()=>{
+    if(!scannerOpen)return;
+    let cancelled=false;
+    (async()=>{
+      try{
+        if(!navigator.mediaDevices?.getUserMedia) throw new Error("La cámara no está disponible en este navegador.");
+        const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+        if(cancelled){stream.getTracks().forEach(t=>t.stop());return;}
+        streamRef.current=stream;
+        if(videoRef.current){videoRef.current.srcObject=stream; await videoRef.current.play();}
+      }catch(err){if(!cancelled)setScannerError(err?.message||"No se pudo abrir la cámara.");}
+    })();
+    return()=>{cancelled=true; streamRef.current?.getTracks?.().forEach(t=>t.stop()); streamRef.current=null;};
+  },[scannerOpen]);
+
+  function cerrarScanner(){
+    streamRef.current?.getTracks?.().forEach(t=>t.stop());
+    streamRef.current=null;
+    setScannerOpen(false);
+  }
+  function capturarScanner(){
+    const video=videoRef.current;
+    if(!video||!video.videoWidth){setScannerError("Espera a que la cámara esté lista.");return;}
+    const canvas=document.createElement("canvas");
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+    canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+    // La imagen queda disponible para validación visual; OCR de placa se incorpora en la siguiente fase.
+    canvas.toDataURL("image/jpeg",0.9);
+    setForm(f=>({...f,referencia:f.referencia||"CAPTURA-CAMARA"}));
+    cerrarScanner();
+    setMessage("Captura realizada. Verifica visualmente la placa y confirma los datos antes de registrar el ingreso.");
+  }
+
+  async function registrar(e){
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
     const folio=form.folio_cita.trim() || "CAS-"+Date.now().toString().slice(-8);
