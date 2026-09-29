@@ -5,7 +5,7 @@ import { createWorker } from "tesseract.js";
 
 export default function Caseta({ warehouseId }) {
   const [accessType,setAccessType]=useState("unidad");
-  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
   const form=accessForm;
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
@@ -216,7 +216,7 @@ export default function Caseta({ warehouseId }) {
       const {data:cita,error:citaError}=await supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,estado,unidades_solicitadas").eq("almacen_id",warehouseId).eq("folio",folio).maybeSingle();
       if(citaError)throw citaError;
       if(cita){
-        const {data:precarga}=await supabase.from("cita_datos_precarga").select("linea_transporte,operador_nombre,contacto,tracto_placas,caja_placas,observaciones").eq("cita_id",cita.id).maybeSingle();
+        const {data:precarga}=await supabase.from("cita_datos_precarga").select("linea_transporte,operador_nombre,contacto,tracto_numero,tracto_placas,caja_numero,caja_placas,observaciones").eq("cita_id",cita.id).maybeSingle();
         setForm(prev=>({...prev,
           folio_cita:cita.folio||folio,
           nombre:precarga?.operador_nombre||prev.nombre,
@@ -263,7 +263,7 @@ export default function Caseta({ warehouseId }) {
       });
       if(error){setError(error.message);setLoading(false);return}
       setMessage(accessType==="visitante"?"Visitante registrado. Acceso abierto.":"Proveedor registrado. Acceso abierto.");
-      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
       await load();setLoading(false);return;
     }
 
@@ -288,7 +288,7 @@ export default function Caseta({ warehouseId }) {
     }
     const accessInsert=await supabase.from("accesos_caseta").insert({
       folio:folioUnidad,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
-      tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_placas:form.caja_placas.trim().toUpperCase()||null,
+      tracto_numero:form.tracto_numero.trim()||null,tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_numero:form.caja_numero.trim()||null,caja_placas:form.caja_placas.trim().toUpperCase()||null,
       operacion_tipo:form.operacion_tipo,unidad_id:unit.id,entrada_at:new Date().toISOString(),estado:"dentro",
       observaciones:form.referencia.trim()||null,registrado_por:user?.id||null
     });
@@ -327,7 +327,7 @@ export default function Caseta({ warehouseId }) {
             <label className="cita-first-field">Folio de cita <span>(opcional · primero)</span><div className="exact-input cita-input"><ClipboardList size={18}/><input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value.toUpperCase()})} onBlur={()=>buscarCita()} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();buscarCita();}}} placeholder="Escanea o escribe el folio de cita"/><button type="button" className="cita-scan-btn" onClick={abrirScanner} title="Escanear QR"><ScanLine size={17}/></button><button type="button" className="cita-search-btn" onClick={()=>buscarCita()} disabled={citaLoading||!form.folio_cita.trim()} title="Buscar cita">{citaLoading?"…":<Search size={16}/>}</button></div>{citaEncontrada&&<small className="cita-found">✓ Cita encontrada · {citaEncontrada.fecha||"fecha no disponible"} {citaEncontrada.hora_inicio?("· "+String(citaEncontrada.hora_inicio).slice(0,5)):""}</small>}</label>
             <label>Nombre del operador<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label>
             <label>Línea de transporte<div className="exact-input"><Building2 size={18}/><input required value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa transportista"/></div></label>
-            <div className="exact-two"><label>Placa tracto<div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label><label>Placa caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div>
+            <div className="exact-two"><label>Número de tracto<div className="exact-input"><Truck size={18}/><input value={form.tracto_numero} onChange={e=>setForm({...form,tracto_numero:e.target.value})} placeholder="Número económico"/></div></label><label>Placa tracto<div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div><div className="exact-two"><label>Número de caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_numero} onChange={e=>setForm({...form,caja_numero:e.target.value})} placeholder="Número económico"/></div></label><label>Placa caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div>
             <div className="exact-two"><label>Tipo de operación<div className="exact-input"><ClipboardList size={18}/><select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></div></label><label>Referencia <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Referencia del cliente"/></div></label></div>
           </>:<>
             <div className="exact-two"><label>Nombre completo<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label><label>Empresa <span>(opcional)</span><div className="exact-input"><Building2 size={18}/><input value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa / procedencia"/></div></label></div>
