@@ -34,36 +34,45 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    // Fuente principal: consulta directa autenticada sobre el mismo almacén.
-    // Realtime + sondeo de 1 s mantienen esta lista actualizada. La RPC queda
-    // únicamente como respaldo si la consulta directa falla.
+
+    let targetWarehouseId=warehouseId;
+    try{
+      const {data:{user}}=await supabase.auth.getUser();
+      if(user?.id){
+        const {data:perfil}=await supabase.from("usuarios").select("almacen_id,rol,activo").eq("id",user.id).maybeSingle();
+        if(perfil?.activo && perfil?.rol==="caseta" && perfil.almacen_id){
+          targetWarehouseId=perfil.almacen_id;
+        }
+      }
+    }catch{}
+
     let filas=null;
     let ultimoError=null;
     const {data:directData,error:directError}=await supabase
       .from("accesos_caseta")
       .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
-      .eq("almacen_id",warehouseId)
+      .eq("almacen_id",targetWarehouseId)
       .order("entrada_at",{ascending:false})
       .limit(50);
-    if(!directError && Array.isArray(directData)){
+
+    const {data:rpcData,error:rpcError}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:targetWarehouseId});
+
+    if(!directError && Array.isArray(directData) && directData.length>0){
+      filas=directData;
+    }else if(!rpcError && Array.isArray(rpcData)){
+      filas=rpcData;
+    }else if(!directError && Array.isArray(directData)){
       filas=directData;
     }else{
-      ultimoError=directError;
-      const {data:rpcData,error:rpcError}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:warehouseId});
-      if(!rpcError && Array.isArray(rpcData)){
-        filas=rpcData;
-      }else{
-        ultimoError=rpcError||ultimoError;
-      }
+      ultimoError=rpcError||directError;
     }
+
     if(!Array.isArray(filas)){
       setRecent([]);
       if(showMessage)setMessage("No se pudo sincronizar el monitor: "+(ultimoError?.message||"respuesta no disponible"));
       setRefreshLoading(false);
       return;
     }
-    // El gafete permanece completamente aislado del monitor operativo.
-    // No se consulta ni se expone su número aquí; solo Caseta/control interno lo maneja.
     setRecent(filas);
     if(showMessage)setMessage("Monitor sincronizado.");
     if(showMessage)setRefreshLoading(false);
