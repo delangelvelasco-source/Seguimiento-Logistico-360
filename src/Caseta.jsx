@@ -48,23 +48,32 @@ export default function Caseta({ warehouseId }) {
 
     let filas=null;
     let ultimoError=null;
-    const {data:directData,error:directError}=await supabase
-      .from("accesos_caseta")
-      .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
-      .eq("almacen_id",targetWarehouseId)
-      .order("entrada_at",{ascending:false})
-      .limit(50);
 
-    const {data:rpcData,error:rpcError}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:targetWarehouseId});
+    // Fuente principal: RPC segura del monitor. Así todos los navegadores
+    // reciben exactamente la misma lectura autorizada del almacén.
+    const {data:rpcData,error:rpcError}=await supabase.rpc(
+      "listar_accesos_caseta_monitor",
+      {p_almacen_id:targetWarehouseId}
+    );
 
-    if(!directError && Array.isArray(directData) && directData.length>0){
-      filas=directData;
-    }else if(!rpcError && Array.isArray(rpcData)){
+    if(!rpcError && Array.isArray(rpcData)){
       filas=rpcData;
-    }else if(!directError && Array.isArray(directData)){
-      filas=directData;
     }else{
-      ultimoError=rpcError||directError;
+      ultimoError=rpcError;
+
+      // Respaldo directo autenticado.
+      const {data:directData,error:directError}=await supabase
+        .from("accesos_caseta")
+        .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
+        .eq("almacen_id",targetWarehouseId)
+        .order("entrada_at",{ascending:false})
+        .limit(50);
+
+      if(!directError && Array.isArray(directData)){
+        filas=directData;
+      }else{
+        ultimoError=directError||ultimoError;
+      }
     }
 
     if(!Array.isArray(filas)){
