@@ -352,3 +352,7 @@
 .cita-search-btn{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:#eaf2ff;color:#1769e0;display:grid;place-items:center;cursor:pointer}
 .cita-search-btn:disabled{opacity:.45;cursor:not-allowed}
 .cita-found{display:flex;align-items:center;gap:6px;margin-top:7px;color:#168a52;font-weight:700;font-size:12px}
+
+.cita-scan-btn{position:absolute;right:49px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:#eaf2ff;color:#1769e0;display:grid;place-items:center;cursor:pointer}
+.cita-qr-wrap{margin-top:12px;padding:12px;border-radius:16px;background:#f5f8ff;display:flex;flex-direction:column;align-items:center;gap:7px}.cita-qr-wrap img{width:180px;height:180px;image-rendering:auto}
+.qr-scanner-overlay{position:fixed;inset:0;background:rgba(3,12,25,.78);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}.qr-scanner-card{width:min(420px,100%);background:#fff;border-radius:22px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.35)}.qr-scanner-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.qr-scanner-head button{border:0;background:#eef3f9;border-radius:10px;padding:8px}.qr-reader{width:100%;overflow:hidden;border-radius:16px}.qr-scanner-card>small{display:block;margin-top:10px;text-align:center;color:#64748b}
