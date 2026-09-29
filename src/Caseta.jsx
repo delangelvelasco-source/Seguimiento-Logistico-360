@@ -90,7 +90,7 @@ export default function Caseta({ warehouseId }) {
       try{
         await supabase.realtime.setAuth();
         if(!activo)return;
-        channel=supabase.channel("caseta-broadcast-"+warehouseId,{config:{private:true}})
+        if(channel){try{await supabase.removeChannel(channel);}catch{}}\n        channel=supabase.channel("caseta:"+warehouseId,{config:{private:true}})
           .on("broadcast",{event:"INSERT"},refrescarInmediato)
           .on("broadcast",{event:"UPDATE"},refrescarInmediato)
           .on("broadcast",{event:"DELETE"},refrescarInmediato)
@@ -538,7 +538,7 @@ export default function Caseta({ warehouseId }) {
         </button>
       </div>
       {showOtherAccess&&<div style={{marginTop:"16px"}}>
-        {otrosAccesos.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Gafete</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{otrosAccesos.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin otros accesos</strong><span>Visitantes, proveedores, personal interno, eventuales y otros aparecerán aquí.</span></div>}
+        {otrosAccesos.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{otrosAccesos.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin otros accesos</strong><span>Visitantes, proveedores, personal interno, eventuales y otros aparecerán aquí.</span></div>}
       </div>}
     </div>
 
