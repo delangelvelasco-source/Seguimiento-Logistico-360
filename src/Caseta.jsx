@@ -298,7 +298,7 @@ export default function Caseta({ warehouseId }) {
       setError(accessInsert.error.message);setLoading(false);return;
     }
     setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
-    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
     await load();setLoading(false);
   }
 
