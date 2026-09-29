@@ -73,7 +73,13 @@ export default function Caseta({ warehouseId }) {
         table:"accesos_caseta",
         filter:"almacen_id=eq."+warehouseId
       },refrescarInmediato)
-      .subscribe();
+      .subscribe((status)=>{
+        // Si el navegador recupera la conexión, sincronizar inmediatamente.
+        if(status==="SUBSCRIBED")refrescarInmediato();
+        if(status==="CHANNEL_ERROR" || status==="TIMED_OUT"){
+          setTimeout(()=>{if(activo)refrescarInmediato();},300);
+        }
+      });
 
     // Respaldo de alta frecuencia por si el navegador pierde temporalmente
     // la conexión Realtime. No requiere recargar la página.
