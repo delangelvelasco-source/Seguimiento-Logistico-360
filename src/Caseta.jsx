@@ -35,26 +35,89 @@ export default function Caseta({ warehouseId }) {
       setCapturedId(image);
       setOcrText("");
       setOcrLoading(true);
-      setMessage("Identificación capturada. Leyendo nombre…");
+      setMessage("Identificación capturada. Preparando lectura…");
+      let worker=null;
       try{
-        const worker=await createWorker("spa");
-        const result=await worker.recognize(image);
+        const img=await new Promise((resolve,reject)=>{
+          const el=new Image();
+          el.onload=()=>resolve(el);
+          el.onerror=()=>reject(new Error("No se pudo preparar la imagen."));
+          el.src=image;
+        });
+        const canvas=document.createElement("canvas");
+        const scale=Math.min(3,Math.max(2,2400/Math.max(img.naturalWidth||img.width,1)));
+        canvas.width=Math.round((img.naturalWidth||img.width)*scale);
+        canvas.height=Math.round((img.naturalHeight||img.height)*scale);
+        const ctx=canvas.getContext("2d");
+        if(!ctx)throw new Error("No se pudo preparar el OCR.");
+        ctx.imageSmoothingEnabled=true;
+        ctx.imageSmoothingQuality="high";
+        ctx.filter="grayscale(1) contrast(1.18)";
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+        setMessage("Identificación capturada. Leyendo nombre…");
+        worker=await createWorker("spa");
+        await worker.setParameters({
+          tessedit_pageseg_mode:"6",
+          preserve_interword_spaces:"1",
+          user_defined_dpi:"300"
+        });
+        const result=await worker.recognize(canvas);
         const text=result?.data?.text||"";
         setOcrText(text);
-        const lines=text.split(/\\n+/).map(x=>x.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]/g," ").replace(/\\s+/g," ").trim()).filter(x=>x.length>=5);
-        const markers=["NOMBRE","NOMBRES","NOMBRE(S)","APELLIDO","APELLIDOS","PATERNO","MATERNO"];
-        const candidates=lines.filter(line=>markers.some(m=>line.toUpperCase().includes(m))).map(line=>line.replace(/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?:S)?|PATERNO|MATERNO)\\s*:?-?\\s*/i,"").trim()).filter(Boolean);
-        const name=candidates.join(" ").replace(/\\s+/g," ").trim();
+
+        const clean=(value="")=>value
+          .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s-]/g," ")
+          .replace(/\\s+/g," ")
+          .trim();
+
+        const lines=text
+          .split(/\\r?\\n+/)
+          .map(clean)
+          .filter(Boolean);
+
+        const label=/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\\b[:.\\-]?\\s*(.*)$/i;
+        const labels=["NOMBRE","NOMBRES","NOMBRE(S)","APELLIDO","APELLIDOS","APELLIDO PATERNO","APELLIDO MATERNO","PATERNO","MATERNO"];
+
+        const plausible=(value)=>{
+          const v=clean(value);
+          if(!v)return false;
+          const upper=v.toUpperCase();
+          if(labels.includes(upper))return false;
+          const words=v.split(" ").filter(Boolean);
+          if(words.length<2 || words.length>6)return false;
+          if(words.some(w=>w.length<2 || w.length>20))return false;
+          return words.every(w=>/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]+$/.test(w));
+        };
+
+        const values=[];
+        for(let i=0;i<lines.length;i++){
+          const match=lines[i].match(label);
+          if(!match)continue;
+          const inline=clean(match[2]||"");
+          if(plausible(inline)){
+            values.push(inline);
+            continue;
+          }
+          const next=clean(lines[i+1]||"");
+          if(plausible(next))values.push(next);
+        }
+
+        const uniqueValues=[...new Set(values.map(v=>v.toUpperCase()))];
+        const name=uniqueValues.join(" ").replace(/\\s+/g," ").trim();
+
         if(name){
           setForm(f=>({...f,operador_nombre:name}));
           setMessage("Nombre detectado automáticamente. Verifica que coincida con la identificación antes de registrar.");
         }else{
-          setMessage("No pude identificar el nombre con suficiente confianza. Verifica la foto y captura el nombre manualmente.");
+          setMessage("No pude identificar el nombre con suficiente confianza. Acerca la identificación, evita reflejos y vuelve a capturarla.");
         }
-        await worker.terminate();
       }catch(err){
         setMessage("La foto quedó capturada, pero no fue posible leer el nombre automáticamente. Captúralo manualmente.");
-      }finally{setOcrLoading(false);}
+      }finally{
+        if(worker)await worker.terminate();
+        setOcrLoading(false);
+      }
     };
     reader.readAsDataURL(file);
     e.target.value="";
