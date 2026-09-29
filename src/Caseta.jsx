@@ -34,28 +34,26 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    // El monitor usa una RPC segura para consultar el estado completo del almacén.
-    // Así no depende de que la sesión del navegador tenga una política RLS distinta
-    // a la tablet y ambos dispositivos ven exactamente la misma operación.
-    // Fuente principal: RPC segura. Respaldo automático: consulta directa autenticada.
-    // Esto evita que un fallo/latencia del RPC deje el monitor mostrando falsamente 0.
+    // Fuente principal: consulta directa autenticada sobre el mismo almacén.
+    // Realtime + sondeo de 1 s mantienen esta lista actualizada. La RPC queda
+    // únicamente como respaldo si la consulta directa falla.
     let filas=null;
     let ultimoError=null;
-    const {data:rpcData,error:rpcError}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:warehouseId});
-    if(!rpcError && Array.isArray(rpcData) && rpcData.length>0){
-      filas=rpcData;
+    const {data:directData,error:directError}=await supabase
+      .from("accesos_caseta")
+      .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
+      .eq("almacen_id",warehouseId)
+      .order("entrada_at",{ascending:false})
+      .limit(50);
+    if(!directError && Array.isArray(directData)){
+      filas=directData;
     }else{
-      ultimoError=rpcError;
-      const {data:directData,error:directError}=await supabase
-        .from("accesos_caseta")
-        .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
-        .eq("almacen_id",warehouseId)
-        .order("entrada_at",{ascending:false})
-        .limit(50);
-      if(!directError && Array.isArray(directData)){
-        filas=directData;
+      ultimoError=directError;
+      const {data:rpcData,error:rpcError}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:warehouseId});
+      if(!rpcError && Array.isArray(rpcData)){
+        filas=rpcData;
       }else{
-        ultimoError=directError||ultimoError;
+        ultimoError=rpcError||ultimoError;
       }
     }
     if(!Array.isArray(filas)){
