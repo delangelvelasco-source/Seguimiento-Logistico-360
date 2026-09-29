@@ -87,7 +87,7 @@ function App() {
     setLoading(true);setDbError("");
     Promise.all([
       supabase.from("usuarios").select("id,nombre,rol,activo,almacen_id").eq("id",session.user.id).maybeSingle(),
-      supabase.from("almacenes").select("id,codigo,nombre,activo").eq("activo",true).order("codigo")
+      supabase.from("almacenes").select("id,codigo,nombre,activa").eq("activa",true).order("codigo")
     ]).then(([p,w])=>{
       if(!active)return;
       if(p.error)setDbError(p.error.message); else setProfile(p.data);
