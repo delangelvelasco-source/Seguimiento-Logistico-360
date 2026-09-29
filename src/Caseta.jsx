@@ -195,27 +195,76 @@ export default function Caseta({ warehouseId }) {
     await load();setLoading(false);
   }
 
-  return <section id="caseta" className="users-section">
-    <div className="panel">
-      <div className="panel-title"><div><LogIn size={19}/><strong>Caseta · Registro de ingreso</strong></div><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15} className={refreshLoading?"spin":""}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
-      <p className="section-copy">Captura mínima. La información continuará enriqueciéndose en Dispatch, CSR y Operación; no se vuelve a capturar.</p>
-      <form className="caseta-form" onSubmit={registrar}>
-        <label>Operador<input required value={form.operador_nombre} onChange={e=>setForm({...form,operador_nombre:e.target.value})} placeholder="Nombre y apellidos"/></label>
-        <label>Línea de transporte<input required value={form.linea_transporte} onChange={e=>setForm({...form,linea_transporte:e.target.value})} placeholder="Empresa transportista"/></label>
-        <label>Placa tracto<input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value})} placeholder="ABC-123-X"/></label>
-        <label>Placa caja<input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value})} placeholder="Opcional"/></label>
-        <label>Folio de cita<input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Opcional"/></label>
-        <label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
-        <label>Referencia del cliente<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Opcional"/></label>
-        <div style={{display:"grid",gap:10}}><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/><input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/><button type="button" onClick={abrirScanner} style={{width:"100%",minHeight:82,display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:18,border:"1px solid rgba(96,165,250,.45)",background:"linear-gradient(135deg,rgba(37,99,235,.22),rgba(124,58,237,.26))",color:"#fff",cursor:"pointer",boxShadow:"0 10px 30px rgba(37,99,235,.12)"}}><span style={{width:48,height:48,borderRadius:14,display:"grid",placeItems:"center",background:"rgba(255,255,255,.12)",flex:"0 0 auto"}}><Camera size={25}/></span><span style={{display:"grid",gap:3,textAlign:"left",flex:1}}><strong style={{fontSize:16}}>Tomar foto de placa</strong><small style={{color:"#cbd5e1"}}>Toca para abrir directamente la cámara trasera</small></span><b style={{fontSize:14}}>📷</b></button><button type="button" onClick={abrirCamaraId} style={{width:"100%",minHeight:76,display:"flex",alignItems:"center",gap:14,padding:"14px 18px",borderRadius:18,border:"1px solid rgba(45,212,191,.35)",background:"rgba(15,118,110,.16)",color:"#fff",cursor:"pointer"}}><span style={{width:46,height:46,borderRadius:14,display:"grid",placeItems:"center",background:"rgba(45,212,191,.12)",flex:"0 0 auto"}}><Camera size={23}/></span><span style={{display:"grid",gap:3,textAlign:"left",flex:1}}><strong style={{fontSize:16}}>Tomar foto de identificación</strong><small style={{color:"#cbd5e1"}}>Captura la identificación del operador</small></span><b>📷</b></button>{capturedPhoto&&<div style={{display:"flex",alignItems:"center",gap:12,padding:10,borderRadius:14,background:"rgba(15,23,42,.75)",border:"1px solid rgba(148,163,184,.22)"}}><img src={capturedPhoto} alt="Evidencia capturada" style={{width:78,height:58,objectFit:"cover",borderRadius:10}}/><div style={{display:"grid",gap:3}}><strong style={{color:"#fff"}}>Foto capturada</strong><small style={{color:"#94a3b8"}}>Verifica la placa y captura el dato en el campo correspondiente.</small></div></div>}{ocrLoading&&<div className="notice" style={{marginTop:8}}><strong>🔎 Leyendo identificación…</strong><span>Procesando el nombre en el dispositivo.</span></div>}{capturedId&&<div style={{display:"flex",alignItems:"center",gap:12,padding:10,borderRadius:14,background:"rgba(15,23,42,.75)",border:"1px solid rgba(45,212,191,.25)"}}><img src={capturedId} alt="Identificación capturada" style={{width:78,height:58,objectFit:"cover",borderRadius:10}}/><div style={{display:"grid",gap:3}}><strong style={{color:"#fff"}}>Identificación capturada</strong><small style={{color:"#94a3b8"}}>Verifica los datos del operador antes de registrar.</small></div></div></div>
-        {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
-        {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
-        <button className="login-btn" disabled={loading}><Truck size={17}/>{loading?"Registrando…":"Registrar ingreso a Caseta"}</button>
-      </form>
+  return <section id="caseta" className="caseta-page">
+    <div className="caseta-header-card">
+      <div className="caseta-header-main">
+        <div className="caseta-icon"><LogIn size={22}/></div>
+        <div>
+          <div className="eyebrow">CONTROL DE ACCESO</div>
+          <h2>Registro de ingreso</h2>
+          <p>Captura los datos de la unidad y conserva evidencia del ingreso.</p>
+        </div>
+      </div>
+      <div className="caseta-live"><span className="dot"/> Caseta activa</div>
     </div>
-    <div className="panel">
-      <div className="panel-title"><div><ClipboardCheck size={19}/><strong>Ingresos recientes</strong></div><span className="tag">{recent.length}</span></div>
-      {recent.length?<div className="caseta-list">{recent.map(u=><div className="caseta-row" key={u.id}><div><strong>{u.folio}</strong><span>{u.linea_transporte} · {u.operador_nombre}</span></div><div><b>{u.tracto_placas}</b><small>{u.ubicacion_tipo} · {u.estado}</small></div></div>)}</div>:<div className="empty">No hay ingresos registrados.</div>}
+
+    <div className="caseta-layout">
+      <div className="panel caseta-main-panel">
+        <div className="caseta-section-head">
+          <div><span className="caseta-step">01</span><div><strong>Datos de la unidad</strong><small>Información capturada por el operador de caseta</small></div></div>
+          <button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15} className={refreshLoading?"spin":""}/>{refreshLoading?"Actualizando…":"Actualizar"}</button>
+        </div>
+
+        <form className="caseta-form-pro" onSubmit={registrar}>
+          <div className="field-group">
+            <label>Operador<span className="required-mark">*</span><input required value={form.operador_nombre} onChange={e=>setForm({...form,operador_nombre:e.target.value})} placeholder="Nombre y apellidos"/></label>
+            <label>Línea de transporte<span className="required-mark">*</span><input required value={form.linea_transporte} onChange={e=>setForm({...form,linea_transporte:e.target.value})} placeholder="Empresa transportista"/></label>
+          </div>
+          <div className="field-group">
+            <label>Placa tracto<span className="required-mark">*</span><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></label>
+            <label>Placa caja<input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="Opcional"/></label>
+          </div>
+          <div className="field-group">
+            <label>Folio de cita<input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Opcional"/></label>
+            <label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
+          </div>
+          <label>Referencia del cliente<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Opcional"/></label>
+
+          <div className="caseta-divider"><span>02</span><div><strong>Evidencia del ingreso</strong><small>Las fotografías se conservan como respaldo. Los datos se capturan manualmente.</small></div></div>
+          <div className="evidence-grid">
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/>
+            <input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/>
+            <button type="button" className="evidence-btn plate" onClick={abrirScanner}>
+              <span className="evidence-icon"><Camera size={23}/></span>
+              <span><strong>Fotografiar placa</strong><small>Evidencia del tracto</small></span>
+              <span className="evidence-arrow">›</span>
+            </button>
+            <button type="button" className="evidence-btn id" onClick={abrirCamaraId}>
+              <span className="evidence-icon"><Camera size={23}/></span>
+              <span><strong>Fotografiar identificación</strong><small>Evidencia del operador</small></span>
+              <span className="evidence-arrow">›</span>
+            </button>
+          </div>
+
+          {(capturedPhoto||capturedId)&&<div className="evidence-preview-grid">
+            {capturedPhoto&&<div className="evidence-preview"><img src={capturedPhoto} alt="Evidencia de placa"/><div><strong>Placa registrada</strong><small>Evidencia capturada</small></div></div>}
+            {capturedId&&<div className="evidence-preview"><img src={capturedId} alt="Evidencia de identificación"/><div><strong>Identificación registrada</strong><small>Evidencia capturada</small></div></div>}
+          </div>}
+
+          {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
+          {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
+
+          <button className="caseta-submit" disabled={loading}><Truck size={18}/>{loading?"Registrando ingreso…":"Registrar ingreso a Caseta"}<span>→</span></button>
+        </form>
+      </div>
+
+      <div className="panel caseta-recent-panel">
+        <div className="caseta-section-head">
+          <div><span className="caseta-step">03</span><div><strong>Ingresos recientes</strong><small>Últimas unidades registradas</small></div></div>
+          <span className="caseta-count">{recent.length}</span>
+        </div>
+        {recent.length?<div className="caseta-list-pro">{recent.map(u=><div className="caseta-row-pro" key={u.id}><div className="recent-folio"><strong>{u.folio}</strong><span>{u.linea_transporte||"Sin línea"}</span></div><div className="recent-data"><b>{u.tracto_placas||"—"}</b><small>{u.operador_nombre||"Sin operador"}</small></div><span className="recent-status">{u.estado||"en_caseta"}</span></div>)}</div>:<div className="caseta-empty"><ClipboardCheck size={24}/><strong>Sin ingresos todavía</strong><span>Los registros aparecerán aquí después de confirmar una unidad.</span></div>}
+      </div>
     </div>
   </section>
 }
