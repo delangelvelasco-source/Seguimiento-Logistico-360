@@ -10,6 +10,9 @@ export const supabase = supabaseConfigured
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true
+      },
+      global: {
+        fetch: (input, init = {}) => fetch(input, { ...init, cache: "no-store" })
       }
     })
   : null;
