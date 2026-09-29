@@ -348,7 +348,7 @@
 
 /* Caseta · búsqueda de cita y precarga */
 .cita-first-field{position:relative}
-.cita-input{padding-right:52px}
+.cita-input{padding-right:92px}
 .cita-search-btn{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:#eaf2ff;color:#1769e0;display:grid;place-items:center;cursor:pointer}
 .cita-search-btn:disabled{opacity:.45;cursor:not-allowed}
 .cita-found{display:flex;align-items:center;gap:6px;margin-top:7px;color:#168a52;font-weight:700;font-size:12px}
