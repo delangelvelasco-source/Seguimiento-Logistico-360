@@ -45,27 +45,27 @@ export default function Caseta({ warehouseId }) {
     let filas=null;
     let ultimoError=null;
 
-    const {data:rpcData,error:rpcError}=await supabase.rpc(
-      "listar_accesos_caseta_monitor",
-      {p_almacen_id:targetWarehouseId}
-    );
+    // La tabla tiene RLS de lectura para personal autenticado; la consultamos
+    // directamente primero para que el monitor no dependa de la RPC autorizada.
+    const {data:directData,error:directError}=await supabase
+      .from("accesos_caseta")
+      .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
+      .eq("almacen_id",targetWarehouseId)
+      .order("entrada_at",{ascending:false})
+      .limit(50);
 
-    if(!rpcError && Array.isArray(rpcData)){
-      filas=rpcData;
+    if(!directError && Array.isArray(directData)){
+      filas=directData;
     }else{
-      ultimoError=rpcError;
-
-      const {data:directData,error:directError}=await supabase
-        .from("accesos_caseta")
-        .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
-        .eq("almacen_id",targetWarehouseId)
-        .order("entrada_at",{ascending:false})
-        .limit(50);
-
-      if(!directError && Array.isArray(directData)){
-        filas=directData;
+      ultimoError=directError;
+      const {data:rpcData,error:rpcError}=await supabase.rpc(
+        "listar_accesos_caseta_monitor",
+        {p_almacen_id:targetWarehouseId}
+      );
+      if(!rpcError && Array.isArray(rpcData)){
+        filas=rpcData;
       }else{
-        ultimoError=directError||ultimoError;
+        ultimoError=rpcError||ultimoError;
       }
     }
 
