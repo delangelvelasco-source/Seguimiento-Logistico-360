@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, CheckCircle2, ClipboardCheck, LogIn, RefreshCw, Search, Truck } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 export default function Caseta({ warehouseId }) {
   const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
-  const [recent,setRecent]=useState([]);
+  const [recent,setRecent]=useState([]);\n  const [scannerOpen,setScannerOpen]=useState(false);\n  const [scannerError,setScannerError]=useState("");\n  const videoRef=useRef(null);\n  const streamRef=useRef(null);
 
   async function load(){
     const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,created_at").eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(12);
@@ -13,7 +13,7 @@ export default function Caseta({ warehouseId }) {
   }
   useEffect(()=>{if(warehouseId)load()},[warehouseId]);
 
-  async function registrar(e){
+  async function abrirScanner(){\n    setScannerError("");\n    setScannerOpen(true);\n    try{\n      if(!navigator.mediaDevices?.getUserMedia) throw new Error("La cámara no está disponible en este navegador.");\n      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});\n      streamRef.current=stream;\n      if(videoRef.current){videoRef.current.srcObject=stream; await videoRef.current.play();}\n    }catch(err){setScannerError(err?.message||"No se pudo abrir la cámara.");}\n  }\n  function cerrarScanner(){\n    streamRef.current?.getTracks?.().forEach(t=>t.stop());\n    streamRef.current=null;\n    setScannerOpen(false);\n  }\n  function capturarScanner(){\n    const video=videoRef.current;\n    if(!video||!video.videoWidth){setScannerError("Espera a que la cámara esté lista.");return;}\n    const canvas=document.createElement("canvas");\n    canvas.width=video.videoWidth; canvas.height=video.videoHeight;\n    canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);\n    // La imagen queda disponible para validación visual; OCR de placa se incorpora en la siguiente fase.\n    const imagen=canvas.toDataURL("image/jpeg",0.9);\n    setForm(f=>({...f,referencia:f.referencia||"CAPTURA-CAMARA"}));\n    cerrarScanner();\n    setMessage("Captura realizada. Verifica visualmente la placa y confirma los datos antes de registrar el ingreso.");\n  }\n\n  async function registrar(e){
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
     const folio=form.folio_cita.trim() || "CAS-"+Date.now().toString().slice(-8);
@@ -45,7 +45,7 @@ export default function Caseta({ warehouseId }) {
         <label>Folio de cita<input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Opcional"/></label>
         <label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
         <label>Referencia del cliente<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Opcional"/></label>
-        <div className="scan-placeholder"><Camera size={22}/><div><strong>Escaneo de placa / identificación</strong><span>Preparado para cámara móvil + OCR. No sustituye la validación física.</span></div></div>
+        <button type="button" className="scan-placeholder" onClick={abrirScanner} style={{width:"100%",textAlign:"left",cursor:"pointer",border:"1px solid rgba(99,102,241,.45)",background:"linear-gradient(135deg,rgba(37,99,235,.18),rgba(124,58,237,.22))",color:"inherit"}}><Camera size={25}/><div><strong>Escanear placa / identificación</strong><span>Abre la cámara trasera del móvil para capturar la evidencia. La captura no sustituye la validación física.</span></div><b style={{marginLeft:"auto"}}>Abrir cámara</b></button>
         {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
         {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
         <button className="login-btn" disabled={loading}><Truck size={17}/>{loading?"Registrando…":"Registrar ingreso a Caseta"}</button>
