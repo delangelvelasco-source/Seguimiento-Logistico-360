@@ -255,8 +255,11 @@ export default function Caseta({ warehouseId }) {
     const folioAcceso=form.folio_cita.trim() || prefix+"-"+Date.now().toString().slice(-6);
 
     if(accessType!=="unidad"){
+      const {data:folioData,error:folioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:accessType});
+      if(folioError){setError(folioError.message||"No se pudo generar el folio.");setLoading(false);return;}
+      const folioAccesoNuevo=folioData||folioAcceso;
       const {error}=await supabase.from("accesos_caseta").insert({
-        folio:folioAcceso,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
+        folio:folioAccesoNuevo,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
         persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,
         telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,
         registrado_por:user?.id||null
