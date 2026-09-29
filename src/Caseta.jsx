@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, ClipboardCheck, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3, Search, ScanLine, X } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCheck, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3, Search, ScanLine, X, Users, UserRoundCheck } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import { createWorker } from "tesseract.js";
 
@@ -308,16 +308,19 @@ export default function Caseta({ warehouseId }) {
     </div>
 
     <div className="access-selector">
-      <button type="button" className={accessType==="unidad"?"access-type active unit": "access-type unit"} onClick={()=>setAccessType("unidad")}><Truck size={22}/><span><b>Unidad</b><small>Transportista</small></span></button>
+      <button type="button" className={accessType==="unidad"?"access-type active unit": "access-type unit"} onClick={()=>setAccessType("unidad")}><Truck size={22}/><span><b>Transportista</b><small>Unidad</small></span></button>
       <button type="button" className={accessType==="visitante"?"access-type active visitor": "access-type visitor"} onClick={()=>setAccessType("visitante")}><User size={22}/><span><b>Visitante</b><small>Acceso personal</small></span></button>
       <button type="button" className={accessType==="proveedor"?"access-type active provider": "access-type provider"} onClick={()=>setAccessType("proveedor")}><Building2 size={22}/><span><b>Proveedor</b><small>Servicio / entrega</small></span></button>
+      <button type="button" className={accessType==="otro"?"access-type active other": "access-type other"} onClick={()=>setAccessType("otro")}><ClipboardList size={22}/><span><b>Otros</b><small>Acceso general</small></span></button>
+      <button type="button" className={accessType==="personal_interno"?"access-type active internal": "access-type internal"} onClick={()=>setAccessType("personal_interno")}><Users size={22}/><span><b>Personal Interno</b><small>Colaborador</small></span></button>
+      <button type="button" className={accessType==="eventual"?"access-type active eventual": "access-type eventual"} onClick={()=>setAccessType("eventual")}><UserRoundCheck size={22}/><span><b>Eventuales</b><small>Acceso temporal</small></span></button>
     </div>
 
     <div className="caseta-steps"><div className="caseta-step-item active"><span>1</span><strong>Datos de acceso</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>2</span><strong>Evidencia</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>3</span><strong>Registrar ingreso</strong></div></div>
 
     <div className="caseta-exact-grid">
       <div className="caseta-white-card">
-        <div className="exact-card-title"><div className="exact-icon">{accessType==="unidad"?<Truck size={22}/>:accessType==="visitante"?<User size={22}/>:<Building2 size={22}/>}</div><div><h3>1. {accessType==="unidad"?"DATOS DE LA UNIDAD":accessType==="visitante"?"DATOS DEL VISITANTE":"DATOS DEL PROVEEDOR"}</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
+        <div className="exact-card-title"><div className="exact-icon">{accessType==="unidad"?<Truck size={22}/>:accessType==="visitante"?<User size={22}/>:<Building2 size={22}/>}</div><div><h3>1. {accessType==="unidad"?"DATOS DEL TRANSPORTISTA":accessType==="visitante"?"DATOS DEL VISITANTE":accessType==="proveedor"?"DATOS DEL PROVEEDOR":accessType==="personal_interno"?"DATOS DEL PERSONAL INTERNO":accessType==="eventual"?"DATOS DEL EVENTUAL":"DATOS DE OTROS"}</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
         <form className="caseta-exact-form" onSubmit={registrar}>
           {accessType==="unidad"?<>
             <label className="cita-first-field">Folio de cita <span>(opcional · primero)</span><div className="exact-input cita-input"><ClipboardList size={18}/><input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value.toUpperCase()})} onBlur={()=>buscarCita()} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();buscarCita();}}} placeholder="Escanea o escribe el folio de cita"/><button type="button" className="cita-scan-btn" onClick={abrirScanner} title="Escanear QR"><ScanLine size={17}/></button><button type="button" className="cita-search-btn" onClick={()=>buscarCita()} disabled={citaLoading||!form.folio_cita.trim()} title="Buscar cita">{citaLoading?"…":<Search size={16}/>}</button></div>{citaEncontrada&&<small className="cita-found">✓ Cita encontrada · {citaEncontrada.fecha||"fecha no disponible"} {citaEncontrada.hora_inicio?("· "+String(citaEncontrada.hora_inicio).slice(0,5)):""}</small>}</label>
@@ -333,7 +336,7 @@ export default function Caseta({ warehouseId }) {
           </>}
           {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
           {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
-          <button className="caseta-exact-submit" disabled={loading}><Truck size={22}/>{loading?"Registrando ingreso…":accessType==="unidad"?"Registrar ingreso a Caseta":accessType==="visitante"?"Registrar visitante":"Registrar proveedor"}<span>→</span></button>
+          <button className="caseta-exact-submit" disabled={loading}><Truck size={22}/>{loading?"Registrando ingreso…":accessType==="unidad"?"Registrar ingreso a Caseta":accessType==="visitante"?"Registrar visitante":accessType==="proveedor"?"Registrar proveedor":accessType==="personal_interno"?"Registrar personal interno":accessType==="eventual"?"Registrar eventual":"Registrar otro acceso"}<span>→</span></button>
         </form>
       </div>
 
@@ -348,7 +351,7 @@ export default function Caseta({ warehouseId }) {
     </div>
 
     <div className="caseta-recent-exact"><div className="recent-exact-head"><div><div className="exact-icon"><Clock size={22}/></div><div><h3>Accesos recientes</h3><p>Unidades, visitantes y proveedores registrados en esta caseta.</p></div></div><div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div></div>
-      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Estado</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Unidad":u.tipo_acceso==="visitante"?"👤 Visitante":"🏢 Proveedor"}</span></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td><td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td><td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin accesos todavía</strong><span>Los registros aparecerán aquí después de confirmar un acceso.</span></div>}
+      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Estado</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td><td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td><td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin accesos todavía</strong><span>Los registros aparecerán aquí después de confirmar un acceso.</span></div>}
     </div>
 
     <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
