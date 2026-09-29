@@ -269,3 +269,72 @@
 .bottom-brand strong{color:#fff}
 @media(max-width:900px){.caseta-exact{margin:0 12px 20px}.caseta-exact .caseta-hero{margin:0 -12px;padding:20px 18px;flex-wrap:wrap}.caseta-hero-divider,.caseta-clock{display:none}.caseta-brand-block{min-width:170px}.caseta-hero-title h2{font-size:26px}.caseta-hero-status{margin-left:auto}.caseta-steps{gap:7px}.caseta-step-line{width:28px}.caseta-step-item strong{font-size:10px}.caseta-step-item span{width:36px;height:36px;font-size:14px}.caseta-exact-grid{grid-template-columns:1fr}}
 @media(max-width:620px){.caseta-exact .caseta-hero{display:grid;grid-template-columns:1fr auto;gap:12px}.caseta-brand-block{grid-column:1/-1}.caseta-hero-title{grid-column:1}.caseta-hero-status{grid-column:2;grid-row:2}.caseta-steps{justify-content:space-between;padding:16px 0}.caseta-step-line{display:none}.caseta-step-item{flex-direction:column;gap:5px;text-align:center}.caseta-step-item strong{font-size:8px}.caseta-white-card{padding:16px}.exact-two,.exact-evidence-grid{grid-template-columns:1fr}.exact-card-title h3{font-size:14px}.caseta-recent-exact{padding:15px}.recent-exact-head{align-items:flex-start}.recent-exact-actions{flex-direction:column;align-items:flex-end}.caseta-bottom-nav{gap:4px;justify-content:space-between}.caseta-bottom-nav>div:not(.bottom-brand){min-width:52px}.bottom-brand{display:none}}
+
+/* Modelo final de referencia · optimizado para teléfono/tableta */
+@media(max-width:900px){
+  .app-shell{background:#07101b}
+  .main{max-width:100%;padding-bottom:18px}
+  .topbar{display:none}
+  .caseta-exact{margin:0 10px 16px;border-radius:0 0 22px 22px;overflow:hidden;background:#07111d}
+  .caseta-exact .caseta-hero{margin:0;padding:16px 18px 18px;min-height:154px;border-radius:0;background:
+    linear-gradient(105deg,#071321f2 0%,#102942e8 52%,#274967e8 100%),
+    radial-gradient(circle at 84% 38%,#6f91a8 0,transparent 28%);
+  }
+  .caseta-brand-block{min-width:0}
+  .caseta-brand-icon{width:45px;height:45px}
+  .caseta-brand-block strong{font-size:15px}
+  .caseta-hero-title h2{font-size:29px}
+  .caseta-hero-title p{font-size:11px}
+  .caseta-hero-status{font-size:9px}
+  .caseta-active{font-size:9px;padding:7px 9px}
+  .caseta-hero-status>strong{font-size:9px}
+  .caseta-steps{background:#081421;padding:15px 12px 18px}
+  .caseta-step-item span{width:34px;height:34px}
+  .caseta-exact-grid{gap:10px}
+  .caseta-white-card{border-radius:14px;padding:14px}
+  .exact-card-title{margin-bottom:14px}
+  .exact-card-title h3{font-size:13px}
+  .exact-card-title p{font-size:10px}
+  .exact-icon{width:39px;height:39px}
+  .caseta-exact-form{gap:10px}
+  .caseta-exact-form label{font-size:11px}
+  .exact-input{height:45px;margin-top:5px}
+  .exact-input input,.exact-input select{font-size:16px}
+  .caseta-exact-submit{height:56px;font-size:15px}
+  .exact-evidence-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .exact-evidence{padding:9px}
+  .exact-evidence strong{font-size:11px}
+  .exact-evidence small{font-size:9px}
+  .exact-photo-placeholder,.exact-evidence img{height:118px}
+  .evidence-note{font-size:9px}
+  .caseta-recent-exact{margin-top:10px;border-radius:14px;padding:12px}
+  .recent-exact-head h3{font-size:14px}
+  .recent-exact-head p{font-size:9px}
+  .recent-exact-actions .secondary-btn{min-height:38px}
+  .exact-table{min-width:720px}
+  .exact-table th{font-size:8px}
+  .exact-table td{font-size:9px;padding:10px 7px}
+  .caseta-bottom-nav{margin:0 -10px;padding:10px 8px 12px;background:#07111d;border-top:1px solid #20324a;gap:2px}
+  .caseta-bottom-nav>div:not(.bottom-brand){min-width:54px;font-size:8px}
+}
+@media(max-width:480px){
+  .caseta-exact{margin:0 7px 12px}
+  .caseta-exact .caseta-hero{padding:14px 14px 16px}
+  .caseta-brand-block{grid-column:1/-1}
+  .caseta-brand-block strong{font-size:14px}
+  .caseta-brand-icon{width:42px;height:42px}
+  .caseta-hero-title h2{font-size:27px}
+  .caseta-hero-status{font-size:8px}
+  .caseta-active{font-size:8px;padding:6px 8px}
+  .caseta-hero-status>strong{font-size:8px}
+  .caseta-step-item strong{font-size:7px}
+  .caseta-step-item span{width:32px;height:32px;font-size:12px}
+  .caseta-white-card{padding:12px}
+  .exact-two{grid-template-columns:1fr}
+  .exact-evidence-grid{grid-template-columns:1fr 1fr}
+  .exact-photo-placeholder,.exact-evidence img{height:105px}
+  .caseta-bottom-nav>div:not(.bottom-brand){min-width:50px}
+}
+@media(min-width:901px){
+  .caseta-exact{max-width:1180px;margin-left:auto;margin-right:auto}
+}
