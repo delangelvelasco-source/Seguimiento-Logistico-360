@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, ClipboardCheck, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3, Search } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCheck, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3, Search, ScanLine, X } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import { createWorker } from "tesseract.js";
 
@@ -22,6 +22,9 @@ export default function Caseta({ warehouseId }) {
   const [refreshLoading,setRefreshLoading]=useState(false);
   const [ocrText,setOcrText]=useState("");
   const [citaLoading,setCitaLoading]=useState(false);
+  const [scannerOpen,setScannerOpen]=useState(false);
+  const [scannerError,setScannerError]=useState("");
+  const [scanner,setScanner]=useState(null);
   const [citaEncontrada,setCitaEncontrada]=useState(null);
 
   async function load(showMessage=false){
@@ -180,6 +183,31 @@ export default function Caseta({ warehouseId }) {
     e.target.value="";
   }
 
+  async function abrirScanner(){
+    setScannerError("");
+    setScannerOpen(true);
+    setTimeout(async()=>{
+      try{
+        const mod=await import("html5-qrcode");
+        const reader=new mod.Html5Qrcode("caseta-qr-reader");
+        setScanner(reader);
+        await reader.start({facingMode:{exact:"environment"}},{fps:10,qrbox:{width:240,height:240}},async(decoded)=>{
+          let folio=decoded;
+          try{const parsed=JSON.parse(decoded);if(parsed?.tipo==="cita360")folio=parsed.folio||"";}catch{}
+          if(!folio){setScannerError("El QR no contiene un folio de cita válido.");return;}
+          setForm(prev=>({...prev,folio_cita:folio}));
+          try{await reader.stop();await reader.clear();}catch{}
+          setScanner(null);setScannerOpen(false);
+          buscarCita(folio);
+        },()=>{});
+      }catch(err){setScannerError("No se pudo abrir la cámara. Revisa el permiso de cámara y vuelve a intentar.");}
+    },120);
+  }
+  async function cerrarScanner(){
+    try{if(scanner){await scanner.stop();await scanner.clear();}}catch{}
+    setScanner(null);setScannerOpen(false);
+  }
+
   async function buscarCita(valor=form.folio_cita){
     if(accessType!=="unidad")return;
     const folio=String(valor||"").trim();
@@ -297,7 +325,7 @@ export default function Caseta({ warehouseId }) {
         <div className="exact-card-title"><div className="exact-icon">{accessType==="unidad"?<Truck size={22}/>:accessType==="visitante"?<User size={22}/>:<Building2 size={22}/>}</div><div><h3>1. {accessType==="unidad"?"DATOS DE LA UNIDAD":accessType==="visitante"?"DATOS DEL VISITANTE":"DATOS DEL PROVEEDOR"}</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
         <form className="caseta-exact-form" onSubmit={registrar}>
           {accessType==="unidad"?<>
-            <label className="cita-first-field">Folio de cita <span>(opcional · primero)</span><div className="exact-input cita-input"><ClipboardList size={18}/><input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value.toUpperCase()})} onBlur={()=>buscarCita()} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();buscarCita();}}} placeholder="Escanea o escribe el folio de cita"/><button type="button" className="cita-search-btn" onClick={()=>buscarCita()} disabled={citaLoading||!form.folio_cita.trim()} title="Buscar cita">{citaLoading?"…":<Search size={16}/>}</button></div>{citaEncontrada&&<small className="cita-found">✓ Cita encontrada · {citaEncontrada.fecha||"fecha no disponible"} {citaEncontrada.hora_inicio?("· "+String(citaEncontrada.hora_inicio).slice(0,5)):""}</small>}</label>
+            <label className="cita-first-field">Folio de cita <span>(opcional · primero)</span><div className="exact-input cita-input"><ClipboardList size={18}/><input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value.toUpperCase()})} onBlur={()=>buscarCita()} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();buscarCita();}}} placeholder="Escanea o escribe el folio de cita"/><button type="button" className="cita-scan-btn" onClick={abrirScanner} title="Escanear QR"><ScanLine size={17}/></button><button type="button" className="cita-search-btn" onClick={()=>buscarCita()} disabled={citaLoading||!form.folio_cita.trim()} title="Buscar cita">{citaLoading?"…":<Search size={16}/>}</button></div>{citaEncontrada&&<small className="cita-found">✓ Cita encontrada · {citaEncontrada.fecha||"fecha no disponible"} {citaEncontrada.hora_inicio?("· "+String(citaEncontrada.hora_inicio).slice(0,5)):""}</small>}</label>
             <label>Nombre del operador<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label>
             <label>Línea de transporte<div className="exact-input"><Building2 size={18}/><input required value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa transportista"/></div></label>
             <div className="exact-two"><label>Placa tracto<div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label><label>Placa caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div>
@@ -329,5 +357,5 @@ export default function Caseta({ warehouseId }) {
     </div>
 
     <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
-  </section>
+  {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>Escanear QR de cita</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>Apunta la cámara al QR generado por CSR.</small></div></div>}</section>
 }
