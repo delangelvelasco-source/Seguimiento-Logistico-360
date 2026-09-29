@@ -4,7 +4,10 @@ import { supabase } from "./lib/supabase";
 import { createWorker } from "tesseract.js";
 
 export default function Caseta({ warehouseId }) {
-  const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+  const [accessType,setAccessType]=useState("unidad");
+  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+  const form=accessForm;
+  const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
   const [recent,setRecent]=useState([]);
   const [scannerOpen,setScannerOpen]=useState(false);
@@ -25,7 +28,7 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,created_at").eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(12);
+    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(12);
     if(error){
       if(showMessage)setMessage("No se pudo actualizar la lista de ingresos: "+error.message);
     }else{
@@ -178,127 +181,100 @@ export default function Caseta({ warehouseId }) {
   async function registrar(e){
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
-    const folio=form.folio_cita.trim() || "CAS-"+Date.now().toString().slice(-8);
+    const prefix=accessType==="unidad"?"C":accessType==="visitante"?"V":"P";
+    const folio=form.folio_cita.trim() || prefix+"-"+Date.now().toString().slice(-6);
+
+    if(accessType!=="unidad"){
+      const {error}=await supabase.from("accesos_caseta").insert({
+        folio,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
+        persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,
+        telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,
+        registrado_por:user?.id||null
+      });
+      if(error){setError(error.message);setLoading(false);return}
+      setMessage(accessType==="visitante"?"Visitante registrado. Acceso abierto.":"Proveedor registrado. Acceso abierto.");
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+      await load();setLoading(false);return;
+    }
+
     const {data:unit,error:unitError}=await supabase.from("unidades").insert({
-      folio,operador_nombre:form.operador_nombre.trim(),linea_transporte:form.linea_transporte.trim(),tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_placas:form.caja_placas.trim().toUpperCase()||null,estado:"en_caseta",almacen_id:warehouseId,caseta_usuario_id:user?.id||null,operacion_tipo:form.operacion_tipo,ubicacion_tipo:"caseta"
+      folio,operador_nombre:form.nombre.trim(),linea_transporte:form.empresa.trim(),tracto_placas:form.tracto_placas.trim().toUpperCase(),
+      caja_placas:form.caja_placas.trim().toUpperCase()||null,estado:"en_caseta",almacen_id:warehouseId,caseta_usuario_id:user?.id||null,
+      operacion_tipo:form.operacion_tipo,ubicacion_tipo:"caseta"
     }).select("id").single();
     if(unitError){setError(unitError.message);setLoading(false);return}
     const {data:op,error:opError}=await supabase.from("operaciones_360").insert({
-      folio, tipo_operacion:form.operacion_tipo, movimiento:form.operacion_tipo, almacen_id:warehouseId, referencia_cliente:form.referencia.trim()||null, estado_general:"en_caseta", unidad_id:unit.id, creado_por:user?.id||null
+      folio,tipo_operacion:form.operacion_tipo,movimiento:form.operacion_tipo,almacen_id:warehouseId,referencia_cliente:form.referencia.trim()||null,
+      estado_general:"en_caseta",unidad_id:unit.id,creado_por:user?.id||null
     }).select("id").single();
     if(opError){await supabase.from("unidades").delete().eq("id",unit.id);setError(opError.message);setLoading(false);return}
     await supabase.from("unidades").update({operacion_360_id:op.data.id,ubicacion_tipo:"caseta",updated_at:new Date().toISOString()}).eq("id",unit.id);
     const patio=await supabase.rpc("registrar_ingreso_caseta_patios",{p_unidad_id:unit.id,p_observaciones:"Ingreso registrado en Caseta"});
     if(patio.error){setError(patio.error.message);setLoading(false);return}
-    setMessage("Ingreso registrado. La unidad quedó en patio y visible para Dispatch.");
-    setForm({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+    const accessInsert=await supabase.from("accesos_caseta").insert({
+      folio,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
+      tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_placas:form.caja_placas.trim().toUpperCase()||null,
+      operacion_tipo:form.operacion_tipo,unidad_id:unit.id,entrada_at:new Date().toISOString(),estado:"dentro",
+      observaciones:form.referencia.trim()||null,registrado_por:user?.id||null
+    });
+    if(accessInsert.error){setError(accessInsert.error.message);setLoading(false);return}
+    setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
+    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
     await load();setLoading(false);
   }
 
   return <section id="caseta" className="caseta-page caseta-exact">
     <div className="caseta-hero">
-      <div className="caseta-brand-block">
-        <div className="caseta-brand-icon"><Truck size={28}/></div>
-        <div><strong>Seguimiento<br/><span>Logístico 360°</span></strong></div>
-      </div>
+      <div className="caseta-brand-block"><div className="caseta-brand-icon"><Truck size={28}/></div><div><strong>Seguimiento<br/><span>Logístico 360°</span></strong></div></div>
       <div className="caseta-hero-divider"/>
-      <div className="caseta-hero-title">
-        <div className="eyebrow">CONTROL DE ACCESO</div>
-        <h2>Caseta</h2>
-        <p>Registro de ingreso de unidades</p>
-      </div>
-      <div className="caseta-hero-status">
-        <div className="caseta-active"><span className="dot"/> Caseta activa</div>
-        <strong>MTY-II | Las Torres</strong>
-      </div>
+      <div className="caseta-hero-title"><div className="eyebrow">CONTROL DE ACCESO</div><h2>Caseta</h2><p>Registro de unidades, visitantes y proveedores</p></div>
+      <div className="caseta-hero-status"><div className="caseta-active"><span className="dot"/> Caseta activa</div><strong>MTY-II | Las Torres</strong></div>
       <div className="caseta-clock">10:00</div>
     </div>
 
-    <div className="caseta-steps">
-      <div className="caseta-step-item active"><span>1</span><strong>Datos de la unidad</strong></div>
-      <div className="caseta-step-line"/>
-      <div className="caseta-step-item"><span>2</span><strong>Evidencia fotográfica</strong></div>
-      <div className="caseta-step-line"/>
-      <div className="caseta-step-item"><span>3</span><strong>Registrar ingreso</strong></div>
+    <div className="access-selector">
+      <button type="button" className={accessType==="unidad"?"access-type active unit": "access-type unit"} onClick={()=>setAccessType("unidad")}><Truck size={22}/><span><b>Unidad</b><small>Transportista</small></span></button>
+      <button type="button" className={accessType==="visitante"?"access-type active visitor": "access-type visitor"} onClick={()=>setAccessType("visitante")}><User size={22}/><span><b>Visitante</b><small>Acceso personal</small></span></button>
+      <button type="button" className={accessType==="proveedor"?"access-type active provider": "access-type provider"} onClick={()=>setAccessType("proveedor")}><Building2 size={22}/><span><b>Proveedor</b><small>Servicio / entrega</small></span></button>
     </div>
+
+    <div className="caseta-steps"><div className="caseta-step-item active"><span>1</span><strong>Datos de acceso</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>2</span><strong>Evidencia</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>3</span><strong>Registrar ingreso</strong></div></div>
 
     <div className="caseta-exact-grid">
       <div className="caseta-white-card">
-        <div className="exact-card-title">
-          <div className="exact-icon"><Truck size={22}/></div>
-          <div><h3>1. DATOS DE LA UNIDAD</h3><p>Captura la información del operador y la unidad.</p></div>
-        </div>
-
+        <div className="exact-card-title"><div className="exact-icon">{accessType==="unidad"?<Truck size={22}/>:accessType==="visitante"?<User size={22}/>:<Building2 size={22}/>}</div><div><h3>1. {accessType==="unidad"?"DATOS DE LA UNIDAD":accessType==="visitante"?"DATOS DEL VISITANTE":"DATOS DEL PROVEEDOR"}</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
         <form className="caseta-exact-form" onSubmit={registrar}>
-          <label>Nombre del operador
-            <div className="exact-input"><User size={18}/><input required value={form.operador_nombre} onChange={e=>setForm({...form,operador_nombre:e.target.value})} placeholder="Nombre y apellidos"/></div>
-          </label>
-          <label>Línea de transporte
-            <div className="exact-input"><Building2 size={18}/><input required value={form.linea_transporte} onChange={e=>setForm({...form,linea_transporte:e.target.value})} placeholder="Empresa transportista"/></div>
-          </label>
-          <div className="exact-two">
-            <label>Placa tracto
-              <div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div>
-            </label>
-            <label>Placa caja <span>(opcional)</span>
-              <div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div>
-            </label>
-          </div>
-          <div className="exact-two">
-            <label>Tipo de operación
-              <div className="exact-input"><ClipboardList size={18}/><select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></div>
-            </label>
-            <label>Referencia del cliente <span>(opcional)</span>
-              <div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Ej. OC, Proyecto, etc."/></div>
-            </label>
-          </div>
-          <input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="" className="hidden-input"/>
+          {accessType==="unidad"?<>
+            <label>Nombre del operador<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label>
+            <label>Línea de transporte<div className="exact-input"><Building2 size={18}/><input required value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa transportista"/></div></label>
+            <div className="exact-two"><label>Placa tracto<div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label><label>Placa caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div>
+            <div className="exact-two"><label>Tipo de operación<div className="exact-input"><ClipboardList size={18}/><select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></div></label><label>Folio de cita <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Cita / referencia"/></div></label></div>
+          </>:<>
+            <div className="exact-two"><label>Nombre completo<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label><label>Empresa <span>(opcional)</span><div className="exact-input"><Building2 size={18}/><input value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa / procedencia"/></div></label></div>
+            {accessType==="visitante"&&<label>Persona a quien visita<div className="exact-input"><User size={18}/><input required value={form.persona_visita} onChange={e=>setForm({...form,persona_visita:e.target.value})} placeholder="Nombre del anfitrión"/></div></label>}
+            <div className="exact-two"><label>Motivo<div className="exact-input"><ClipboardList size={18}/><input required value={form.motivo} onChange={e=>setForm({...form,motivo:e.target.value})} placeholder={accessType==="proveedor"?"Servicio / entrega":"Visita / reunión"}/></div></label><label>Área de destino<div className="exact-input"><Building2 size={18}/><input required value={form.area_destino} onChange={e=>setForm({...form,area_destino:e.target.value})} placeholder="Área / almacén"/></div></label></div>
+            <div className="exact-two"><label>Teléfono <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.telefono} onChange={e=>setForm({...form,telefono:e.target.value})} placeholder="Contacto"/></div></label><label>Observaciones <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Notas"/></div></label></div>
+          </>}
           {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
           {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
-          <button className="caseta-exact-submit" disabled={loading}><Truck size={22}/>{loading?"Registrando ingreso…":"Registrar ingreso a Caseta"}<span>→</span></button>
+          <button className="caseta-exact-submit" disabled={loading}><Truck size={22}/>{loading?"Registrando ingreso…":accessType==="unidad"?"Registrar ingreso a Caseta":accessType==="visitante"?"Registrar visitante":"Registrar proveedor"}<span>→</span></button>
         </form>
       </div>
 
       <div className="caseta-white-card">
-        <div className="exact-card-title">
-          <div className="exact-icon"><Camera size={22}/></div>
-          <div><h3>2. EVIDENCIA FOTOGRÁFICA</h3><p>Las fotos se guardan solo como evidencia.</p></div>
-        </div>
-        <div className="exact-evidence-grid">
-          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/>
-          <input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/>
-          <button type="button" className="exact-evidence" onClick={abrirScanner}>
-            <span className="exact-evidence-icon"><ClipboardList size={25}/></span>
-            <strong>Foto de placa</strong><small>Toca para abrir la cámara</small>
-            {capturedPhoto?<img src={capturedPhoto} alt="Evidencia de placa"/>:<div className="exact-photo-placeholder">PLACA</div>}
-            {capturedPhoto&&<span className="photo-ok">✓</span>}
-          </button>
-          <button type="button" className="exact-evidence" onClick={abrirCamaraId}>
-            <span className="exact-evidence-icon"><IdCard size={25}/></span>
-            <strong>Foto de identificación</strong><small>Toca para abrir la cámara</small>
-            {capturedId?<img src={capturedId} alt="Evidencia de identificación"/>:<div className="exact-photo-placeholder id-placeholder">ID</div>}
-            {capturedId&&<span className="photo-ok">✓</span>}
-          </button>
+        <div className="exact-card-title"><div className="exact-icon"><Camera size={22}/></div><div><h3>2. EVIDENCIA FOTOGRÁFICA</h3><p>Las fotos se conservan como respaldo.</p></div></div>
+        <div className="exact-evidence-grid"><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/><input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/>
+          <button type="button" className="exact-evidence" onClick={abrirScanner}><span className="exact-evidence-icon"><ClipboardList size={25}/></span><strong>Foto de placa</strong><small>{accessType==="unidad"?"Evidencia del tracto":"Opcional"}</small>{capturedPhoto?<img src={capturedPhoto} alt="Evidencia de placa"/>:<div className="exact-photo-placeholder">PLACA</div>}{capturedPhoto&&<span className="photo-ok">✓</span>}</button>
+          <button type="button" className="exact-evidence" onClick={abrirCamaraId}><span className="exact-evidence-icon"><IdCard size={25}/></span><strong>Foto de identificación</strong><small>Evidencia de acceso</small>{capturedId?<img src={capturedId} alt="Evidencia de identificación"/>:<div className="exact-photo-placeholder id-placeholder">ID</div>}{capturedId&&<span className="photo-ok">✓</span>}</button>
         </div>
         <div className="evidence-note"><Camera size={15}/> Las fotografías son evidencia; los datos se capturan manualmente.</div>
       </div>
     </div>
 
-    <div className="caseta-recent-exact">
-      <div className="recent-exact-head">
-        <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Ingresos recientes</h3><p>Últimos registros en esta caseta.</p></div></div>
-        <div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
-      </div>
-      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Fecha y hora</th><th>Operador</th><th>Transportista</th><th>Placa tracto</th><th>Tipo</th><th>Estado</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td>{new Date(u.created_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</td><td>{u.operador_nombre||"—"}</td><td>{u.linea_transporte||"—"}</td><td><strong>{u.tracto_placas||"—"}</strong></td><td><span className="exact-pill">{u.estado==="en_caseta"?"Recibo":u.estado||"Registrado"}</span></td><td><span className="exact-status"><span/> Registrado</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin ingresos todavía</strong><span>Los registros aparecerán aquí después de confirmar una unidad.</span></div>}
+    <div className="caseta-recent-exact"><div className="recent-exact-head"><div><div className="exact-icon"><Clock size={22}/></div><div><h3>Accesos recientes</h3><p>Unidades, visitantes y proveedores registrados en esta caseta.</p></div></div><div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div></div>
+      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Estado</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Unidad":u.tipo_acceso==="visitante"?"👤 Visitante":"🏢 Proveedor"}</span></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td><td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td><td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin accesos todavía</strong><span>Los registros aparecerán aquí después de confirmar un acceso.</span></div>}
     </div>
 
-    <div className="caseta-bottom-nav">
-      <div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div>
-      <div><Truck size={22}/><span>Dispatch</span></div>
-      <div><ClipboardList size={22}/><span>Operación</span></div>
-      <div><User size={22}/><span>CSR</span></div>
-      <div><BarChart3 size={22}/><span>Reportes</span></div>
-      <div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div>
-    </div>
+    <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
   </section>
 }
