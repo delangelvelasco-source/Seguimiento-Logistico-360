@@ -252,11 +252,11 @@ export default function Caseta({ warehouseId }) {
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
     const prefix=accessType==="unidad"?"C":accessType==="visitante"?"V":"P";
-    const folio=form.folio_cita.trim() || prefix+"-"+Date.now().toString().slice(-6);
+    const folioAcceso=form.folio_cita.trim() || prefix+"-"+Date.now().toString().slice(-6);
 
     if(accessType!=="unidad"){
       const {error}=await supabase.from("accesos_caseta").insert({
-        folio,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
+        folio:folioAcceso,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
         persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,
         telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,
         registrado_por:user?.id||null
@@ -268,13 +268,14 @@ export default function Caseta({ warehouseId }) {
     }
 
     const {data:unit,error:unitError}=await supabase.from("unidades").insert({
-      folio,operador_nombre:form.nombre.trim(),linea_transporte:form.empresa.trim(),tracto_placas:form.tracto_placas.trim().toUpperCase(),
+      operador_nombre:form.nombre.trim(),linea_transporte:form.empresa.trim(),tracto_placas:form.tracto_placas.trim().toUpperCase(),
       caja_placas:form.caja_placas.trim().toUpperCase()||null,estado:"en_caseta",almacen_id:warehouseId,caseta_usuario_id:user?.id||null,
       operacion_tipo:form.operacion_tipo,ubicacion_tipo:"caseta"
-    }).select("id").single();
+    }).select("id,folio").single();
     if(unitError){setError(unitError.message);setLoading(false);return}
+    const folioUnidad=unit.folio;
     const {data:op,error:opError}=await supabase.from("operaciones_360").insert({
-      folio,tipo_operacion:form.operacion_tipo,movimiento:form.operacion_tipo==="recibo"?"importacion":"exportacion",almacen_id:warehouseId,referencia_cliente:form.referencia.trim()||null,cita_id:citaEncontrada?.id||null,
+      folio:folioUnidad,tipo_operacion:form.operacion_tipo,movimiento:form.operacion_tipo==="recibo"?"importacion":"exportacion",almacen_id:warehouseId,referencia_cliente:form.referencia.trim()||null,cita_id:citaEncontrada?.id||null,
       estado_general:"en_almacen",unidad_id:unit.id,creado_por:user?.id||null
     }).select("id").single();
     if(opError){await supabase.from("unidades").delete().eq("id",unit.id);setError(opError.message);setLoading(false);return}
@@ -286,7 +287,7 @@ export default function Caseta({ warehouseId }) {
       setError(patio.error.message);setLoading(false);return;
     }
     const accessInsert=await supabase.from("accesos_caseta").insert({
-      folio,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
+      folio:folioUnidad,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
       tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_placas:form.caja_placas.trim().toUpperCase()||null,
       operacion_tipo:form.operacion_tipo,unidad_id:unit.id,entrada_at:new Date().toISOString(),estado:"dentro",
       observaciones:form.referencia.trim()||null,registrado_por:user?.id||null
