@@ -374,12 +374,13 @@ export default function Caseta({ warehouseId }) {
 
   async function validarGafete(){
     const numero=String(form.gafete_numero||"").trim().toUpperCase();
-    if(!numero)return null;
-    const {data,error}=await supabase.from("gafetes").select("id,numero,tipo,estado,activo").eq("numero",numero).maybeSingle();
-    if(error)throw error;
-    if(!data||!data.activo)throw new Error("El gafete no existe o está inactivo.");
-    if(data.estado!=="disponible")throw new Error("El gafete "+numero+" no está disponible. Estado actual: "+data.estado+".");
-    return data;
+    if(!numero)throw new Error("Captura o escanea el número de gafete asignado.");
+    // La validación se hace en servidor para mantener el inventario/número del gafete
+    // aislado del resto de módulos y evitar que RLS del catálogo bloquee a Caseta.
+    const {data,error}=await supabase.rpc("validar_gafete_caseta",{p_gafete_numero:numero});
+    if(error)throw new Error(String(error.message||"No se pudo validar el gafete.").replace(/^GAFETE_[A-Z_]+:\s*/i,""));
+    if(!data?.ok)throw new Error("No se pudo validar el gafete.");
+    return {numero:String(data.gafete_numero||numero).toUpperCase()};
   }
 
   async function registrar(e){
@@ -389,12 +390,11 @@ export default function Caseta({ warehouseId }) {
     const requiereGafete=["unidad","visitante","proveedor"].includes(accessType);
     let gafete=null;
     try{
-      if(requiereGafete){
-        gafete=await validarGafete();
-        if(!gafete)throw new Error("Captura o escanea el número de gafete asignado.");
-      }
+      if(requiereGafete)gafete=await validarGafete();
     }catch(err){
-      setError(err?.message||"No se pudo validar el gafete.");
+      const raw=String(err?.message||"No se pudo validar el gafete.");
+      const mensaje=raw.replace(/^GAFETE_[A-Z_]+:\s*/i,"").trim();
+      setError(mensaje||"No se pudo validar el gafete.");
       setLoading(false);
       return;
     }
@@ -484,7 +484,7 @@ export default function Caseta({ warehouseId }) {
             <div className="exact-two"><label>Número de tracto<div className="exact-input"><Truck size={18}/><input value={form.tracto_numero} onChange={e=>setForm({...form,tracto_numero:e.target.value})} placeholder="Número económico"/></div></label><label>Placa tracto<div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div><div className="exact-two"><label>Número de caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_numero} onChange={e=>setForm({...form,caja_numero:e.target.value})} placeholder="Número económico"/></div></label><label>Placa caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div>
             <div className="exact-two"><label>Tipo de operación<div className="exact-input"><ClipboardList size={18}/><select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></div></label><label>Referencia <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Referencia del cliente"/></div></label></div>
           </>:<>
-            <div className="exact-two"><label>Nombre completo<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label><label>Gafete asignado<div className="exact-input"><IdCard size={18}/><input required={["visitante","proveedor"].includes(accessType)} value={form.gafete_numero} onChange={e=>setForm({...form,gafete_numero:e.target.value.toUpperCase()})} placeholder="Ej. 0001"/><button type="button" className="cita-scan-btn" onClick={()=>abrirScanner("gafete")} title="Escanear QR del gafete"><ScanLine size={17}/></button></div></label></div>
+            <div className="exact-two"><label>Nombre completo<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label><label>Gafete asignado <span>(control interno)</span><div className="exact-input"><IdCard size={18}/><input required={["visitante","proveedor"].includes(accessType)} value={form.gafete_numero} onChange={e=>setForm({...form,gafete_numero:e.target.value.toUpperCase()})} placeholder="Ej. 0001"/><button type="button" className="cita-scan-btn" onClick={()=>abrirScanner("gafete")} title="Escanear QR del gafete"><ScanLine size={17}/></button></div></label></div>
             <label>Empresa <span>(opcional)</span><div className="exact-input"><Building2 size={18}/><input value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa / procedencia"/></div></label>
             {accessType==="visitante"&&<label>Persona a quien visita<div className="exact-input"><User size={18}/><input required value={form.persona_visita} onChange={e=>setForm({...form,persona_visita:e.target.value})} placeholder="Nombre del anfitrión"/></div></label>}
             <div className="exact-two"><label>Motivo<div className="exact-input"><ClipboardList size={18}/><input required value={form.motivo} onChange={e=>setForm({...form,motivo:e.target.value})} placeholder={accessType==="proveedor"?"Servicio / entrega":"Visita / reunión"}/></div></label><label>Área de destino<div className="exact-input"><Building2 size={18}/><input required value={form.area_destino} onChange={e=>setForm({...form,area_destino:e.target.value})} placeholder="Área / almacén"/></div></label></div>
