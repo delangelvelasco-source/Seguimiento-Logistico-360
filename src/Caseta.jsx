@@ -44,28 +44,40 @@ export default function Caseta({ warehouseId }) {
           el.onerror=()=>reject(new Error("No se pudo preparar la imagen."));
           el.src=image;
         });
-        const canvas=document.createElement("canvas");
+
         const width=img.naturalWidth||img.width;
         const height=img.naturalHeight||img.height;
-        const scale=Math.min(3,Math.max(2,2400/Math.max(width,1)));
+        const scale=Math.min(2.5,Math.max(1,2400/Math.max(width,1)));
+        const canvas=document.createElement("canvas");
         canvas.width=Math.round(width*scale);
         canvas.height=Math.round(height*scale);
         const ctx=canvas.getContext("2d");
         if(!ctx)throw new Error("No se pudo preparar el OCR.");
         ctx.imageSmoothingEnabled=true;
         ctx.imageSmoothingQuality="high";
-        ctx.filter="grayscale(1) contrast(1.18)";
         ctx.drawImage(img,0,0,canvas.width,canvas.height);
 
-        setMessage("Identificación capturada. Leyendo nombre…");
         worker=await createWorker("spa");
         await worker.setParameters({
-          tessedit_pageseg_mode:"6",
           preserve_interword_spaces:"1",
           user_defined_dpi:"300"
         });
-        const result=await worker.recognize(canvas);
-        const text=result?.data?.text||"";
+
+        const passes=[];
+        for(const mode of ["6","11"]){
+          await worker.setParameters({tessedit_pageseg_mode:mode});
+          const result=await worker.recognize(canvas);
+          passes.push({
+            text:result?.data?.text||"",
+            confidence:Number(result?.data?.confidence||0)
+          });
+        }
+
+        const text=passes
+          .sort((a,b)=>b.confidence-a.confidence)
+          .map(x=>x.text)
+          .filter(Boolean)
+          .join("\n\n---\n\n");
         setOcrText(text);
 
         const clean=(value="")=>value
@@ -83,8 +95,7 @@ export default function Caseta({ warehouseId }) {
 
         const plausible=(value)=>{
           const v=clean(value);
-          if(!v)return false;
-          if(labels.includes(v.toUpperCase()))return false;
+          if(!v || labels.includes(v.toUpperCase()))return false;
           const words=v.split(" ").filter(Boolean);
           if(words.length<2 || words.length>6)return false;
           if(words.some(w=>w.length<2 || w.length>20))return false;
@@ -100,18 +111,24 @@ export default function Caseta({ warehouseId }) {
             values.push(inline);
             continue;
           }
-          const next=clean(lines[i+1]||"");
-          if(plausible(next))values.push(next);
+          for(let j=1;j<=2;j++){
+            const next=clean(lines[i+j]||"");
+            if(plausible(next)){
+              values.push(next);
+              break;
+            }
+          }
         }
 
         const uniqueValues=[...new Set(values.map(v=>v.toUpperCase()))];
         const name=uniqueValues.join(" ").replace(/\s+/g," ").trim();
+        const bestConfidence=Math.max(...passes.map(x=>x.confidence),0);
 
-        if(name){
+        if(name && bestConfidence>=35){
           setForm(f=>({...f,operador_nombre:name}));
           setMessage("Nombre detectado automáticamente. Verifica que coincida con la identificación antes de registrar.");
         }else{
-          setMessage("No pude identificar el nombre con suficiente confianza. Acerca la identificación, evita reflejos y vuelve a capturarla.");
+          setMessage("La identificación fue leída, pero el nombre no tiene suficiente claridad para autocompletarlo. Captura la identificación más cerca y de frente.");
         }
       }catch(err){
         setMessage("La foto quedó capturada, pero no fue posible leer el nombre automáticamente. Captúralo manualmente.");
