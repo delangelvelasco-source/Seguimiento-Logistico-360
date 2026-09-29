@@ -34,9 +34,14 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(50);
+    // El monitor usa una RPC segura para consultar el estado completo del almacén.
+    // Así no depende de que la sesión del navegador tenga una política RLS distinta
+    // a la tablet y ambos dispositivos ven exactamente la misma operación.
+    const {data,error}=await supabase.rpc("listar_accesos_caseta_monitor",{p_almacen_id:warehouseId});
     if(error){
-      if(showMessage)setMessage("No se pudo actualizar la lista de ingresos: "+error.message);
+      setRecent([]);
+      if(showMessage)setMessage("No se pudo sincronizar el monitor: "+error.message);
+      return;
     }else{
       const ids=(data||[]).map(x=>x.id);
       let asignaciones=[];
@@ -84,10 +89,18 @@ export default function Caseta({ warehouseId }) {
     // Respaldo de alta frecuencia por si el navegador pierde temporalmente
     // la conexión Realtime. No requiere recargar la página.
     const interval=setInterval(()=>refrescarInmediato(),1000);
+    const alVolver=()=>refrescarInmediato();
+    const alRecuperarRed=()=>refrescarInmediato();
+    window.addEventListener("focus",alVolver);
+    document.addEventListener("visibilitychange",alVolver);
+    window.addEventListener("online",alRecuperarRed);
 
     return ()=>{
       activo=false;
       clearInterval(interval);
+      window.removeEventListener("focus",alVolver);
+      document.removeEventListener("visibilitychange",alVolver);
+      window.removeEventListener("online",alRecuperarRed);
       supabase.removeChannel(channel);
     };
   },[warehouseId]);
