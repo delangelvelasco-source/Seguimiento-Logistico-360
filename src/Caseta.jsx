@@ -253,7 +253,7 @@ export default function Caseta({ warehouseId }) {
     }).select("id").single();
     if(opError){await supabase.from("unidades").delete().eq("id",unit.id);setError(opError.message);setLoading(false);return}
     await supabase.from("unidades").update({operacion_360_id:op.data.id,ubicacion_tipo:"caseta",updated_at:new Date().toISOString()}).eq("id",unit.id);
-    const patio=await supabase.rpc("registrar_ingreso_caseta_patios",{p_unidad_id:unit.id,p_observaciones:"Ingreso registrado en Caseta"});
+    const patio=await supabase.rpc("registrar_ingreso_caseta_patios",{p_unidad_id:unit.id,p_motivo:"Ingreso registrado en Caseta"});
     if(patio.error){setError(patio.error.message);setLoading(false);return}
     const accessInsert=await supabase.from("accesos_caseta").insert({
       folio,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
