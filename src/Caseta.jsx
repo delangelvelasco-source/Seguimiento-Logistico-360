@@ -343,7 +343,7 @@ export default function Caseta({ warehouseId }) {
         const mod=await import("html5-qrcode");
         const reader=new mod.Html5Qrcode("caseta-qr-reader");
         setScanner(reader);
-        await reader.start({facingMode:{exact:"environment"}},{fps:10,qrbox:{width:240,height:240}},async(decoded)=>{
+        await reader.start({facingMode:"environment"},{fps:10,aspectRatio:1.333333,qrbox:{width:260,height:260}},async(decoded)=>{
           let value=String(decoded||"").trim();
           try{
             const parsed=JSON.parse(value);
