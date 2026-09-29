@@ -256,8 +256,12 @@
 .exact-table td{padding:13px 10px;font-size:11px;color:#c3cfde;border-bottom:1px solid #17283d}
 .exact-table td strong{color:#edf3fa}
 .exact-pill{display:inline-flex;padding:6px 10px;border-radius:999px;background:#1764d9;color:#fff;font-size:9px;font-weight:800}
-.exact-status{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#073a1f;border:1px solid #12653a;color:#72e0a4;font-size:9px;font-weight:800}
-.exact-status span{width:7px;height:7px;border-radius:50%;background:#45d68d}
+.exact-status{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;font-size:9px;font-weight:800}
+.exact-status.inside{background:#073a1f;border:1px solid #12653a;color:#72e0a4}
+.exact-status.inside span{background:#45d68d}
+.exact-status.exited{background:#3a424c;border:1px solid #68727d;color:#d2d7dc}
+.exact-status.exited span{background:#aab2ba}
+.exact-status span{width:7px;height:7px;border-radius:50%;display:inline-block}
 .exact-empty{min-height:130px;display:grid;place-items:center;align-content:center;text-align:center;color:#718198}
 .exact-empty strong{display:block;color:#b7c3d4;font-size:12px;margin-top:7px}.exact-empty span{display:block;font-size:9px;margin-top:4px}
 .caseta-bottom-nav{display:flex;align-items:center;justify-content:center;gap:35px;padding:22px 10px 4px;color:#8291a7}
