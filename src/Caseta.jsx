@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, ClipboardCheck, LogIn, RefreshCw, Search, Truck } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCheck, LogIn, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import { createWorker } from "tesseract.js";
 
@@ -195,76 +195,110 @@ export default function Caseta({ warehouseId }) {
     await load();setLoading(false);
   }
 
-  return <section id="caseta" className="caseta-page">
-    <div className="caseta-header-card">
-      <div className="caseta-header-main">
-        <div className="caseta-icon"><LogIn size={22}/></div>
-        <div>
-          <div className="eyebrow">CONTROL DE ACCESO</div>
-          <h2>Registro de ingreso</h2>
-          <p>Captura los datos de la unidad y conserva evidencia del ingreso.</p>
-        </div>
+  return <section id="caseta" className="caseta-page caseta-exact">
+    <div className="caseta-hero">
+      <div className="caseta-brand-block">
+        <div className="caseta-brand-icon"><Truck size={28}/></div>
+        <div><strong>Seguimiento<br/><span>Logístico 360°</span></strong></div>
       </div>
-      <div className="caseta-live"><span className="dot"/> Caseta activa</div>
+      <div className="caseta-hero-divider"/>
+      <div className="caseta-hero-title">
+        <div className="eyebrow">CONTROL DE ACCESO</div>
+        <h2>Caseta</h2>
+        <p>Registro de ingreso de unidades</p>
+      </div>
+      <div className="caseta-hero-status">
+        <div className="caseta-active"><span className="dot"/> Caseta activa</div>
+        <strong>MTY-II | Las Torres</strong>
+      </div>
+      <div className="caseta-clock">10:00</div>
     </div>
 
-    <div className="caseta-layout">
-      <div className="panel caseta-main-panel">
-        <div className="caseta-section-head">
-          <div><span className="caseta-step">01</span><div><strong>Datos de la unidad</strong><small>Información capturada por el operador de caseta</small></div></div>
-          <button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15} className={refreshLoading?"spin":""}/>{refreshLoading?"Actualizando…":"Actualizar"}</button>
+    <div className="caseta-steps">
+      <div className="caseta-step-item active"><span>1</span><strong>Datos de la unidad</strong></div>
+      <div className="caseta-step-line"/>
+      <div className="caseta-step-item"><span>2</span><strong>Evidencia fotográfica</strong></div>
+      <div className="caseta-step-line"/>
+      <div className="caseta-step-item"><span>3</span><strong>Registrar ingreso</strong></div>
+    </div>
+
+    <div className="caseta-exact-grid">
+      <div className="caseta-white-card">
+        <div className="exact-card-title">
+          <div className="exact-icon"><Truck size={22}/></div>
+          <div><h3>1. DATOS DE LA UNIDAD</h3><p>Captura la información del operador y la unidad.</p></div>
         </div>
 
-        <form className="caseta-form-pro" onSubmit={registrar}>
-          <div className="field-group">
-            <label>Operador<span className="required-mark">*</span><input required value={form.operador_nombre} onChange={e=>setForm({...form,operador_nombre:e.target.value})} placeholder="Nombre y apellidos"/></label>
-            <label>Línea de transporte<span className="required-mark">*</span><input required value={form.linea_transporte} onChange={e=>setForm({...form,linea_transporte:e.target.value})} placeholder="Empresa transportista"/></label>
+        <form className="caseta-exact-form" onSubmit={registrar}>
+          <label>Nombre del operador
+            <div className="exact-input"><User size={18}/><input required value={form.operador_nombre} onChange={e=>setForm({...form,operador_nombre:e.target.value})} placeholder="Nombre y apellidos"/></div>
+          </label>
+          <label>Línea de transporte
+            <div className="exact-input"><Building2 size={18}/><input required value={form.linea_transporte} onChange={e=>setForm({...form,linea_transporte:e.target.value})} placeholder="Empresa transportista"/></div>
+          </label>
+          <div className="exact-two">
+            <label>Placa tracto
+              <div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div>
+            </label>
+            <label>Placa caja <span>(opcional)</span>
+              <div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div>
+            </label>
           </div>
-          <div className="field-group">
-            <label>Placa tracto<span className="required-mark">*</span><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></label>
-            <label>Placa caja<input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="Opcional"/></label>
+          <div className="exact-two">
+            <label>Tipo de operación
+              <div className="exact-input"><ClipboardList size={18}/><select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></div>
+            </label>
+            <label>Referencia del cliente <span>(opcional)</span>
+              <div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Ej. OC, Proyecto, etc."/></div>
+            </label>
           </div>
-          <div className="field-group">
-            <label>Folio de cita<input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Opcional"/></label>
-            <label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
-          </div>
-          <label>Referencia del cliente<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Opcional"/></label>
-
-          <div className="caseta-divider"><span>02</span><div><strong>Evidencia del ingreso</strong><small>Las fotografías se conservan como respaldo. Los datos se capturan manualmente.</small></div></div>
-          <div className="evidence-grid">
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/>
-            <input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/>
-            <button type="button" className="evidence-btn plate" onClick={abrirScanner}>
-              <span className="evidence-icon"><Camera size={23}/></span>
-              <span><strong>Fotografiar placa</strong><small>Evidencia del tracto</small></span>
-              <span className="evidence-arrow">›</span>
-            </button>
-            <button type="button" className="evidence-btn id" onClick={abrirCamaraId}>
-              <span className="evidence-icon"><Camera size={23}/></span>
-              <span><strong>Fotografiar identificación</strong><small>Evidencia del operador</small></span>
-              <span className="evidence-arrow">›</span>
-            </button>
-          </div>
-
-          {(capturedPhoto||capturedId)&&<div className="evidence-preview-grid">
-            {capturedPhoto&&<div className="evidence-preview"><img src={capturedPhoto} alt="Evidencia de placa"/><div><strong>Placa registrada</strong><small>Evidencia capturada</small></div></div>}
-            {capturedId&&<div className="evidence-preview"><img src={capturedId} alt="Evidencia de identificación"/><div><strong>Identificación registrada</strong><small>Evidencia capturada</small></div></div>}
-          </div>}
-
+          <input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="" className="hidden-input"/>
           {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
           {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
-
-          <button className="caseta-submit" disabled={loading}><Truck size={18}/>{loading?"Registrando ingreso…":"Registrar ingreso a Caseta"}<span>→</span></button>
+          <button className="caseta-exact-submit" disabled={loading}><Truck size={22}/>{loading?"Registrando ingreso…":"Registrar ingreso a Caseta"}<span>→</span></button>
         </form>
       </div>
 
-      <div className="panel caseta-recent-panel">
-        <div className="caseta-section-head">
-          <div><span className="caseta-step">03</span><div><strong>Ingresos recientes</strong><small>Últimas unidades registradas</small></div></div>
-          <span className="caseta-count">{recent.length}</span>
+      <div className="caseta-white-card">
+        <div className="exact-card-title">
+          <div className="exact-icon"><Camera size={22}/></div>
+          <div><h3>2. EVIDENCIA FOTOGRÁFICA</h3><p>Las fotos se guardan solo como evidencia.</p></div>
         </div>
-        {recent.length?<div className="caseta-list-pro">{recent.map(u=><div className="caseta-row-pro" key={u.id}><div className="recent-folio"><strong>{u.folio}</strong><span>{u.linea_transporte||"Sin línea"}</span></div><div className="recent-data"><b>{u.tracto_placas||"—"}</b><small>{u.operador_nombre||"Sin operador"}</small></div><span className="recent-status">{u.estado||"en_caseta"}</span></div>)}</div>:<div className="caseta-empty"><ClipboardCheck size={24}/><strong>Sin ingresos todavía</strong><span>Los registros aparecerán aquí después de confirmar una unidad.</span></div>}
+        <div className="exact-evidence-grid">
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/>
+          <input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/>
+          <button type="button" className="exact-evidence" onClick={abrirScanner}>
+            <span className="exact-evidence-icon"><ClipboardList size={25}/></span>
+            <strong>Foto de placa</strong><small>Toca para abrir la cámara</small>
+            {capturedPhoto?<img src={capturedPhoto} alt="Evidencia de placa"/>:<div className="exact-photo-placeholder">PLACA</div>}
+            {capturedPhoto&&<span className="photo-ok">✓</span>}
+          </button>
+          <button type="button" className="exact-evidence" onClick={abrirCamaraId}>
+            <span className="exact-evidence-icon"><IdCard size={25}/></span>
+            <strong>Foto de identificación</strong><small>Toca para abrir la cámara</small>
+            {capturedId?<img src={capturedId} alt="Evidencia de identificación"/>:<div className="exact-photo-placeholder id-placeholder">ID</div>}
+            {capturedId&&<span className="photo-ok">✓</span>}
+          </button>
+        </div>
+        <div className="evidence-note"><Camera size={15}/> Las fotografías son evidencia; los datos se capturan manualmente.</div>
       </div>
+    </div>
+
+    <div className="caseta-recent-exact">
+      <div className="recent-exact-head">
+        <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Ingresos recientes</h3><p>Últimos registros en esta caseta.</p></div></div>
+        <div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
+      </div>
+      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Fecha y hora</th><th>Operador</th><th>Transportista</th><th>Placa tracto</th><th>Tipo</th><th>Estado</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td>{new Date(u.created_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</td><td>{u.operador_nombre||"—"}</td><td>{u.linea_transporte||"—"}</td><td><strong>{u.tracto_placas||"—"}</strong></td><td><span className="exact-pill">{u.estado==="en_caseta"?"Recibo":u.estado||"Registrado"}</span></td><td><span className="exact-status"><span/> Registrado</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin ingresos todavía</strong><span>Los registros aparecerán aquí después de confirmar una unidad.</span></div>}
+    </div>
+
+    <div className="caseta-bottom-nav">
+      <div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div>
+      <div><Truck size={22}/><span>Dispatch</span></div>
+      <div><ClipboardList size={22}/><span>Operación</span></div>
+      <div><User size={22}/><span>CSR</span></div>
+      <div><BarChart3 size={22}/><span>Reportes</span></div>
+      <div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div>
     </div>
   </section>
 }
