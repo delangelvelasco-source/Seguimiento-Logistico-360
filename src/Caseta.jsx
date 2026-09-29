@@ -267,35 +267,28 @@ export default function Caseta({ warehouseId }) {
       await load();setLoading(false);return;
     }
 
-    const {data:unit,error:unitError}=await supabase.from("unidades").insert({
-      operador_nombre:form.nombre.trim(),linea_transporte:form.empresa.trim(),tracto_numero:form.tracto_numero.trim()||null,tracto_placas:form.tracto_placas.trim().toUpperCase(),
-      caja_numero:form.caja_numero.trim()||null,caja_placas:form.caja_placas.trim().toUpperCase()||null,estado:"en_caseta",almacen_id:warehouseId,caseta_usuario_id:user?.id||null,
-      operacion_tipo:form.operacion_tipo,ubicacion_tipo:"caseta"
-    }).select("id,folio").single();
-    if(unitError){setError(unitError.message);setLoading(false);return}
-    const folioUnidad=unit.folio;
-    const {data:op,error:opError}=await supabase.from("operaciones_360").insert({
-      folio:folioUnidad,tipo_operacion:form.operacion_tipo,movimiento:form.operacion_tipo==="recibo"?"importacion":"exportacion",almacen_id:warehouseId,referencia_cliente:form.referencia.trim()||null,cita_id:citaEncontrada?.id||null,
-      estado_general:"en_almacen",unidad_id:unit.id,creado_por:user?.id||null
-    }).select("id").single();
-    if(opError){await supabase.from("unidades").delete().eq("id",unit.id);setError(opError.message);setLoading(false);return}
-    await supabase.from("unidades").update({operacion_360_id:op.data.id,ubicacion_tipo:"caseta",updated_at:new Date().toISOString()}).eq("id",unit.id);
-    const patio=await supabase.rpc("registrar_ingreso_caseta_patios",{p_unidad_id:unit.id,p_motivo:"Ingreso registrado en Caseta"});
-    if(patio.error){
-      await supabase.from("operaciones_360").delete().eq("id",op.data.id);
-      await supabase.from("unidades").delete().eq("id",unit.id);
-      setError(patio.error.message);setLoading(false);return;
-    }
-    const accessInsert=await supabase.from("accesos_caseta").insert({
-      folio:folioUnidad,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
-      tracto_numero:form.tracto_numero.trim()||null,tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_numero:form.caja_numero.trim()||null,caja_placas:form.caja_placas.trim().toUpperCase()||null,
-      operacion_tipo:form.operacion_tipo,unidad_id:unit.id,entrada_at:new Date().toISOString(),estado:"dentro",
-      observaciones:form.referencia.trim()||null,registrado_por:user?.id||null
+    const {data:resultado,error:registroError}=await supabase.rpc("registrar_ingreso_caseta_completo",{
+      p_almacen_id:warehouseId,
+      p_folio_cita:form.folio_cita.trim()||null,
+      p_nombre:form.nombre.trim(),
+      p_linea:form.empresa.trim(),
+      p_tracto_numero:form.tracto_numero.trim()||null,
+      p_tracto_placas:form.tracto_placas.trim().toUpperCase(),
+      p_caja_numero:form.caja_numero.trim()||null,
+      p_caja_placas:form.caja_placas.trim().toUpperCase()||null,
+      p_operacion_tipo:form.operacion_tipo,
+      p_referencia:form.referencia.trim()||null,
+      p_cita_id:citaEncontrada?.id||null
     });
-    if(accessInsert.error){
-      await supabase.from("operaciones_360").delete().eq("id",op.data.id);
-      await supabase.from("unidades").delete().eq("id",unit.id);
-      setError(accessInsert.error.message);setLoading(false);return;
+    if(registroError){
+      setError(registroError.message||"No se pudo registrar el ingreso.");
+      setLoading(false);
+      return;
+    }
+    if(!resultado?.ok){
+      setError("No se pudo confirmar el registro.");
+      setLoading(false);
+      return;
     }
     setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
     setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
