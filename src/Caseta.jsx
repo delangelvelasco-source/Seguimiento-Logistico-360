@@ -16,11 +16,23 @@ export default function Caseta({ warehouseId }) {
   const [capturedPhoto,setCapturedPhoto]=useState("");
   const [capturedId,setCapturedId]=useState("");
   const [ocrLoading,setOcrLoading]=useState(false);
+  const [refreshLoading,setRefreshLoading]=useState(false);
   const [ocrText,setOcrText]=useState("");
 
-  async function load(){
+  async function load(showMessage=false){
+    if(!warehouseId){
+      if(showMessage)setMessage("No hay un almacén activo seleccionado.");
+      return;
+    }
+    if(showMessage)setRefreshLoading(true);
     const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,created_at").eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(12);
-    if(!error)setRecent(data||[]);
+    if(error){
+      if(showMessage)setMessage("No se pudo actualizar la lista de ingresos: "+error.message);
+    }else{
+      setRecent(data||[]);
+      if(showMessage)setMessage("Ingresos actualizados correctamente.");
+    }
+    if(showMessage)setRefreshLoading(false);
   }
   useEffect(()=>{if(warehouseId)load()},[warehouseId]);
 
@@ -204,7 +216,7 @@ export default function Caseta({ warehouseId }) {
 
   return <section id="caseta" className="users-section">
     <div className="panel">
-      <div className="panel-title"><div><LogIn size={19}/><strong>Caseta · Registro de ingreso</strong></div><button className="secondary-btn" onClick={load}><RefreshCw size={15}/>Actualizar</button></div>
+      <div className="panel-title"><div><LogIn size={19}/><strong>Caseta · Registro de ingreso</strong></div><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15} className={refreshLoading?"spin":""}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
       <p className="section-copy">Captura mínima. La información continuará enriqueciéndose en Dispatch, CSR y Operación; no se vuelve a capturar.</p>
       <form className="caseta-form" onSubmit={registrar}>
         <label>Operador<input required value={form.operador_nombre} onChange={e=>setForm({...form,operador_nombre:e.target.value})} placeholder="Nombre y apellidos"/></label>
