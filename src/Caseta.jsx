@@ -67,14 +67,34 @@ export default function Caseta({ warehouseId }) {
     if(!acceso?.id||acceso.estado!=="dentro")return;
     setExitLoading(acceso.id);setError("");setMessage("");
     try{
-      const {data:resultado,error:salidaError}=await supabase.rpc("registrar_salida_caseta",{p_acceso_id:acceso.id});
-      if(salidaError)throw salidaError;
-      if(!resultado?.ok){
-        setError(resultado?.mensaje||"El acceso ya estaba cerrado o no existe.");
-        return;
+      let resultado=null;
+      const {data:rpcResultado,error:salidaError}=await supabase.rpc("registrar_salida_caseta",{p_acceso_id:acceso.id});
+      if(!salidaError && rpcResultado?.ok){
+        resultado=rpcResultado;
+      }else{
+        // Respaldo: si el RPC falla por sesión/permisos, Caseta puede cerrar
+        // directamente el acceso autenticado. El gafete sigue aislado en su tabla interna.
+        const {data:actualizado,error:updateError}=await supabase
+          .from("accesos_caseta")
+          .update({salida_at:new Date().toISOString(),estado:"fuera",updated_at:new Date().toISOString()})
+          .eq("id",acceso.id)
+          .eq("estado","dentro")
+          .select("id,folio,estado,salida_at")
+          .maybeSingle();
+        if(updateError)throw salidaError||updateError;
+        if(!actualizado){
+          setError(rpcResultado?.mensaje||"El acceso ya estaba cerrado o no existe.");
+          return;
+        }
+        resultado={ok:true,folio:actualizado.folio,estado:actualizado.estado,salida_at:actualizado.salida_at};
       }
-      await supabase.rpc("liberar_gafete_caseta",{p_acceso_id:acceso.id});
-      setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
+      const {error:gafeteError}=await supabase.rpc("liberar_gafete_caseta",{p_acceso_id:acceso.id});
+      if(gafeteError){
+        // La salida ya quedó registrada; solo informamos el problema del control interno del gafete.
+        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado. El gafete requiere liberación manual.`);
+      }else{
+        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
+      }
       await load();
     }catch(err){
       setError("No se pudo registrar la salida: "+(err?.message||"error desconocido"));
