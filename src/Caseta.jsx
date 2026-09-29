@@ -45,9 +45,11 @@ export default function Caseta({ warehouseId }) {
           el.src=image;
         });
         const canvas=document.createElement("canvas");
-        const scale=Math.min(3,Math.max(2,2400/Math.max(img.naturalWidth||img.width,1)));
-        canvas.width=Math.round((img.naturalWidth||img.width)*scale);
-        canvas.height=Math.round((img.naturalHeight||img.height)*scale);
+        const width=img.naturalWidth||img.width;
+        const height=img.naturalHeight||img.height;
+        const scale=Math.min(3,Math.max(2,2400/Math.max(width,1)));
+        canvas.width=Math.round(width*scale);
+        canvas.height=Math.round(height*scale);
         const ctx=canvas.getContext("2d");
         if(!ctx)throw new Error("No se pudo preparar el OCR.");
         ctx.imageSmoothingEnabled=true;
@@ -67,23 +69,22 @@ export default function Caseta({ warehouseId }) {
         setOcrText(text);
 
         const clean=(value="")=>value
-          .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s-]/g," ")
-          .replace(/\\s+/g," ")
+          .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s-]/g," ")
+          .replace(/\s+/g," ")
           .trim();
 
         const lines=text
-          .split(/\\r?\\n+/)
+          .split(/\r?\n+/)
           .map(clean)
           .filter(Boolean);
 
-        const label=/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\\b[:.\\-]?\\s*(.*)$/i;
+        const label=/^(NOMBRE(?:S)?|NOMBRE\(S\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\b[:.\-]?\s*(.*)$/i;
         const labels=["NOMBRE","NOMBRES","NOMBRE(S)","APELLIDO","APELLIDOS","APELLIDO PATERNO","APELLIDO MATERNO","PATERNO","MATERNO"];
 
         const plausible=(value)=>{
           const v=clean(value);
           if(!v)return false;
-          const upper=v.toUpperCase();
-          if(labels.includes(upper))return false;
+          if(labels.includes(v.toUpperCase()))return false;
           const words=v.split(" ").filter(Boolean);
           if(words.length<2 || words.length>6)return false;
           if(words.some(w=>w.length<2 || w.length>20))return false;
@@ -104,7 +105,7 @@ export default function Caseta({ warehouseId }) {
         }
 
         const uniqueValues=[...new Set(values.map(v=>v.toUpperCase()))];
-        const name=uniqueValues.join(" ").replace(/\\s+/g," ").trim();
+        const name=uniqueValues.join(" ").replace(/\s+/g," ").trim();
 
         if(name){
           setForm(f=>({...f,operador_nombre:name}));
