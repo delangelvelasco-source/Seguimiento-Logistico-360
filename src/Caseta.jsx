@@ -110,24 +110,31 @@ export default function Caseta({ warehouseId }) {
 
   function extraerNombre(text){
     const lines=text.split(/\\r?\\n+/).map(l=>limpiarOCR(l)).filter(Boolean);
+    const stop=/^(DOMICILIO|CLAVE DE ELECTOR|CURP|FECHA DE NACIMIENTO|SECCIÓN|VIGENCIA|AÑO DE REGISTRO|SEXO)\\b/i;
     const label=/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\\b[:.\\-]?\\s*(.*)$/i;
-    const bad=new Set(["NOMBRE","NOMBRES","NOMBRE S","APELLIDO","APELLIDOS","PATERNO","MATERNO"]);
+    const bad=/^(NOMBRE|NOMBRES|APELLIDO|APELLIDOS|PATERNO|MATERNO)$/i;
+    const word=/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]{2,22}$/;
     const candidatos=[];
-    const plausible=v=>{
-      const x=limpiarOCR(v), words=x.split(" ").filter(Boolean);
-      if(!x||bad.has(x.toUpperCase())||words.length<2||words.length>6)return false;
-      return words.every(w=>w.length>=2&&w.length<=22&&/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]+$/.test(w));
-    };
     for(let i=0;i<lines.length;i++){
       const m=lines[i].match(label);
-      if(m&&plausible(m[2]||""))candidatos.push(m[2]);
-      if(m){
-        for(let j=1;j<=2;j++)if(plausible(lines[i+j]||""))candidatos.push(lines[i+j]);
+      if(!m)continue;
+      const parts=[];
+      const inline=limpiarOCR(m[2]||"");
+      if(inline&&!bad.test(inline)&&inline.split(/\\s+/).length>=2)parts.push(...inline.split(/\\s+/));
+      for(let j=1;j<=5;j++){
+        const next=limpiarOCR(lines[i+j]||"");
+        if(!next||stop.test(next))break;
+        const words=next.split(/\\s+/).filter(Boolean);
+        if(words.length>3||words.some(w=>!word.test(w)))break;
+        parts.push(...words);
       }
+      if(parts.length>=2&&parts.length<=6)candidatos.push(parts.join(" "));
     }
-    return [...new Set(candidatos.map(x=>limpiarOCR(x).toUpperCase()))].sort((a,b)=>b.length-a.length)[0]||"";
+    return [...new Set(candidatos.map(x=>x.toUpperCase()))].sort((a,b)=>{
+      const aw=a.split(" ").length,bw=b.split(" ").length;
+      return bw-aw||b.length-a.length;
+    })[0]||"";
   }
-
   function extraerPlaca(text){
     const lines=text.split(/\\r?\\n+/).map(l=>limpiarOCR(l).toUpperCase()).filter(Boolean);
     const candidates=[];
