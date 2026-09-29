@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, CheckCircle2, ClipboardCheck, LogIn, RefreshCw, Search, Truck } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import { createWorker } from "tesseract.js";
 
 export default function Caseta({ warehouseId }) {
   const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
@@ -14,6 +15,8 @@ export default function Caseta({ warehouseId }) {
   const idInputRef=useRef(null);
   const [capturedPhoto,setCapturedPhoto]=useState("");
   const [capturedId,setCapturedId]=useState("");
+  const [ocrLoading,setOcrLoading]=useState(false);
+  const [ocrText,setOcrText]=useState("");
 
   async function load(){
     const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,created_at").eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(12);
@@ -23,13 +26,37 @@ export default function Caseta({ warehouseId }) {
 
   function abrirScanner(){ setScannerError(""); cameraInputRef.current?.click(); }
   function abrirCamaraId(){ idInputRef.current?.click(); }
-  function recibirFotoId(e){
+  async function recibirFotoId(e){
     const file=e.target.files?.[0];
     if(!file)return;
     const reader=new FileReader();
-    reader.onload=()=>setCapturedId(String(reader.result||""));
+    reader.onload=async()=>{
+      const image=String(reader.result||"");
+      setCapturedId(image);
+      setOcrText("");
+      setOcrLoading(true);
+      setMessage("Identificación capturada. Leyendo nombre…");
+      try{
+        const worker=await createWorker("spa");
+        const result=await worker.recognize(image);
+        const text=result?.data?.text||"";
+        setOcrText(text);
+        const lines=text.split(/\\n+/).map(x=>x.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]/g," ").replace(/\\s+/g," ").trim()).filter(x=>x.length>=5);
+        const markers=["NOMBRE","NOMBRES","NOMBRE(S)","APELLIDO","APELLIDOS","PATERNO","MATERNO"];
+        const candidates=lines.filter(line=>markers.some(m=>line.toUpperCase().includes(m))).map(line=>line.replace(/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?:S)?|PATERNO|MATERNO)\\s*:?-?\\s*/i,"").trim()).filter(Boolean);
+        const name=candidates.join(" ").replace(/\\s+/g," ").trim();
+        if(name){
+          setForm(f=>({...f,operador_nombre:name}));
+          setMessage("Nombre detectado automáticamente. Verifica que coincida con la identificación antes de registrar.");
+        }else{
+          setMessage("No pude identificar el nombre con suficiente confianza. Verifica la foto y captura el nombre manualmente.");
+        }
+        await worker.terminate();
+      }catch(err){
+        setMessage("La foto quedó capturada, pero no fue posible leer el nombre automáticamente. Captúralo manualmente.");
+      }finally{setOcrLoading(false);}
+    };
     reader.readAsDataURL(file);
-    setMessage("Foto de identificación capturada. Verifica visualmente los datos.");
     e.target.value="";
   }
   function recibirFoto(e){
@@ -106,7 +133,7 @@ export default function Caseta({ warehouseId }) {
         <label>Folio de cita<input value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Opcional"/></label>
         <label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
         <label>Referencia del cliente<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Opcional"/></label>
-        <div style={{display:"grid",gap:10}}><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/><input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/><button type="button" onClick={abrirScanner} style={{width:"100%",minHeight:82,display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:18,border:"1px solid rgba(96,165,250,.45)",background:"linear-gradient(135deg,rgba(37,99,235,.22),rgba(124,58,237,.26))",color:"#fff",cursor:"pointer",boxShadow:"0 10px 30px rgba(37,99,235,.12)"}}><span style={{width:48,height:48,borderRadius:14,display:"grid",placeItems:"center",background:"rgba(255,255,255,.12)",flex:"0 0 auto"}}><Camera size={25}/></span><span style={{display:"grid",gap:3,textAlign:"left",flex:1}}><strong style={{fontSize:16}}>Tomar foto de placa</strong><small style={{color:"#cbd5e1"}}>Toca para abrir directamente la cámara trasera</small></span><b style={{fontSize:14}}>📷</b></button><button type="button" onClick={abrirCamaraId} style={{width:"100%",minHeight:76,display:"flex",alignItems:"center",gap:14,padding:"14px 18px",borderRadius:18,border:"1px solid rgba(45,212,191,.35)",background:"rgba(15,118,110,.16)",color:"#fff",cursor:"pointer"}}><span style={{width:46,height:46,borderRadius:14,display:"grid",placeItems:"center",background:"rgba(45,212,191,.12)",flex:"0 0 auto"}}><Camera size={23}/></span><span style={{display:"grid",gap:3,textAlign:"left",flex:1}}><strong style={{fontSize:16}}>Tomar foto de identificación</strong><small style={{color:"#cbd5e1"}}>Captura la identificación del operador</small></span><b>📷</b></button>{capturedPhoto&&<div style={{display:"flex",alignItems:"center",gap:12,padding:10,borderRadius:14,background:"rgba(15,23,42,.75)",border:"1px solid rgba(148,163,184,.22)"}}><img src={capturedPhoto} alt="Evidencia capturada" style={{width:78,height:58,objectFit:"cover",borderRadius:10}}/><div style={{display:"grid",gap:3}}><strong style={{color:"#fff"}}>Foto capturada</strong><small style={{color:"#94a3b8"}}>Verifica la placa y captura el dato en el campo correspondiente.</small></div></div>}{capturedId&&<div style={{display:"flex",alignItems:"center",gap:12,padding:10,borderRadius:14,background:"rgba(15,23,42,.75)",border:"1px solid rgba(45,212,191,.25)"}}><img src={capturedId} alt="Identificación capturada" style={{width:78,height:58,objectFit:"cover",borderRadius:10}}/><div style={{display:"grid",gap:3}}><strong style={{color:"#fff"}}>Identificación capturada</strong><small style={{color:"#94a3b8"}}>Verifica los datos del operador antes de registrar.</small></div></div>}}</div>
+        <div style={{display:"grid",gap:10}}><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/><input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/><button type="button" onClick={abrirScanner} style={{width:"100%",minHeight:82,display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:18,border:"1px solid rgba(96,165,250,.45)",background:"linear-gradient(135deg,rgba(37,99,235,.22),rgba(124,58,237,.26))",color:"#fff",cursor:"pointer",boxShadow:"0 10px 30px rgba(37,99,235,.12)"}}><span style={{width:48,height:48,borderRadius:14,display:"grid",placeItems:"center",background:"rgba(255,255,255,.12)",flex:"0 0 auto"}}><Camera size={25}/></span><span style={{display:"grid",gap:3,textAlign:"left",flex:1}}><strong style={{fontSize:16}}>Tomar foto de placa</strong><small style={{color:"#cbd5e1"}}>Toca para abrir directamente la cámara trasera</small></span><b style={{fontSize:14}}>📷</b></button><button type="button" onClick={abrirCamaraId} style={{width:"100%",minHeight:76,display:"flex",alignItems:"center",gap:14,padding:"14px 18px",borderRadius:18,border:"1px solid rgba(45,212,191,.35)",background:"rgba(15,118,110,.16)",color:"#fff",cursor:"pointer"}}><span style={{width:46,height:46,borderRadius:14,display:"grid",placeItems:"center",background:"rgba(45,212,191,.12)",flex:"0 0 auto"}}><Camera size={23}/></span><span style={{display:"grid",gap:3,textAlign:"left",flex:1}}><strong style={{fontSize:16}}>Tomar foto de identificación</strong><small style={{color:"#cbd5e1"}}>Captura la identificación del operador</small></span><b>📷</b></button>{capturedPhoto&&<div style={{display:"flex",alignItems:"center",gap:12,padding:10,borderRadius:14,background:"rgba(15,23,42,.75)",border:"1px solid rgba(148,163,184,.22)"}}><img src={capturedPhoto} alt="Evidencia capturada" style={{width:78,height:58,objectFit:"cover",borderRadius:10}}/><div style={{display:"grid",gap:3}}><strong style={{color:"#fff"}}>Foto capturada</strong><small style={{color:"#94a3b8"}}>Verifica la placa y captura el dato en el campo correspondiente.</small></div></div>}{ocrLoading&&<div className="notice" style={{marginTop:8}}><strong>🔎 Leyendo identificación…</strong><span>Procesando el nombre en el dispositivo.</span></div>}{ocrText&&!ocrLoading&&<div style={{padding:10,borderRadius:12,background:"rgba(15,23,42,.7)",color:"#cbd5e1",fontSize:12,whiteSpace:"pre-wrap",maxHeight:90,overflow:"auto"}}><strong>Texto detectado</strong><br/>{ocrText}</div>}{capturedId&&<div style={{display:"flex",alignItems:"center",gap:12,padding:10,borderRadius:14,background:"rgba(15,23,42,.75)",border:"1px solid rgba(45,212,191,.25)"}}><img src={capturedId} alt="Identificación capturada" style={{width:78,height:58,objectFit:"cover",borderRadius:10}}/><div style={{display:"grid",gap:3}}><strong style={{color:"#fff"}}>Identificación capturada</strong><small style={{color:"#94a3b8"}}>Verifica los datos del operador antes de registrar.</small></div></div>}}</div>
         {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
         {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
         <button className="login-btn" disabled={loading}><Truck size={17}/>{loading?"Registrando…":"Registrar ingreso a Caseta"}</button>
