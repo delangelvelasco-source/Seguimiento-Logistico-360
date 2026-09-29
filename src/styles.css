@@ -222,7 +222,7 @@
 .caseta-exact-form{display:grid;gap:14px}
 .caseta-exact-form label{font-size:13px;font-weight:800;color:#16233e}
 .caseta-exact-form label span{font-weight:500;color:#64748b}
-.exact-input{height:48px;margin-top:7px;border:1px solid #bdc9d8;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;gap:9px;color:#5e718c}
+.exact-input{position:relative;height:48px;margin-top:7px;border:1px solid #bdc9d8;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;gap:9px;color:#5e718c}
 .exact-input:focus-within{border-color:#2b7fe7;box-shadow:0 0 0 3px #2b7fe718}
 .exact-input input,.exact-input select{width:100%;border:0;outline:0;background:transparent;color:#263650;font-size:14px;min-width:0}
 .exact-input input::placeholder{color:#7c8ba1}
