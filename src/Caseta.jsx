@@ -34,11 +34,18 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,gafete_numero,tracto_placas,operacion_tipo,estado,entrada_at,salida_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(50);
+    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(50);
     if(error){
       if(showMessage)setMessage("No se pudo actualizar la lista de ingresos: "+error.message);
     }else{
-      setRecent(data||[]);
+      const ids=(data||[]).map(x=>x.id);
+      let asignaciones=[];
+      if(ids.length){
+        const {data:asig}=await supabase.from("gafetes_asignaciones_caseta").select("acceso_id,numero").in("acceso_id",ids);
+        asignaciones=asig||[];
+      }
+      const gafeteMap=new Map(asignaciones.map(x=>[x.acceso_id,x.numero]));
+      setRecent((data||[]).map(x=>({...x,gafete_numero:gafeteMap.get(x.id)||null})));
       if(showMessage)setMessage("Ingresos actualizados correctamente.");
     }
     if(showMessage)setRefreshLoading(false);
@@ -66,6 +73,7 @@ export default function Caseta({ warehouseId }) {
         setError(resultado?.mensaje||"El acceso ya estaba cerrado o no existe.");
         return;
       }
+      await supabase.rpc("liberar_gafete_caseta",{p_acceso_id:acceso.id});
       setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
       await load();
     }catch(err){
@@ -299,13 +307,6 @@ export default function Caseta({ warehouseId }) {
     return data;
   }
 
-  async function ocuparGafete(numero,tipo){
-    if(!numero)return;
-    const tipoGafete=tipo==="unidad"?"transportista":tipo;
-    const {error}=await supabase.from("gafetes").update({estado:"asignado",tipo:tipoGafete,updated_at:new Date().toISOString()}).eq("numero",numero).eq("activo",true);
-    if(error)throw error;
-  }
-
   async function registrar(e){
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
@@ -327,12 +328,15 @@ export default function Caseta({ warehouseId }) {
       const {data:folioData,error:folioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:accessType});
       if(folioError){setError(folioError.message||"No se pudo generar el folio.");setLoading(false);return;}
       const folioAccesoNuevo=folioData||folioAcceso;
-      const {error}=await supabase.from("accesos_caseta").insert({folio:folioAccesoNuevo,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,telefono:form.telefono.trim()||null,gafete_numero:gafete?.numero||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,registrado_por:user?.id||null});
+      const {data:accesoNuevo,error}=await supabase.from("accesos_caseta").insert({folio:folioAccesoNuevo,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,registrado_por:user?.id||null}).select("id").single();
       if(error){setError(error.message);setLoading(false);return}
-      if(gafete){try{await ocuparGafete(gafete.numero,accessType);}catch(err){setError("El acceso se registró, pero no se pudo actualizar el estado del gafete: "+(err?.message||"error desconocido"));}}
+      if(gafete){
+        const {error:gafeteError}=await supabase.rpc("asignar_gafete_caseta",{p_acceso_id:accesoNuevo.id,p_gafete_numero:gafete.numero,p_tipo_acceso:accessType});
+        if(gafeteError){setError("No se pudo asignar el gafete: "+(gafeteError.message||"error desconocido"));setLoading(false);return}
+      }
       const etiquetas={visitante:"Visitante",proveedor:"Proveedor",otro:"Otro acceso",personal_interno:"Personal interno",eventual:"Eventual"};
       setMessage(`${etiquetas[accessType]||"Acceso"} registrado. Folio ${folioAccesoNuevo}. Acceso abierto.`);
-      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
       await load();setLoading(false);return;
     }
 
@@ -342,12 +346,13 @@ export default function Caseta({ warehouseId }) {
     if(registroError){setError(registroError.message||"No se pudo registrar el ingreso.");setLoading(false);return;}
     if(!resultado?.ok){setError("No se pudo confirmar el registro.");setLoading(false);return;}
     if(gafete){
-      const {error:gafeteAccessError}=await supabase.from("accesos_caseta").update({gafete_numero:gafete.numero,updated_at:new Date().toISOString()}).eq("folio",resultado.folio).eq("almacen_id",warehouseId);
-      if(gafeteAccessError){setError("El ingreso se registró, pero no se pudo guardar el gafete: "+gafeteAccessError.message);setLoading(false);return;}
-      try{await ocuparGafete(gafete.numero,"unidad");}catch(err){setError("El ingreso se registró, pero no se pudo actualizar el estado del gafete: "+(err?.message||"error desconocido"));setLoading(false);return;}
+      const {data:accesoUnidad,error:accesoUnidadError}=await supabase.from("accesos_caseta").select("id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
+      if(accesoUnidadError||!accesoUnidad){setError("El ingreso se registró, pero no se pudo localizar el acceso para asignar el gafete.");setLoading(false);return;}
+      const {error:gafeteError}=await supabase.rpc("asignar_gafete_caseta",{p_acceso_id:accesoUnidad.id,p_gafete_numero:gafete.numero,p_tipo_acceso:"unidad"});
+      if(gafeteError){setError("El ingreso se registró, pero no se pudo asignar el gafete: "+(gafeteError.message||"error desconocido"));setLoading(false);return;}
     }
     setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
-    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
+    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
     await load();setLoading(false);
   }
 
