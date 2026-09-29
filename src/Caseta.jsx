@@ -9,7 +9,8 @@ export default function Caseta({ warehouseId }) {
   const form=accessForm;
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
-  const [recent,setRecent]=useState([]);\n  const [exitLoading,setExitLoading]=useState("");
+  const [recent,setRecent]=useState([]);
+  const [exitLoading,setExitLoading]=useState("");
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const cameraInputRef=useRef(null);
@@ -40,7 +41,19 @@ export default function Caseta({ warehouseId }) {
     }
     if(showMessage)setRefreshLoading(false);
   }
-  useEffect(()=>{if(warehouseId)load()},[warehouseId]);\n  async function registrarSalida(acceso){
+  useEffect(()=>{
+    if(!warehouseId)return;
+    load();
+    const channel=supabase.channel("caseta-tiempo-real-"+warehouseId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},()=>load())
+      .subscribe();
+    const interval=setInterval(()=>load(),2000);
+    return ()=>{
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  },[warehouseId]);
+  async function registrarSalida(acceso){
     if(!acceso?.id||acceso.estado!=="dentro")return;
     setExitLoading(acceso.id);setError("");setMessage("");
     const {error:salidaError}=await supabase.from("accesos_caseta").update({salida_at:new Date().toISOString(),estado:"fuera",updated_at:new Date().toISOString()}).eq("id",acceso.id).eq("estado","dentro");
@@ -123,7 +136,8 @@ export default function Caseta({ warehouseId }) {
   }
 
   function extraerNombre(text){
-    const lines=text.split(/\\r?\\n+/).map(l=>limpiarOCR(l)).filter(Boolean);
+    const lines=text.split(/\\r?\
++/).map(l=>limpiarOCR(l)).filter(Boolean);
     const stop=/^(DOMICILIO|CLAVE DE ELECTOR|CURP|FECHA DE NACIMIENTO|SECCIÓN|VIGENCIA|AÑO DE REGISTRO|SEXO)\\b/i;
     const label=/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\\b[:.\\-]?\\s*(.*)$/i;
     const bad=/^(NOMBRE|NOMBRES|APELLIDO|APELLIDOS|PATERNO|MATERNO)$/i;
@@ -150,7 +164,8 @@ export default function Caseta({ warehouseId }) {
     })[0]||"";
   }
   function extraerPlaca(text){
-    const lines=text.split(/\\r?\\n+/).map(l=>limpiarOCR(l).toUpperCase()).filter(Boolean);
+    const lines=text.split(/\\r?\
++/).map(l=>limpiarOCR(l).toUpperCase()).filter(Boolean);
     const candidates=[];
     for(const line of lines){
       const compact=line.replace(/[^A-Z0-9]/g,"");
