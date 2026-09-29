@@ -251,8 +251,7 @@ export default function Caseta({ warehouseId }) {
   async function registrar(e){
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
-    const prefix=accessType==="unidad"?"C":accessType==="visitante"?"V":"P";
-    const folioAcceso=form.folio_cita.trim() || prefix+"-"+Date.now().toString().slice(-6);
+    const folioAcceso=form.folio_cita.trim() || null;
 
     if(accessType!=="unidad"){
       const {data:folioData,error:folioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:accessType});
@@ -265,7 +264,8 @@ export default function Caseta({ warehouseId }) {
         registrado_por:user?.id||null
       });
       if(error){setError(error.message);setLoading(false);return}
-      setMessage(accessType==="visitante"?"Visitante registrado. Acceso abierto.":"Proveedor registrado. Acceso abierto.");
+      const etiquetas={visitante:"Visitante",proveedor:"Proveedor",otro:"Otro acceso",personal_interno:"Personal interno",eventual:"Eventual"};
+      setMessage(`${etiquetas[accessType]||"Acceso"} registrado. Folio ${folioAccesoNuevo}. Acceso abierto.`);
       setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
       await load();setLoading(false);return;
     }
