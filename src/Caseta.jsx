@@ -62,14 +62,9 @@ export default function Caseta({ warehouseId }) {
       setRefreshLoading(false);
       return;
     }
-    const ids=filas.map(x=>x.id);
-    let asignaciones=[];
-    if(ids.length){
-      const {data:asig}=await supabase.from("gafetes_asignaciones_caseta").select("acceso_id,numero").in("acceso_id",ids);
-      asignaciones=asig||[];
-    }
-    const gafeteMap=new Map(asignaciones.map(x=>[x.acceso_id,x.numero]));
-    setRecent(filas.map(x=>({...x,gafete_numero:gafeteMap.get(x.id)||null})));
+    // El gafete permanece completamente aislado del monitor operativo.
+    // No se consulta ni se expone su número aquí; solo Caseta/control interno lo maneja.
+    setRecent(filas);
     if(showMessage)setMessage("Monitor sincronizado.");
     if(showMessage)setRefreshLoading(false);
   }
@@ -451,7 +446,7 @@ export default function Caseta({ warehouseId }) {
     <td><strong>{u.folio}</strong></td>
     <td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td>
     <td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td>
-    <td>{u.gafete_numero||"—"}</td>
+    
     <td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
     <td>{u.salida_at?new Date(u.salida_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td>
     <td><span className={`exact-status ${u.estado==="dentro"?"inside":"exited"}`}><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td>
@@ -516,7 +511,7 @@ export default function Caseta({ warehouseId }) {
         <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Monitor operativo</h3><p>Seguimiento en tiempo real de las unidades transportistas. Los demás accesos quedan disponibles en el botón inferior.</p></div></div>
         <div className="recent-exact-actions"><span>{transportistas.length} unidades</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
       </div>
-      {transportistas.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Operación</th><th>Gafete</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{transportistas.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><Truck size={24}/><strong>Sin unidades registradas</strong><span>Las unidades transportistas aparecerán aquí en cuanto se registre un ingreso.</span></div>}
+      {transportistas.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Operación</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{transportistas.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><Truck size={24}/><strong>Sin unidades registradas</strong><span>Las unidades transportistas aparecerán aquí en cuanto se registre un ingreso.</span></div>}
       <div style={{display:"flex",justifyContent:"center",marginTop:"16px"}}>
         <button type="button" className="secondary-btn" onClick={()=>setShowOtherAccess(v=>!v)}>
           {showOtherAccess?"− Ocultar otros accesos":"＋ Ver otros accesos"}
