@@ -10,6 +10,7 @@ export default function Caseta({ warehouseId }) {
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
   const [recent,setRecent]=useState([]);
+  const [showOtherAccess,setShowOtherAccess]=useState(false);
   const [exitLoading,setExitLoading]=useState("");
   const videoRef=useRef(null);
   const streamRef=useRef(null);
@@ -32,7 +33,7 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(12);
+    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(50);
     if(error){
       if(showMessage)setMessage("No se pudo actualizar la lista de ingresos: "+error.message);
     }else{
@@ -53,6 +54,7 @@ export default function Caseta({ warehouseId }) {
       supabase.removeChannel(channel);
     };
   },[warehouseId]);
+
   async function registrarSalida(acceso){
     if(!acceso?.id||acceso.estado!=="dentro")return;
     setExitLoading(acceso.id);setError("");setMessage("");
@@ -61,7 +63,6 @@ export default function Caseta({ warehouseId }) {
     setMessage("Salida registrada. El acceso quedó cerrado.");
     await load();setExitLoading("");
   }
-
 
   function abrirScannerPlaca(){ cameraInputRef.current?.click(); }
   function abrirCamaraId(){ idInputRef.current?.click(); }
@@ -132,14 +133,13 @@ export default function Caseta({ warehouseId }) {
   }
 
   function limpiarOCR(value=""){
-    return value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\\s-]/g," ").replace(/\\s+/g," ").trim();
+    return value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s-]/g," ").replace(/\s+/g," ").trim();
   }
 
   function extraerNombre(text){
-    const lines=text.split(/\\r?\
-+/).map(l=>limpiarOCR(l)).filter(Boolean);
-    const stop=/^(DOMICILIO|CLAVE DE ELECTOR|CURP|FECHA DE NACIMIENTO|SECCIÓN|VIGENCIA|AÑO DE REGISTRO|SEXO)\\b/i;
-    const label=/^(NOMBRE(?:S)?|NOMBRE\\(S\\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\\b[:.\\-]?\\s*(.*)$/i;
+    const lines=text.split(/\r?\n+/).map(l=>limpiarOCR(l)).filter(Boolean);
+    const stop=/^(DOMICILIO|CLAVE DE ELECTOR|CURP|FECHA DE NACIMIENTO|SECCIÓN|VIGENCIA|AÑO DE REGISTRO|SEXO)\b/i;
+    const label=/^(NOMBRE(?:S)?|NOMBRE\(S\)|APELLIDO(?: PATERNO| MATERNO|S)?|PATERNO|MATERNO)\b[:.\-]?\s*(.*)$/i;
     const bad=/^(NOMBRE|NOMBRES|APELLIDO|APELLIDOS|PATERNO|MATERNO)$/i;
     const word=/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]{2,22}$/;
     const candidatos=[];
@@ -148,11 +148,11 @@ export default function Caseta({ warehouseId }) {
       if(!m)continue;
       const parts=[];
       const inline=limpiarOCR(m[2]||"");
-      if(inline&&!bad.test(inline)&&inline.split(/\\s+/).length>=2)parts.push(...inline.split(/\\s+/));
+      if(inline&&!bad.test(inline)&&inline.split(/\s+/).length>=2)parts.push(...inline.split(/\s+/));
       for(let j=1;j<=5;j++){
         const next=limpiarOCR(lines[i+j]||"");
         if(!next||stop.test(next))break;
-        const words=next.split(/\\s+/).filter(Boolean);
+        const words=next.split(/\s+/).filter(Boolean);
         if(words.length>3||words.some(w=>!word.test(w)))break;
         parts.push(...words);
       }
@@ -163,9 +163,9 @@ export default function Caseta({ warehouseId }) {
       return bw-aw||b.length-a.length;
     })[0]||"";
   }
+
   function extraerPlaca(text){
-    const lines=text.split(/\\r?\
-+/).map(l=>limpiarOCR(l).toUpperCase()).filter(Boolean);
+    const lines=text.split(/\r?\n+/).map(l=>limpiarOCR(l).toUpperCase()).filter(Boolean);
     const candidates=[];
     for(const line of lines){
       const compact=line.replace(/[^A-Z0-9]/g,"");
@@ -177,7 +177,7 @@ export default function Caseta({ warehouseId }) {
       }
     }
     const unique=[...new Set(candidates)];
-    const filtered=unique.filter(v=>!/^\\d{6,8}$/.test(v)&&!/(MEX|INE|CURP|VIGENCIA|NACIMIENTO|REGISTRO)/.test(v));
+    const filtered=unique.filter(v=>!/^\d{6,8}$/.test(v)&&!/(MEX|INE|CURP|VIGENCIA|NACIMIENTO|REGISTRO)/.test(v));
     return filtered.sort((a,b)=>b.length-a.length)[0]||"";
   }
 
@@ -224,6 +224,7 @@ export default function Caseta({ warehouseId }) {
       }catch(err){setScannerError("No se pudo abrir la cámara. Revisa el permiso de cámara y vuelve a intentar.");}
     },120);
   }
+
   async function cerrarScanner(){
     try{if(scanner){await scanner.stop();await scanner.clear();}}catch{}
     setScanner(null);setScannerOpen(false);
@@ -240,15 +241,7 @@ export default function Caseta({ warehouseId }) {
       if(citaError)throw citaError;
       if(cita){
         const {data:precarga}=await supabase.from("cita_datos_precarga").select("linea_transporte,operador_nombre,contacto,tracto_numero,tracto_placas,caja_numero,caja_placas,observaciones").eq("cita_id",cita.id).maybeSingle();
-        setForm(prev=>({...prev,
-          folio_cita:cita.folio||folio,
-          nombre:precarga?.operador_nombre||prev.nombre,
-          empresa:precarga?.linea_transporte||prev.empresa,
-          tracto_placas:precarga?.tracto_placas||prev.tracto_placas,
-          caja_placas:precarga?.caja_placas||prev.caja_placas,
-          operacion_tipo:cita.tipo_operacion||prev.operacion_tipo,
-          referencia:cita.referencia||prev.referencia
-        }));
+        setForm(prev=>({...prev,folio_cita:cita.folio||folio,nombre:precarga?.operador_nombre||prev.nombre,empresa:precarga?.linea_transporte||prev.empresa,tracto_placas:precarga?.tracto_placas||prev.tracto_placas,caja_placas:precarga?.caja_placas||prev.caja_placas,operacion_tipo:cita.tipo_operacion||prev.operacion_tipo,referencia:cita.referencia||prev.referencia}));
         setCitaEncontrada({...cita,...precarga});
         setMessage("Cita encontrada. Los datos disponibles se cargaron automáticamente; puedes corregirlos si es necesario.");
       }else{
@@ -280,12 +273,7 @@ export default function Caseta({ warehouseId }) {
       const {data:folioData,error:folioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:accessType});
       if(folioError){setError(folioError.message||"No se pudo generar el folio.");setLoading(false);return;}
       const folioAccesoNuevo=folioData||folioAcceso;
-      const {error}=await supabase.from("accesos_caseta").insert({
-        folio:folioAccesoNuevo,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
-        persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,
-        telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,
-        registrado_por:user?.id||null
-      });
+      const {error}=await supabase.from("accesos_caseta").insert({folio:folioAccesoNuevo,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,registrado_por:user?.id||null});
       if(error){setError(error.message);setLoading(false);return}
       const etiquetas={visitante:"Visitante",proveedor:"Proveedor",otro:"Otro acceso",personal_interno:"Personal interno",eventual:"Eventual"};
       setMessage(`${etiquetas[accessType]||"Acceso"} registrado. Folio ${folioAccesoNuevo}. Acceso abierto.`);
@@ -293,33 +281,27 @@ export default function Caseta({ warehouseId }) {
       await load();setLoading(false);return;
     }
 
-    const {data:resultado,error:registroError}=await supabase.rpc("registrar_ingreso_caseta_completo",{
-      p_almacen_id:warehouseId,
-      p_folio_cita:form.folio_cita.trim()||null,
-      p_nombre:form.nombre.trim(),
-      p_linea:form.empresa.trim(),
-      p_tracto_numero:form.tracto_numero.trim()||null,
-      p_tracto_placas:form.tracto_placas.trim().toUpperCase(),
-      p_caja_numero:form.caja_numero.trim()||null,
-      p_caja_placas:form.caja_placas.trim().toUpperCase()||null,
-      p_operacion_tipo:form.operacion_tipo,
-      p_referencia:form.referencia.trim()||null,
-      p_cita_id:citaEncontrada?.id||null
+    const {data:resultado,error:registroError}=await supabase.rpc("registrar_ingreso_caseta_completo", {
+      p_almacen_id:warehouseId,p_folio_cita:form.folio_cita.trim()||null,p_nombre:form.nombre.trim(),p_linea:form.empresa.trim(),p_tracto_numero:form.tracto_numero.trim()||null,p_tracto_placas:form.tracto_placas.trim().toUpperCase(),p_caja_numero:form.caja_numero.trim()||null,p_caja_placas:form.caja_placas.trim().toUpperCase()||null,p_operacion_tipo:form.operacion_tipo,p_referencia:form.referencia.trim()||null,p_cita_id:citaEncontrada?.id||null
     });
-    if(registroError){
-      setError(registroError.message||"No se pudo registrar el ingreso.");
-      setLoading(false);
-      return;
-    }
-    if(!resultado?.ok){
-      setError("No se pudo confirmar el registro.");
-      setLoading(false);
-      return;
-    }
+    if(registroError){setError(registroError.message||"No se pudo registrar el ingreso.");setLoading(false);return;}
+    if(!resultado?.ok){setError("No se pudo confirmar el registro.");setLoading(false);return;}
     setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
     setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
     await load();setLoading(false);
   }
+
+  const transportistas=recent.filter(u=>u.tipo_acceso==="unidad");
+  const otrosAccesos=recent.filter(u=>u.tipo_acceso!=="unidad");
+  const renderAccessRow=(u)=><tr key={u.id}>
+    <td><strong>{u.folio}</strong></td>
+    <td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td>
+    <td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td>
+    <td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
+    <td>{u.salida_at?new Date(u.salida_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td>
+    <td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td>
+    <td>{u.estado==="dentro"?<button type="button" className="secondary-btn" onClick={()=>registrarSalida(u)} disabled={exitLoading===u.id}><LogOut size={15}/>{exitLoading===u.id?"Registrando…":"Registrar salida"}</button>:<span>✓ Cerrado</span>}</td>
+  </tr>;
 
   return <section id="caseta" className="caseta-page caseta-exact">
     <div className="caseta-hero">
@@ -331,12 +313,12 @@ export default function Caseta({ warehouseId }) {
     </div>
 
     <div className="access-selector">
-      <button type="button" className={accessType==="unidad"?"access-type active unit": "access-type unit"} onClick={()=>setAccessType("unidad")}><Truck size={22}/><span><b>Transportista</b><small>Unidad</small></span></button>
-      <button type="button" className={accessType==="visitante"?"access-type active visitor": "access-type visitor"} onClick={()=>setAccessType("visitante")}><User size={22}/><span><b>Visitante</b><small>Acceso personal</small></span></button>
-      <button type="button" className={accessType==="proveedor"?"access-type active provider": "access-type provider"} onClick={()=>setAccessType("proveedor")}><Building2 size={22}/><span><b>Proveedor</b><small>Servicio / entrega</small></span></button>
-      <button type="button" className={accessType==="otro"?"access-type active other": "access-type other"} onClick={()=>setAccessType("otro")}><ClipboardList size={22}/><span><b>Otros</b><small>Acceso general</small></span></button>
-      <button type="button" className={accessType==="personal_interno"?"access-type active internal": "access-type internal"} onClick={()=>setAccessType("personal_interno")}><Users size={22}/><span><b>Personal Interno</b><small>Colaborador</small></span></button>
-      <button type="button" className={accessType==="eventual"?"access-type active eventual": "access-type eventual"} onClick={()=>setAccessType("eventual")}><UserRoundCheck size={22}/><span><b>Eventuales</b><small>Acceso temporal</small></span></button>
+      <button type="button" className={accessType==="unidad"?"access-type active unit":"access-type unit"} onClick={()=>setAccessType("unidad")}><Truck size={22}/><span><b>Transportista</b><small>Unidad</small></span></button>
+      <button type="button" className={accessType==="visitante"?"access-type active visitor":"access-type visitor"} onClick={()=>setAccessType("visitante")}><User size={22}/><span><b>Visitante</b><small>Acceso personal</small></span></button>
+      <button type="button" className={accessType==="proveedor"?"access-type active provider":"access-type provider"} onClick={()=>setAccessType("proveedor")}><Building2 size={22}/><span><b>Proveedor</b><small>Servicio / entrega</small></span></button>
+      <button type="button" className={accessType==="otro"?"access-type active other":"access-type other"} onClick={()=>setAccessType("otro")}><ClipboardList size={22}/><span><b>Otros</b><small>Acceso general</small></span></button>
+      <button type="button" className={accessType==="personal_interno"?"access-type active internal":"access-type internal"} onClick={()=>setAccessType("personal_interno")}><Users size={22}/><span><b>Personal Interno</b><small>Colaborador</small></span></button>
+      <button type="button" className={accessType==="eventual"?"access-type active eventual":"access-type eventual"} onClick={()=>setAccessType("eventual")}><UserRoundCheck size={22}/><span><b>Eventuales</b><small>Acceso temporal</small></span></button>
     </div>
 
     <div className="caseta-steps"><div className="caseta-step-item active"><span>1</span><strong>Datos de acceso</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>2</span><strong>Evidencia</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>3</span><strong>Registrar ingreso</strong></div></div>
@@ -373,10 +355,24 @@ export default function Caseta({ warehouseId }) {
       </div>
     </div>
 
-    <div className="caseta-recent-exact"><div className="recent-exact-head"><div><div className="exact-icon"><Clock size={22}/></div><div><h3>Accesos recientes</h3><p>Entradas y salidas de unidades, visitantes, proveedores y demás accesos registrados en esta caseta.</p></div></div><div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div></div>
-      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td><td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td><td>{u.salida_at?new Date(u.salida_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td><td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td><td>{u.estado==="dentro"?<button type="button" className="secondary-btn" onClick={()=>registrarSalida(u)} disabled={exitLoading===u.id}><LogOut size={15}/>{exitLoading===u.id?"Registrando…":"Registrar salida"}</button>:<span>✓ Cerrado</span>}</td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin accesos todavía</strong><span>Los registros aparecerán aquí después de confirmar un acceso.</span></div>}
+    <div className="caseta-recent-exact">
+      <div className="recent-exact-head">
+        <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Monitor operativo</h3><p>Seguimiento en tiempo real de las unidades transportistas. Los demás accesos quedan disponibles en el botón inferior.</p></div></div>
+        <div className="recent-exact-actions"><span>{transportistas.length} unidades</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
+      </div>
+      {transportistas.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Operación</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{transportistas.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><Truck size={24}/><strong>Sin unidades registradas</strong><span>Las unidades transportistas aparecerán aquí en cuanto se registre un ingreso.</span></div>}
+      <div style={{display:"flex",justifyContent:"center",marginTop:"16px"}}>
+        <button type="button" className="secondary-btn" onClick={()=>setShowOtherAccess(v=>!v)}>
+          {showOtherAccess?"− Ocultar otros accesos":"＋ Ver otros accesos"}
+          <span style={{marginLeft:"6px"}}>({otrosAccesos.length})</span>
+        </button>
+      </div>
+      {showOtherAccess&&<div style={{marginTop:"16px"}}>
+        {otrosAccesos.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{otrosAccesos.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin otros accesos</strong><span>Visitantes, proveedores, personal interno, eventuales y otros aparecerán aquí.</span></div>}
+      </div>}
     </div>
 
     <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
-  {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>Escanear QR de cita</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>Apunta la cámara al QR generado por CSR.</small></div></div>}</section>
+    {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>Escanear QR de cita</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>Apunta la cámara al QR generado por CSR.</small></div></div>}
+  </section>
 }
