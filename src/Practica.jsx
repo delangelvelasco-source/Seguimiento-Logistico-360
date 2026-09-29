@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowRight, Camera, CheckCircle2, ClipboardCheck, Clock3, FileCheck2, Flag, RotateCcw, ShieldCheck, Truck, UserCheck, Wrench, CalendarDays } from "lucide-react";
 
 const CLIENTS={
-  wabco:{name:"WABCO",requiresAppointment:true,csr:true,sidRid:true,operation:"recibo"},
-  sinCita:{name:"Cliente sin cita",requiresAppointment:false,csr:false,sidRid:false,operation:"recibo"},
-  opcional:{name:"Cliente con cita opcional",requiresAppointment:"opcional",csr:true,sidRid:true,operation:"embarque"}
+  wabco:{name:"Flujo con cita",requiresAppointment:true,csr:true,sidRid:true,operation:"recibo"},
+  sinCita:{name:"Flujo sin cita",requiresAppointment:false,csr:false,sidRid:false,operation:"recibo"},
+  opcional:{name:"Flujo con cita opcional",requiresAppointment:"opcional",csr:true,sidRid:true,operation:"embarque"}
 };
 
 const BASE={
-  folio:"PRA-260926-001",cliente:"WABCO",operacion:"recibo",linea:"Transportes del Norte",
+  folio:"PRA-260926-001",cliente:"",operacion:"recibo",linea:"Transportes del Norte",
   operador:"Carlos Hernández",tracto:"ABC-128-X",caja:"TR-4587",cita:"",
   referencia:"REF-WABCO-45821",sid:"SID-78452",rid:"RID-99104",rampa:"R07",sello:"MX-884321"
 };
@@ -85,12 +85,12 @@ export default function Practica(){
    </div>
 
    <div className="practice-client-selector">
-    <div><b>1. Selecciona cliente / flujo</b><span>Las reglas determinan si CSR y cita participan.</span></div>
+    <div><b>1. Selecciona flujo operativo</b><span>Las reglas determinan si CSR y cita participan.</span></div>
     <div className="client-buttons">{Object.entries(CLIENTS).map(([k,c])=><button type="button" key={k} className={clientKey===k?"client-choice active":"client-choice"} onClick={()=>changeClient(k)}>{c.name}<small>{c.requiresAppointment===true?"Cita requerida":c.requiresAppointment==="opcional"?"Cita opcional":"Sin cita"}</small></button>)}</div>
    </div>
 
    <div className="practice-scenario">
-    <div><span>Cliente</span><strong>{data.cliente}</strong></div><div><span>Operación</span><strong>{data.operacion.toUpperCase()}</strong></div><div><span>Unidad</span><strong>{data.tracto} / {data.caja}</strong></div><div><span>Regla cita</span><strong>{cfg.requiresAppointment===true?"REQUERIDA":cfg.requiresAppointment==="opcional"?"OPCIONAL":"NO APLICA"}</strong></div><div><span>Tiempo</span><strong>{minutes}:{seconds}</strong></div>
+    <div><span>Flujo</span><strong>{cfg.requiresAppointment===true?"CON CITA":cfg.requiresAppointment==="opcional"?"CITA OPCIONAL":"SIN CITA"}</strong></div><div><span>Operación</span><strong>{data.operacion.toUpperCase()}</strong></div><div><span>Unidad</span><strong>{data.tracto} / {data.caja}</strong></div><div><span>Regla cita</span><strong>{cfg.requiresAppointment===true?"REQUERIDA":cfg.requiresAppointment==="opcional"?"OPCIONAL":"NO APLICA"}</strong></div><div><span>Tiempo</span><strong>{minutes}:{seconds}</strong></div>
    </div>
 
    <div className="practice-progress"><div><span>Avance operativo</span><strong>{progress}%</strong></div><div className="practice-progress-bar"><span style={{width:progress+"%"}}/></div></div>
