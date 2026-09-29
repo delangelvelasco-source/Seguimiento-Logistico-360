@@ -249,7 +249,7 @@ export default function Caseta({ warehouseId }) {
     if(unitError){setError(unitError.message);setLoading(false);return}
     const {data:op,error:opError}=await supabase.from("operaciones_360").insert({
       folio,tipo_operacion:form.operacion_tipo,movimiento:form.operacion_tipo,almacen_id:warehouseId,referencia_cliente:form.referencia.trim()||null,
-      estado_general:"en_caseta",unidad_id:unit.id,creado_por:user?.id||null
+      estado_general:"en_almacen",unidad_id:unit.id,creado_por:user?.id||null
     }).select("id").single();
     if(opError){await supabase.from("unidades").delete().eq("id",unit.id);setError(opError.message);setLoading(false);return}
     await supabase.from("unidades").update({operacion_360_id:op.data.id,ubicacion_tipo:"caseta",updated_at:new Date().toISOString()}).eq("id",unit.id);
