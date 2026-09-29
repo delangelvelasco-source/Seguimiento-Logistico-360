@@ -72,38 +72,55 @@ export default function Caseta({ warehouseId }) {
     if(!warehouseId)return;
     let activo=true;
     let recargando=false;
+    let reintento=null;
 
     // Carga inicial inmediata.
     load();
 
-    // Realtime: cualquier alta, cambio de estado o salida se refleja en cuanto
-    // Supabase emite el evento, sin depender del botón Actualizar.
     const refrescarInmediato=async()=>{
       if(!activo || recargando)return;
       recargando=true;
       try{await load();}finally{recargando=false;}
     };
 
-    const channel=supabase.channel("caseta-tiempo-real-"+warehouseId)
+    // Broadcast desde PostgreSQL: entrega inmediata a todos los navegadores
+    // conectados al mismo almacén. El número de gafete nunca viaja por aquí.
+    let channel;
+    const conectarTiempoReal=async()=>{
+      try{
+        await supabase.realtime.setAuth();
+        if(!activo)return;
+        channel=supabase.channel("caseta-broadcast-"+warehouseId,{config:{private:true}})
+          .on("broadcast",{event:"INSERT"},refrescarInmediato)
+          .on("broadcast",{event:"UPDATE"},refrescarInmediato)
+          .on("broadcast",{event:"DELETE"},refrescarInmediato)
+          .subscribe((status)=>{
+            if(status==="SUBSCRIBED")refrescarInmediato();
+            if(status==="CHANNEL_ERROR" || status==="TIMED_OUT"){
+              clearTimeout(reintento);
+              reintento=setTimeout(()=>{if(activo)conectarTiempoReal();},500);
+            }
+          });
+      }catch{
+        // El sondeo y Postgres Changes siguen funcionando como respaldo.
+      }
+    };
+    conectarTiempoReal();
+
+    // Respaldo adicional: Postgres Changes.
+    const postgresChannel=supabase.channel("caseta-postgres-"+warehouseId)
       .on("postgres_changes",{
-        event:"*",
-        schema:"public",
-        table:"accesos_caseta",
+        event:"*",schema:"public",table:"accesos_caseta",
         filter:"almacen_id=eq."+warehouseId
       },refrescarInmediato)
       .subscribe((status)=>{
-        // Si el navegador recupera la conexión, sincronizar inmediatamente.
         if(status==="SUBSCRIBED")refrescarInmediato();
-        if(status==="CHANNEL_ERROR" || status==="TIMED_OUT"){
-          setTimeout(()=>{if(activo)refrescarInmediato();},300);
-        }
       });
 
-    // Respaldo de alta frecuencia por si el navegador pierde temporalmente
-    // la conexión Realtime. No requiere recargar la página.
+    // Último respaldo: sincronización automática cada segundo.
     const interval=setInterval(()=>refrescarInmediato(),1000);
     const alVolver=()=>refrescarInmediato();
-    const alRecuperarRed=()=>refrescarInmediato();
+    const alRecuperarRed=()=>{conectarTiempoReal();refrescarInmediato();};
     window.addEventListener("focus",alVolver);
     document.addEventListener("visibilitychange",alVolver);
     window.addEventListener("online",alRecuperarRed);
@@ -111,10 +128,12 @@ export default function Caseta({ warehouseId }) {
     return ()=>{
       activo=false;
       clearInterval(interval);
+      clearTimeout(reintento);
       window.removeEventListener("focus",alVolver);
       document.removeEventListener("visibilitychange",alVolver);
       window.removeEventListener("online",alRecuperarRed);
-      supabase.removeChannel(channel);
+      if(channel)supabase.removeChannel(channel);
+      supabase.removeChannel(postgresChannel);
     };
   },[warehouseId]);
 
