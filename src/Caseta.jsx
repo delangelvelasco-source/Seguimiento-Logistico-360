@@ -152,79 +152,27 @@ export default function Caseta({ warehouseId }) {
     return filtered.sort((a,b)=>b.length-a.length)[0]||"";
   }
 
-  async function recibirFotoId(e){
+  function recibirFotoId(e){
     const file=e.target.files?.[0];
     if(!file)return;
-    setOcrLoading(true);
-    setOcrText("");
-    setMessage("Identificación capturada. Analizando datos…");
-    try{
-      const {data:{session}}=await supabase.auth.getSession();
-      if(!session?.access_token)throw new Error("Sesión no disponible.");
-      const response=await fetch("https://rgkkhbkesznmxmobzgoy.supabase.co/functions/v1/caseta-ocr-ine",{
-        method:"POST",
-        headers:{
-          Authorization:"Bearer "+session.access_token,
-          apikey:"sb_publishable_A5ZMnv0b-jiZtii9sYUe7w_Py4KaTWG",
-          "Content-Type":file.type||"image/jpeg"
-        },
-        body:file
-      });
-      const result=await response.json().catch(()=>({}));
-      if(!response.ok){
-        if(result?.error==="OCR_AZURE_NOT_CONFIGURED"){
-          throw new Error("OCR_AZURE_NOT_CONFIGURED");
-        }
-        throw new Error(result?.message||result?.error||"No fue posible analizar la identificación.");
-      }
-      setCapturedId(URL.createObjectURL(file));
-      setOcrText([
-        result.operatorName&&("Operador: "+result.operatorName),
-        result.dateOfBirth&&("Fecha de nacimiento: "+result.dateOfBirth),
-        result.curp&&("CURP: "+result.curp),
-        result.voterKey&&("Clave de elector: "+result.voterKey)
-      ].filter(Boolean).join("\\n"));
-      if(result.operatorName){
-        setForm(f=>({...f,operador_nombre:String(result.operatorName).toUpperCase()}));
-        setMessage("Nombre detectado por OCR inteligente. Verifica el dato antes de registrar.");
-      }else{
-        setMessage("La identificación fue analizada, pero no se obtuvo un nombre con suficiente confianza. Captura nuevamente de frente.");
-      }
-    }catch(err){
-      if(err?.message==="OCR_AZURE_NOT_CONFIGURED"){
-        setMessage("El nuevo OCR ya está conectado, pero falta configurar Azure Document Intelligence en los secretos de Supabase.");
-      }else{
-        setMessage("No fue posible analizar la identificación. Puedes capturar el operador manualmente.");
-      }
-    }finally{
-      setOcrLoading(false);
-      e.target.value="";
-    }
+    const reader=new FileReader();
+    reader.onload=()=>{
+      setCapturedId(String(reader.result||""));
+      setOcrText("");
+      setMessage("Identificación capturada como evidencia. Captura el nombre del operador manualmente.");
+    };
+    reader.readAsDataURL(file);
+    e.target.value="";
   }
-  async function recibirFoto(e){
+
+  function recibirFoto(e){
     const file=e.target.files?.[0];
     if(!file)return;
-    setOcrLoading(true);
-    setMessage("Placa capturada. Leyendo placa…");
-    try{
-      const {image,passes}=await ocrImagen(file,"placa");
-      setCapturedPhoto(image);
-      const ordered=[...passes].sort((a,b)=>b.confidence-a.confidence);
-      const text=ordered.map(x=>x.text).filter(Boolean).join("\\n");
-      const placa=extraerPlaca(text);
-      if(placa){
-        setForm(f=>({...f,tracto_placas:placa}));
-        setMessage("Placa detectada automáticamente. Verifica el dato antes de registrar.");
-      }else{
-        setMessage("Foto de placa capturada. No se pudo leer con suficiente claridad; captura la placa manualmente.");
-      }
-    }catch(err){
-      setCapturedPhoto("");
-      setMessage("La foto de placa quedó capturada, pero no fue posible leerla automáticamente.");
-    }finally{
-      setOcrLoading(false);
-      e.target.value="";
-    }
+    const reader=new FileReader();
+    reader.onload=()=>setCapturedPhoto(String(reader.result||""));
+    reader.readAsDataURL(file);
+    setMessage("Foto de placa capturada como evidencia. Captura la placa manualmente.");
+    e.target.value="";
   }
 
   async function registrar(e){
