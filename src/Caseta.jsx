@@ -10,8 +10,6 @@ export default function Caseta({ warehouseId }) {
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
   const [recent,setRecent]=useState([]);
-  const [scannerOpen,setScannerOpen]=useState(false);
-  const [scannerError,setScannerError]=useState("");
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const cameraInputRef=useRef(null);
@@ -44,7 +42,7 @@ export default function Caseta({ warehouseId }) {
   }
   useEffect(()=>{if(warehouseId)load()},[warehouseId]);
 
-  function abrirScanner(){ cameraInputRef.current?.click(); }
+  function abrirScannerPlaca(){ cameraInputRef.current?.click(); }
   function abrirCamaraId(){ idInputRef.current?.click(); }
 
   async function ocrImagen(file, tipo){
@@ -345,7 +343,7 @@ export default function Caseta({ warehouseId }) {
       <div className="caseta-white-card">
         <div className="exact-card-title"><div className="exact-icon"><Camera size={22}/></div><div><h3>2. EVIDENCIA FOTOGRÁFICA</h3><p>Las fotos se conservan como respaldo.</p></div></div>
         <div className="exact-evidence-grid"><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFoto} style={{display:"none"}}/><input ref={idInputRef} type="file" accept="image/*" capture="environment" onChange={recibirFotoId} style={{display:"none"}}/>
-          <button type="button" className="exact-evidence" onClick={abrirScanner}><span className="exact-evidence-icon"><ClipboardList size={25}/></span><strong>Foto de placa</strong><small>{accessType==="unidad"?"Evidencia del tracto":"Opcional"}</small>{capturedPhoto?<img src={capturedPhoto} alt="Evidencia de placa"/>:<div className="exact-photo-placeholder">PLACA</div>}{capturedPhoto&&<span className="photo-ok">✓</span>}</button>
+          <button type="button" className="exact-evidence" onClick={abrirScannerPlaca}><span className="exact-evidence-icon"><ClipboardList size={25}/></span><strong>Foto de placa</strong><small>{accessType==="unidad"?"Evidencia del tracto":"Opcional"}</small>{capturedPhoto?<img src={capturedPhoto} alt="Evidencia de placa"/>:<div className="exact-photo-placeholder">PLACA</div>}{capturedPhoto&&<span className="photo-ok">✓</span>}</button>
           <button type="button" className="exact-evidence" onClick={abrirCamaraId}><span className="exact-evidence-icon"><IdCard size={25}/></span><strong>Foto de identificación</strong><small>Evidencia de acceso</small>{capturedId?<img src={capturedId} alt="Evidencia de identificación"/>:<div className="exact-photo-placeholder id-placeholder">ID</div>}{capturedId&&<span className="photo-ok">✓</span>}</button>
         </div>
         <div className="evidence-note"><Camera size={15}/> Las fotografías son evidencia; los datos se capturan manualmente.</div>
