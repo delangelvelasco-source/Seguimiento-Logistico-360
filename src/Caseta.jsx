@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, ClipboardCheck, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3, Search, ScanLine, X, Users, UserRoundCheck } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCheck, RefreshCw, Truck, User, Building2, IdCard, ClipboardList, Clock, BarChart3, Search, ScanLine, X, Users, UserRoundCheck, LogOut } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import { createWorker } from "tesseract.js";
 
@@ -9,7 +9,7 @@ export default function Caseta({ warehouseId }) {
   const form=accessForm;
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
-  const [recent,setRecent]=useState([]);
+  const [recent,setRecent]=useState([]);\n  const [exitLoading,setExitLoading]=useState("");
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const cameraInputRef=useRef(null);
@@ -31,7 +31,7 @@ export default function Caseta({ warehouseId }) {
       return;
     }
     if(showMessage)setRefreshLoading(true);
-    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(12);
+    const {data,error}=await supabase.from("accesos_caseta").select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at").eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(12);
     if(error){
       if(showMessage)setMessage("No se pudo actualizar la lista de ingresos: "+error.message);
     }else{
@@ -40,7 +40,15 @@ export default function Caseta({ warehouseId }) {
     }
     if(showMessage)setRefreshLoading(false);
   }
-  useEffect(()=>{if(warehouseId)load()},[warehouseId]);
+  useEffect(()=>{if(warehouseId)load()},[warehouseId]);\n  async function registrarSalida(acceso){
+    if(!acceso?.id||acceso.estado!=="dentro")return;
+    setExitLoading(acceso.id);setError("");setMessage("");
+    const {error:salidaError}=await supabase.from("accesos_caseta").update({salida_at:new Date().toISOString(),estado:"fuera",updated_at:new Date().toISOString()}).eq("id",acceso.id).eq("estado","dentro");
+    if(salidaError){setError("No se pudo registrar la salida: "+salidaError.message);setExitLoading("");return;}
+    setMessage("Salida registrada. El acceso quedó cerrado.");
+    await load();setExitLoading("");
+  }
+
 
   function abrirScannerPlaca(){ cameraInputRef.current?.click(); }
   function abrirCamaraId(){ idInputRef.current?.click(); }
@@ -350,8 +358,8 @@ export default function Caseta({ warehouseId }) {
       </div>
     </div>
 
-    <div className="caseta-recent-exact"><div className="recent-exact-head"><div><div className="exact-icon"><Clock size={22}/></div><div><h3>Accesos recientes</h3><p>Unidades, visitantes y proveedores registrados en esta caseta.</p></div></div><div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div></div>
-      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Estado</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td><td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td><td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin accesos todavía</strong><span>Los registros aparecerán aquí después de confirmar un acceso.</span></div>}
+    <div className="caseta-recent-exact"><div className="recent-exact-head"><div><div className="exact-icon"><Clock size={22}/></div><div><h3>Accesos recientes</h3><p>Entradas y salidas de unidades, visitantes, proveedores y demás accesos registrados en esta caseta.</p></div></div><div className="recent-exact-actions"><span>{recent.length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div></div>
+      {recent.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Destino / visita</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{recent.map(u=><tr key={u.id}><td><strong>{u.folio}</strong></td><td><span className="exact-pill">{u.tipo_acceso==="unidad"?"🚛 Transportista":u.tipo_acceso==="visitante"?"👤 Visitante":u.tipo_acceso==="proveedor"?"🏢 Proveedor":u.tipo_acceso==="personal_interno"?"👥 Personal Interno":u.tipo_acceso==="eventual"?"🕒 Eventual":"📋 Otros"}</span></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.persona_visita||u.operacion_tipo||"—"}</td><td>{new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td><td>{u.salida_at?new Date(u.salida_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td><td><span className="exact-status"><span/> {u.estado==="dentro"?"Dentro":"Salió"}</span></td><td>{u.estado==="dentro"?<button type="button" className="secondary-btn" onClick={()=>registrarSalida(u)} disabled={exitLoading===u.id}><LogOut size={15}/>{exitLoading===u.id?"Registrando…":"Registrar salida"}</button>:<span>✓ Cerrado</span>}</td></tr>)}</tbody></table></div>:<div className="exact-empty"><ClipboardCheck size={24}/><strong>Sin accesos todavía</strong><span>Los registros aparecerán aquí después de confirmar un acceso.</span></div>}
     </div>
 
     <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
