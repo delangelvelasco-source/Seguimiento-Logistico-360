@@ -254,14 +254,22 @@ export default function Caseta({ warehouseId }) {
     if(opError){await supabase.from("unidades").delete().eq("id",unit.id);setError(opError.message);setLoading(false);return}
     await supabase.from("unidades").update({operacion_360_id:op.data.id,ubicacion_tipo:"caseta",updated_at:new Date().toISOString()}).eq("id",unit.id);
     const patio=await supabase.rpc("registrar_ingreso_caseta_patios",{p_unidad_id:unit.id,p_motivo:"Ingreso registrado en Caseta"});
-    if(patio.error){setError(patio.error.message);setLoading(false);return}
+    if(patio.error){
+      await supabase.from("operaciones_360").delete().eq("id",op.data.id);
+      await supabase.from("unidades").delete().eq("id",unit.id);
+      setError(patio.error.message);setLoading(false);return;
+    }
     const accessInsert=await supabase.from("accesos_caseta").insert({
       folio,almacen_id:warehouseId,tipo_acceso:"unidad",nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,
       tracto_placas:form.tracto_placas.trim().toUpperCase(),caja_placas:form.caja_placas.trim().toUpperCase()||null,
       operacion_tipo:form.operacion_tipo,unidad_id:unit.id,entrada_at:new Date().toISOString(),estado:"dentro",
       observaciones:form.referencia.trim()||null,registrado_por:user?.id||null
     });
-    if(accessInsert.error){setError(accessInsert.error.message);setLoading(false);return}
+    if(accessInsert.error){
+      await supabase.from("operaciones_360").delete().eq("id",op.data.id);
+      await supabase.from("unidades").delete().eq("id",unit.id);
+      setError(accessInsert.error.message);setLoading(false);return;
+    }
     setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
     setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_placas:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
     await load();setLoading(false);
