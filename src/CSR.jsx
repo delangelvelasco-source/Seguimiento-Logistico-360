@@ -52,7 +52,10 @@ export default function CSR({warehouseId}){
     return;
   }
   if(!window.confirm("¿Eliminar la cita "+appointment.folio+"?"))return;
-  const pr=await supabase.from("cita_datos_precarga").delete().eq("cita_id",appointment.id); if(pr.error){setError("No se pudo eliminar la información de Caseta: "+pr.error.message);return} const r=await supabase.from("citas").delete().eq("id",appointment.id).eq("csr_usuario_id",csrUserId); if(r.error){setError("No se pudo eliminar la cita: "+r.error.message);return} setSelectedSlot("");setSelectedAppointment(null);setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:""}); setMessage("Cita "+appointment.folio+" eliminada.");await load(); } async function verRegistroCaseta(u){
+  const r=await supabase.from("citas").delete().eq("id",appointment.id).eq("csr_usuario_id",csrUserId).select("id").maybeSingle();
+  if(r.error){setError("No se pudo eliminar la cita: "+r.error.message);return}
+  if(!r.data){setError("La cita no se eliminó. Verifica que la sesión CSR sea la propietaria de la cita.");return}
+  setSelectedSlot("");setSelectedAppointment(null);setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:""}); setMessage("Cita "+appointment.folio+" eliminada.");await load(); } async function verRegistroCaseta(u){
   if(!u?.id&&!u?.folio)return;
   setEvidenceLoading(true);setError("");
   try{
