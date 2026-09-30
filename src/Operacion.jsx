@@ -18,7 +18,16 @@ export default function Operacion({warehouseId}) {
     if(r.error) setError(prev=>prev || r.error.message); else setRamps(r.data||[]);
     setLoading(false);
   }
-  useEffect(()=>{load()},[warehouseId]);
+  useEffect(()=>{
+  load();
+  if(!warehouseId)return;
+  const channel=supabase.channel("operacion-live-"+warehouseId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .on("postgres_changes",{event:"*",schema:"public",table:"rampas",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .subscribe();
+  const timer=setInterval(load,15000);
+  return()=>{clearInterval(timer);supabase.removeChannel(channel)};
+},[warehouseId]);
 
   const filtered = useMemo(()=>units.filter(u => [u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
   const occupiedRampIds = useMemo(()=>new Set(units.filter(u=>ACTIVE_STATES.includes(u.estado) && u.rampa_id).map(u=>u.rampa_id)),[units]);
