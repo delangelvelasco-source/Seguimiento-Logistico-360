@@ -14,11 +14,11 @@ export default function TorreControl({warehouseId,onLogout}){
     const [u,r,c]=await Promise.all([
       supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
-      supabase.from("vista_capacidad_patio").select("*").eq("almacen_id",warehouseId).maybeSingle()
+      supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId})
     ]);
     if(u.error)setError(u.error.message);else setUnits(u.data||[]);
     if(r.error)setError(prev=>prev||r.error.message);else setRamps(r.data||[]);
-    if(c.error){const fallback=await supabase.from("patio_configuracion").select("capacidad_maxima,umbral_alerta_1,umbral_alerta_2,umbral_alerta_3").eq("almacen_id",warehouseId).maybeSingle(); if(!fallback.error)setPatio({ocupacion:(u.data||[]).filter(x=>x.ubicacion_tipo==="patio"||x.ubicacion_tipo==="cajon").length,...fallback.data}); else setError(prev=>prev||c.error.message)}else setPatio(c.data);
+    if(c.error)setError(prev=>prev||c.error.message);else setPatio(c.data?.[0]||null);
     setLastUpdate(new Date());setLoading(false);
   }
   useEffect(()=>{
