@@ -1165,3 +1165,6 @@
   box-shadow:0 9px 20px rgba(20,65,120,.24);
 }
 .csr-extra-window-btn:active{transform:translateY(0);box-shadow:0 3px 9px rgba(2,10,25,.18)}
+
+.csr-evidence-hint{display:inline-block;margin-top:7px;margin-right:5px;padding:3px 7px;border-radius:6px;background:#e8f2ff;color:#1769aa;font-size:8px;font-weight:900;cursor:pointer;border:1px solid #b9d6f4}
+.csr-evidence-hint:hover{background:#d9ebff}
