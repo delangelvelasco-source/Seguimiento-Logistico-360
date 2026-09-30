@@ -45,8 +45,8 @@ export default function CSR({warehouseId}){
   <div className="csr-form-section">
    <div className="csr-form-grid">
     <label>Línea de transporte<input autoComplete="organization" placeholder="Empresa transportista" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/></label>
-    <label>Número de caja <span>(opcional)</span><input inputMode="numeric" placeholder="Número económico" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/></label>
-    <label>Placa de caja <span>(opcional)</span><input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaCaja} onChange={e=>setAppointmentForm({...appointmentForm,placaCaja:e.target.value.toUpperCase()})}/></label>
+    <label>Número de caja<input inputMode="numeric" placeholder="Número económico" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/></label>
+    <label>Placa de caja<input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaCaja} onChange={e=>setAppointmentForm({...appointmentForm,placaCaja:e.target.value.toUpperCase()})}/></label>
     <label>Operador <span>(opcional)</span><input autoComplete="name" placeholder="Nombre y apellidos" value={appointmentForm.operador} onChange={e=>setAppointmentForm({...appointmentForm,operador:e.target.value})}/></label>
     <label>Contacto <span>(opcional)</span><input type="tel" inputMode="tel" placeholder="Teléfono" value={appointmentForm.contacto} onChange={e=>setAppointmentForm({...appointmentForm,contacto:e.target.value})}/></label>
     <label>Referencia <span>(opcional)</span><input placeholder="Referencia del cliente" value={appointmentForm.referencia} onChange={e=>setAppointmentForm({...appointmentForm,referencia:e.target.value})}/></label>
@@ -63,7 +63,7 @@ export default function CSR({warehouseId}){
     const pr=selectedAppointment?await supabase.from("cita_datos_precarga").update(precarga).eq("cita_id",selectedAppointment.id):await supabase.from("cita_datos_precarga").insert({...precarga,cita_id:cita.id});pe=pr.error;
     if(pe){setError("La cita se guardó, pero no se pudo actualizar la información para Caseta: "+pe.message);return}
     setMessage(selectedAppointment?"Cita actualizada. Caseta verá la información actualizada.":"Cita programada. La información quedó disponible para Caseta al ingresar el folio.");setSelectedSlot("");setSelectedAppointment(null);setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:""});await load();
-  }}>Guardar cita y enviar a Caseta</button>
+  }}>Registrar cita</button>
  </div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
 
