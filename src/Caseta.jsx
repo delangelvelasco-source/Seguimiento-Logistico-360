@@ -170,12 +170,19 @@ export default function Caseta({ warehouseId }) {
           .update({salida_at:new Date().toISOString(),estado:"salio",updated_at:new Date().toISOString()})
           .eq("id",acceso.id)
           .eq("estado","dentro")
-          .select("id,folio,estado,salida_at")
+          .select("id,folio,estado,salida_at,unidad_id")
           .maybeSingle();
         if(updateError)throw salidaError||updateError;
         if(!actualizado){
           setError(rpcResultado?.mensaje||"El acceso ya estaba cerrado o no existe.");
           return;
+        }
+        if(actualizado?.unidad_id){
+          await supabase.from("unidades").update({
+            salida_caseta_at:actualizado.salida_at,
+            ubicacion_tipo:"fuera",
+            updated_at:actualizado.salida_at
+          }).eq("id",actualizado.unidad_id);
         }
         resultado={ok:true,folio:actualizado.folio,estado:actualizado.estado,salida_at:actualizado.salida_at};
       }
