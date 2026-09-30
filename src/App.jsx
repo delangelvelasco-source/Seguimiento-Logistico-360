@@ -79,6 +79,8 @@ function App() {
   const [recoveryMode,setRecoveryMode]=useState(false);
   const [recoveryEmail,setRecoveryEmail]=useState("");
   const [recoveryMessage,setRecoveryMessage]=useState("");
+  const [sessionLocked,setSessionLocked]=useState(false);
+  const [idleWarning,setIdleWarning]=useState(false);
 
   const isInviteFlow=typeof window!=="undefined" && /(^|[#?&])type=invite([&#]|$)/.test(window.location.hash+window.location.search);
 
@@ -89,6 +91,39 @@ function App() {
     const {data:{subscription}}=supabase.auth.onAuthStateChange((event,newSession)=>{if(active){setSession(newSession);if(event==="PASSWORD_RECOVERY")setRecoveryMode(true)}});
     return()=>{active=false;subscription.unsubscribe()};
   },[]);
+
+  useEffect(()=>{
+    if(!session||!supabase)return;
+    let warningTimer=null;
+    let lockTimer=null;
+    let lastActivity=Date.now();
+    const IDLE_WARNING_MS=13*60*1000;
+    const IDLE_LOCK_MS=15*60*1000;
+    const resetIdle=()=>{
+      if(sessionLocked)return;
+      lastActivity=Date.now();
+      setIdleWarning(false);
+      window.clearTimeout(warningTimer);
+      window.clearTimeout(lockTimer);
+      warningTimer=window.setTimeout(()=>{
+        if(Date.now()-lastActivity>=IDLE_WARNING_MS)setIdleWarning(true);
+      },IDLE_WARNING_MS);
+      lockTimer=window.setTimeout(()=>{
+        if(Date.now()-lastActivity>=IDLE_LOCK_MS){
+          setIdleWarning(false);
+          setSessionLocked(true);
+        }
+      },IDLE_LOCK_MS);
+    };
+    const events=["pointerdown","keydown","touchstart","mousemove","scroll"];
+    events.forEach(event=>window.addEventListener(event,resetIdle,{passive:true}));
+    resetIdle();
+    return()=>{
+      window.clearTimeout(warningTimer);
+      window.clearTimeout(lockTimer);
+      events.forEach(event=>window.removeEventListener(event,resetIdle));
+    };
+  },[session,sessionLocked]);
 
   useEffect(()=>{
     if(!session||!supabase)return;
@@ -160,7 +195,7 @@ function App() {
     setPasswordLoading(false);
   }
 
-  async function logout(){await supabase?.auth.signOut();setWarehouses([]);setProfile(null);setUsers([])}
+  async function logout(){setSessionLocked(false);setIdleWarning(false);await supabase?.auth.signOut();setWarehouses([]);setProfile(null);setUsers([])}
 
   async function inviteUser(e){
     e.preventDefault();setInviteLoading(true);setInviteMessage("");setUsersError("");
@@ -217,7 +252,7 @@ function App() {
 
   if(!session)return <div className="auth-screen"><form className="auth-card" onSubmit={login}><div className="brand-mark">360</div><p className="eyebrow">TORRE DE CONTROL</p><h1>Seguimiento Logístico 360°</h1><p className="auth-copy">Acceso al sistema operativo de logística.</p><label>Usuario o correo<input value={loginUsername} onChange={e=>setLoginUsername(e.target.value.toLowerCase())} placeholder="ej. guardia01 o correo@dominio.com" autoCapitalize="none" autoCorrect="off" required/></label><label>Contraseña<input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required/></label>{authError&&<div className="notice error"><strong>No se pudo iniciar sesión</strong><span>{authError}</span></div>}<button className="login-btn" disabled={loginLoading}>{loginLoading?"Iniciando…":"Iniciar sesión"} <LogIn size={17}/></button><button type="button" className="secondary-btn" onClick={()=>{setRecoveryMode(true);setAuthError("");setRecoveryEmail(loginUsername.includes("@")?loginUsername:"")}}>¿Olvidaste tu contraseña?</button><small className="auth-note">Los usuarios internos pueden entrar con usuario; el administrador original también puede entrar con su correo.</small></form></div>;
 
-  return <div className="app-shell"><aside className={mobileOpen?"sidebar open":"sidebar"}><div className="brand"><div className="brand-mark">360</div><div><strong>Seguimiento</strong><span>Logístico 360°</span></div></div><nav><a className="nav-item active" href="#dashboard" onClick={()=>setMobileOpen(false)}><LayoutDashboard size={18}/>Dashboard</a>{canAccess("torre")&&<a className="nav-item" href="#torre" onClick={()=>setMobileOpen(false)}><Activity size={18}/>Torre de Control</a>}<a className="nav-item practice-nav" href="#practica" onClick={()=>setMobileOpen(false)}><ClipboardCheck size={18}/>Modo práctica</a>{stages.map(([id,label])=>canAccess(id)&&<a className="nav-item" href={"#"+id} key={id} onClick={()=>setMobileOpen(false)}><Activity size={18}/>{label}</a>)}<a className="nav-item" href="#patio" onClick={()=>setMobileOpen(false)}><MapPin size={18}/>Patio</a>{canAccess("rampas")&&<a className="nav-item" href="#rampas" onClick={()=>setMobileOpen(false)}><Wrench size={18}/>Rampas</a>}{canAccess("usuarios")&&<a className="nav-item" href="#usuarios" onClick={()=>setMobileOpen(false)}><Users size={18}/>Usuarios</a>}</nav><div className="sidebar-footer"><div className="secure"><ShieldCheck size={16}/>RLS / Supabase</div><small>{session.user.email}</small><small>{profile?.rol ? roleLabel[profile.rol] : "Cargando rol…"}</small><button className="logout" onClick={logout}>Cerrar sesión</button></div></aside>{mobileOpen&&<button className="backdrop" onClick={()=>setMobileOpen(false)} aria-label="Cerrar menú"/>}<main className="main" data-focus={focusSection||undefined}>
+  return <><div className="app-shell"><aside className={mobileOpen?"sidebar open":"sidebar"}><div className="brand"><div className="brand-mark">360</div><div><strong>Seguimiento</strong><span>Logístico 360°</span></div></div><nav><a className="nav-item active" href="#dashboard" onClick={()=>setMobileOpen(false)}><LayoutDashboard size={18}/>Dashboard</a>{canAccess("torre")&&<a className="nav-item" href="#torre" onClick={()=>setMobileOpen(false)}><Activity size={18}/>Torre de Control</a>}<a className="nav-item practice-nav" href="#practica" onClick={()=>setMobileOpen(false)}><ClipboardCheck size={18}/>Modo práctica</a>{stages.map(([id,label])=>canAccess(id)&&<a className="nav-item" href={"#"+id} key={id} onClick={()=>setMobileOpen(false)}><Activity size={18}/>{label}</a>)}<a className="nav-item" href="#patio" onClick={()=>setMobileOpen(false)}><MapPin size={18}/>Patio</a>{canAccess("rampas")&&<a className="nav-item" href="#rampas" onClick={()=>setMobileOpen(false)}><Wrench size={18}/>Rampas</a>}{canAccess("usuarios")&&<a className="nav-item" href="#usuarios" onClick={()=>setMobileOpen(false)}><Users size={18}/>Usuarios</a>}</nav><div className="sidebar-footer"><div className="secure"><ShieldCheck size={16}/>RLS / Supabase</div><small>{session.user.email}</small><small>{profile?.rol ? roleLabel[profile.rol] : "Cargando rol…"}</small><button className="logout" onClick={logout}>Cerrar sesión</button></div></aside>{mobileOpen&&<button className="backdrop" onClick={()=>setMobileOpen(false)} aria-label="Cerrar menú"/>}<main className="main" data-focus={focusSection||undefined}>
       {focusSection&&<style>{`.main[data-focus] > *:not(header):not(#${focusSection}){display:none !important;} .main[data-focus] > #${focusSection}{display:block !important;} .main[data-focus] > header{position:sticky;top:0;z-index:50;}`}</style>}
 <header className="topbar"><button className="menu-btn" onClick={()=>setMobileOpen(!mobileOpen)} aria-label="Menú">{mobileOpen?<X size={22}/>:<Menu size={22}/>}</button><div><div className="eyebrow">TORRE DE CONTROL</div><h1>Seguimiento Logístico 360°</h1></div><div className="top-actions"><span className="status online"><span className="dot"/>Backend conectado</span></div></header><section id="dashboard" className="hero"><div><p className="eyebrow">OPERACIÓN INTEGRAL</p><h2>Del cliente a la entrega, con una sola fuente de verdad.</h2><p className="hero-copy">Caseta, Dispatch, CSR, Operación, Documentación, Patio y Guardia trabajan sobre la misma operación, con trazabilidad y validaciones.</p></div><div className="hero-card"><Truck size={30}/><div><strong>Flujo piloto</strong><span>Caseta → Dispatch → CSR → Operación</span></div><ArrowRight size={20}/></div></section><Practica/> {canAccess("torre")&&effectiveWarehouseId&&<TorreControl warehouseId={effectiveWarehouseId}/>} <section className="metrics"><Metric icon={<Truck/>} label="Unidades activas" value="—"/><Metric icon={<Clock3/>} label="Dentro de SLA" value="—"/><Metric icon={<Box/>} label="En patio" value="—"/><Metric icon={<CheckCircle2/>} label="Liberadas hoy" value="—"/></section><section className="panel-grid"><div className="panel"><div className="panel-title"><div><ClipboardList size={19}/><strong>Áreas del flujo</strong></div><span className="tag">Piloto</span></div><div className="stage-list">{stages.map(([id,label,desc],i)=><div className="stage" key={id}><div className="stage-number">{i+1}</div><div><strong>{label}</strong><span>{desc}</span></div><ArrowRight size={17}/></div>)}</div></div><div className="panel"><div className="panel-title"><div><Factory size={19}/><strong>Almacenes activos</strong></div><span className="tag">{warehouses.length||"—"}</span></div>{dbError&&<div className="notice error"><strong>Consulta bloqueada</strong><span>{dbError}</span></div>}{loading?<div className="empty">Consultando Supabase…</div>:warehouses.length?<div className="warehouse-list">{warehouses.map(w=><div className="warehouse" key={w.id}><span className="warehouse-code">{w.codigo}</span><div><strong>{w.nombre}</strong><span>Operativo</span></div><CheckCircle2 size={18}/></div>)}</div>:!dbError?<div className="empty">No hay almacenes visibles para este usuario.</div>:null}</div></section>{profile?.rol==="admin_global"&&<section id="usuarios" className="users-section"><div className="panel"><div className="panel-title"><div><Users size={19}/><strong>Administración de usuarios</strong></div><button className="secondary-btn" onClick={loadUsers} disabled={usersLoading}><RefreshCw size={15}/>Actualizar</button></div><p className="section-copy">El administrador crea directamente el usuario y la contraseña. No se requiere correo electrónico.</p><form className="invite-form" onSubmit={createInternalUser}>
 <div><label>Usuario<input value={createUser.username} onChange={e=>setCreateUser({...createUser,username:e.target.value.toLowerCase()})} placeholder="ej. guardia01" pattern="[a-z0-9._-]{3,40}" required/></label></div>
@@ -231,7 +266,7 @@ function App() {
 {canAccess("csr")&&effectiveWarehouseId&&<CSR warehouseId={effectiveWarehouseId}/>}
 {canAccess("operacion")&&effectiveWarehouseId&&<Operacion warehouseId={effectiveWarehouseId}/>}
 {canAccess("documentacion")&&effectiveWarehouseId&&<Documentacion warehouseId={effectiveWarehouseId}/>}
-{canAccess("guardia")&&effectiveWarehouseId&&<Guardia warehouseId={effectiveWarehouseId}/>}<section className="next"><div><p className="eyebrow">SIGUIENTE ETAPA</p><h3>Construir los módulos operativos sobre esta base.</h3><p>Agenda CSR, Caseta, Dispatch, Patio, Guardia y Torre de Control.</p></div><div className="architecture"><span>GitHub</span><b>→</b><span>Frontend</span><b>→</b><span>Supabase</span><b>→</b><span>Producción</span></div></section><footer>Seguimiento Logístico 360° · Torre de Control · v0.4.0</footer></main></div>;
+{canAccess("guardia")&&effectiveWarehouseId&&<Guardia warehouseId={effectiveWarehouseId}/>}<section className="next"><div><p className="eyebrow">SIGUIENTE ETAPA</p><h3>Construir los módulos operativos sobre esta base.</h3><p>Agenda CSR, Caseta, Dispatch, Patio, Guardia y Torre de Control.</p></div><div className="architecture"><span>GitHub</span><b>→</b><span>Frontend</span><b>→</b><span>Supabase</span><b>→</b><span>Producción</span></div></section><footer>Seguimiento Logístico 360° · Torre de Control · v0.4.0</footer></main></div>{(idleWarning||sessionLocked)&&<div className="session-lock-overlay"><div className="session-lock-card"><div className="session-lock-icon"><ShieldCheck size={24}/></div><p className="eyebrow">{sessionLocked?"SESIÓN BLOQUEADA":"SEGURIDAD DE SESIÓN"}</p><h2>{sessionLocked?"Sesión bloqueada por inactividad":"Tu sesión está por bloquearse"}</h2><p>{sessionLocked?"Por seguridad, el acceso fue bloqueado después de 15 minutos sin actividad. Inicia sesión nuevamente para continuar.":"Llevas 13 minutos sin actividad. Si necesitas continuar, confirma que sigues aquí."}</p>{sessionLocked?<button className="login-btn" onClick={logout}>Volver a iniciar sesión <LogIn size={17}/></button>:<button className="login-btn" onClick={()=>{setIdleWarning(false);window.dispatchEvent(new Event("pointerdown"))}}>Continuar sesión <CheckCircle2 size={17}/></button>}</div></div>}</>;
 }
 function Metric({icon,label,value}){return <div className="metric"><div className="metric-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong></div></div>}
 export default App;
