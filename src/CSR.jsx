@@ -39,3 +39,27 @@ export default function CSR({warehouseId}){
  return <section id="csr" className="users-section"><div className="panel"><div className="panel-title"><div><FileCheck2 size={19}/><strong>CSR · Validación</strong></div><button className="secondary-btn" onClick={load}><RefreshCw size={15}/>Actualizar</button></div><p className="section-copy">CSR valida cita, referencias y requisitos sin volver a capturar lo que ya existe.</p>
  {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}<WeeklyCalendar appointments={appointments}/>{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
+
+function WeeklyCalendar({appointments=[]}){
+ const now=new Date();
+ const start=new Date(now);
+ const offset=(now.getDay()+6)%7;
+ start.setDate(now.getDate()-offset);
+ start.setHours(0,0,0,0);
+ const days=Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d});
+ const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+ const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+ return <div className="csr-week-calendar">
+  <div className="csr-calendar-head"><div><strong>Calendario semanal</strong><span>Citas programadas de la semana</span></div><span className="tag">{appointments.length} cita(s)</span></div>
+  <div className="csr-calendar-grid">{days.map((d,i)=>{
+   const dayAppointments=appointments.filter(a=>a.cita_at&&sameDay(new Date(a.cita_at),d));
+   return <div className={"csr-day"+(sameDay(d,now)?" today":"")} key={d.toISOString()}>
+    <div className="csr-day-head"><b>{labels[i]}</b><strong>{d.getDate()}</strong></div>
+    <div className="csr-day-list">
+     {dayAppointments.map(a=><div className="csr-appointment" key={a.id}><strong>{new Date(a.cita_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</strong><span>{a.folio}</span><small>{a.linea_transporte||"Sin transportista"} · {a.operacion_tipo||"Operación"}</small></div>)}
+     {!dayAppointments.length&&<small className="csr-empty-day">Sin citas</small>}
+    </div>
+   </div>
+  })}</div>
+ </div>
+}
