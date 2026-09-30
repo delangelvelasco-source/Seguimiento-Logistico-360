@@ -1169,3 +1169,9 @@
 .csr-evidence-hint{display:inline-block;margin-top:7px;margin-right:5px;padding:3px 7px;border-radius:6px;background:#e8f2ff;color:#1769aa;font-size:8px;font-weight:900;cursor:pointer;border:1px solid #b9d6f4}
 .csr-evidence-hint:hover{background:#d9ebff}
 @media(max-width:600px){.status{display:none}.topbar-logout{padding:8px;width:36px;height:36px;justify-content:center;border-radius:50%}.topbar-logout span{display:none}}
+/* CSR: pallets visibles y de captura obligatoria */
+.csr-pallet-field{position:relative}
+.csr-pallet-field input{border-color:#2d8a64!important;box-shadow:0 0 0 1px #2d8a6433}
+.csr-pallet-field input:focus{border-color:#35c987!important;box-shadow:0 0 0 2px #35c98733!important}
+.csr-pallet-note{display:block;margin-top:4px;font-size:9px;font-weight:700;color:#4fd69a}
+.csr-pallet-summary{color:#138a59!important;font-weight:900!important;margin-top:4px!important}
