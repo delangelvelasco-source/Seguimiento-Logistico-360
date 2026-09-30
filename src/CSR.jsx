@@ -167,7 +167,7 @@ function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,
  const offset=(now.getDay()+6)%7;
  start.setDate(now.getDate()-offset);start.setHours(0,0,0,0);
  const todayKey=now.toISOString().slice(0,10);
- const [selectedDay,setSelectedDay]=useState(todayKey); const [windowRequest,setWindowRequest]=useState(null);
+ const [selectedDay,setSelectedDay]=useState(todayKey); const [windowRequest,setWindowRequest]=useState(null); const [reprogrammingAppointment,setReprogrammingAppointment]=useState(null);
  const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
  const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
  const days=labels.map((label,i)=>{const day=new Date(start);day.setDate(start.getDate()+i);return {label,day,key:day.toISOString().slice(0,10)}});
@@ -198,13 +198,14 @@ function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,
     <div><span>HORARIOS DEL DÍA</span><strong>{selected.label} {selected.day.getDate()} · {selected.day.toLocaleDateString("es-MX",{month:"long"})}</strong></div>
     <div className="csr-agenda-legend"><i className="free-dot"/> Disponible <i className="busy-dot"/> Ocupado</div>
    </div>
+   {reprogrammingAppointment&&<div className="csr-reprogram-banner">Reprogramando <strong>{reprogrammingAppointment.folio}</strong>: selecciona una ventana disponible para conservar el mismo folio.</div>}
    <div className="csr-agenda-grid">
     {selectedSlots.length?selectedSlots.map(s=>{
       const booked=visible.find(a=>a.fecha&&a.hora_inicio&&new Date(a.fecha+"T"+String(a.hora_inicio).slice(0,5)).getTime()===s.dt.getTime());
-      return <button type="button" className={"csr-agenda-slot "+(booked?"busy":"free")} onClick={()=>{setSelectedDay(selected.key);onSlot?.(s.dt.toISOString(),booked)}} key={s.dt.toISOString()}>
+      return <button type="button" className={"csr-agenda-slot "+(booked?"busy":"free")} onClick={()=>{setSelectedDay(selected.key);if(reprogrammingAppointment&&!booked){onSlot?.(s.dt.toISOString(),reprogrammingAppointment);setReprogrammingAppointment(null);}else{onSlot?.(s.dt.toISOString(),booked)}}} key={s.dt.toISOString()}>
        <strong>{String(s.dt.getHours()).padStart(2,"0")}:{String(s.dt.getMinutes()).padStart(2,"0")}</strong>
        <span>Ventana {s.w}</span>
-       <small>{booked?"Modificar · "+booked.folio:"Disponible"}</small>{booked&&booked.csr_usuario_id===csrUserId&&<><span className="csr-evidence-hint" onClick={e=>{e.stopPropagation();onViewEvidence?.(booked)}}>Ver evidencia</span><span className="csr-delete-hint" onClick={e=>{e.stopPropagation();onDelete?.(booked)}}>Eliminar</span></>}
+       <small>{booked?"Modificar · "+booked.folio:"Disponible"}</small>{booked&&booked.csr_usuario_id===csrUserId&&<><span className="csr-reprogram-hint" onClick={e=>{e.stopPropagation();setReprogrammingAppointment(booked);setSelectedDay(selected.key)}}>Reprogramar</span><span className="csr-evidence-hint" onClick={e=>{e.stopPropagation();onViewEvidence?.(booked)}}>Ver evidencia</span><span className="csr-delete-hint" onClick={e=>{e.stopPropagation();onDelete?.(booked)}}>Eliminar</span></>}
       </button>
     }):<div className="csr-agenda-empty">Este día no tiene operación programada.</div>}
    </div>
