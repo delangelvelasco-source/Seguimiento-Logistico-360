@@ -659,3 +659,12 @@
   .warehouse-status{width:100%;max-width:none}
   .status-list{grid-template-columns:repeat(3,minmax(0,1fr));width:100%;margin-left:0}
 }
+
+/* ===== Tablet: indicadores de estado siempre visibles ===== */
+@media (min-width:761px) and (max-width:1399px){
+  .warehouse-status{overflow:visible}
+  .status-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:100%;margin-left:0;box-sizing:border-box}
+  .status-list div{min-width:0;width:100%;box-sizing:border-box}
+  .status-list div span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .status-list b{flex:0 0 auto}
+}
