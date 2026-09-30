@@ -830,3 +830,65 @@
   background:#0c2a1f;
   border-color:#2fbd7a;
 }
+
+
+/* ===== Calendario semanal CSR ===== */
+.csr-week-calendar{
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #1b2a3e;
+  border-radius:16px;
+  background:#0a111d;
+}
+.csr-calendar-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.csr-calendar-head strong,.csr-calendar-head span{display:block}
+.csr-calendar-head strong{font-size:16px}
+.csr-calendar-head span{color:#718097;font-size:11px;margin-top:3px}
+.csr-calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(100px,1fr));
+  gap:7px;
+  overflow-x:auto;
+}
+.csr-day{
+  min-width:100px;
+  min-height:150px;
+  border:1px solid #1c2b40;
+  border-radius:11px;
+  background:#0e1725;
+  overflow:hidden;
+}
+.csr-day.today{border-color:#3d78df;box-shadow:inset 0 2px 0 #3d78df}
+.csr-day-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:9px 8px;
+  border-bottom:1px solid #1b2a3e;
+}
+.csr-day-head b{font-size:10px;color:#8fa1ba;text-transform:uppercase}
+.csr-day-head strong{font-size:18px;color:#e7edf7}
+.csr-day-list{display:grid;gap:6px;padding:7px}
+.csr-appointment{
+  padding:7px;
+  border-radius:8px;
+  border:1px solid #23456f;
+  background:#10233a;
+}
+.csr-appointment strong,.csr-appointment span,.csr-appointment small{display:block}
+.csr-appointment strong{color:#75a8ff;font-size:11px}
+.csr-appointment span{font-size:10px;font-weight:800;margin-top:2px}
+.csr-appointment small{color:#7f91aa;font-size:9px;margin-top:3px;line-height:1.3}
+.csr-empty-day{color:#53637a;font-size:9px;text-align:center;padding:14px 3px}
+@media(max-width:900px){
+  .csr-week-calendar{padding:12px;margin-left:-1px;margin-right:-1px}
+  .csr-calendar-grid{grid-template-columns:repeat(7,94px);padding-bottom:4px}
+  .csr-day{min-width:94px}
+  .csr-calendar-head strong{font-size:15px}
+}
