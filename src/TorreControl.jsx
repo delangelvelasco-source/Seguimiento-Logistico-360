@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, AlertTriangle, Bell, CalendarDays, CheckCircle2, ChevronDown, Clock3, Eye, Filter, History, LayoutDashboard, LogOut, MapPin, RefreshCw, Truck, Warehouse, Wrench } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
@@ -8,16 +8,19 @@ const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_o
 export default function TorreControl({warehouseId,onLogout}){
   const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null);
   const [loading,setLoading]=useState(false),[error,setError]=useState(""),[now,setNow]=useState(Date.now()),[lastUpdate,setLastUpdate]=useState(null),[tab,setTab]=useState("proceso"),[query,setQuery]=useState("");
+  const loadSeq=useRef(0);
 
   async function load(){
     if(!warehouseId)return;
+    const seq=++loadSeq.current;
     setLoading(true);setError("");
     const [u,r,c]=await Promise.all([
       supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId})
     ]);
-    if(u.error)setError(u.error.message);else setUnits(u.data||[]);
+    if(seq!==loadSeq.current)return;
+    if(u.error)setError(u.error.message);else setUnits((u.data||[]).filter(isVisibleUnit));
     if(r.error)setError(prev=>prev||r.error.message);else setRamps(r.data||[]);
     if(c.error)setError(prev=>prev||c.error.message);else setPatio(c.data?.[0]||null);
     setLastUpdate(new Date());setLoading(false);
@@ -26,7 +29,7 @@ export default function TorreControl({warehouseId,onLogout}){
   useEffect(()=>{
     if(!warehouseId||!supabase)return;
     load();
-    const refresh=setInterval(load,5000),tick=setInterval(()=>setNow(Date.now()),1000);
+    const refresh=setInterval(load,3000),tick=setInterval(()=>setNow(Date.now()),1000);
     let channel=null;
     const start=async()=>{
       try{const {data:{session}}=await supabase.auth.getSession();if(session?.access_token)await supabase.realtime.setAuth(session.access_token)}catch{}
@@ -42,20 +45,22 @@ export default function TorreControl({warehouseId,onLogout}){
     return()=>{clearInterval(refresh);clearInterval(tick);window.removeEventListener("focus",load);document.removeEventListener("visibilitychange",vis);if(channel)supabase.removeChannel(channel)};
   },[warehouseId]);
 
+  const todayUnits=useMemo(()=>units.filter(u=>isToday(u.created_at)),[units]);
+  const activeUnits=useMemo(()=>units.filter(u=>!u.salida_caseta_at),[units]);
   const stats=useMemo(()=>({
-    total:units.length,
-    patio:units.filter(u=>["patio","cajon"].includes(u.ubicacion_tipo)).length,
-    operacion:units.filter(u=>u.estado==="en_operacion").length,
-    completed:units.filter(u=>u.estado==="liberada").length,
-    delayed:units.filter(u=>sla(u,now).level==="red").length
-  }),[units,now]);
+    total:todayUnits.length,
+    patio:activeUnits.filter(u=>["patio","cajon"].includes(u.ubicacion_tipo)).length,
+    operacion:activeUnits.filter(u=>u.estado==="en_operacion").length,
+    completed:todayUnits.filter(u=>u.estado==="liberada").length,
+    delayed:activeUnits.filter(u=>sla(u,now).level==="red").length
+  }),[todayUnits,activeUnits,now]);
 
   const capacity=Number(patio?.capacidad_maxima||20),occupancy=Number(patio?.ocupacion??stats.patio),pct=Math.min(100,Math.round(occupancy/capacity*100));
   const operational=ramps.filter(r=>r.activa&&r.estado==="operativa"),occupied=new Set(units.map(u=>u.rampa_id).filter(Boolean));
   const filtered=useMemo(()=>units.filter(u=>[u.folio,u.linea_transporte,u.placas_tracto,u.placas_caja].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
-  const risk=useMemo(()=>{const o={green:0,yellow:0,orange:0,red:0};units.forEach(u=>o[sla(u,now).level]++);return o},[units,now]);
-  const upcoming=units.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).slice(0,5);
-  const movements=units.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
+  const risk=useMemo(()=>{const o={green:0,yellow:0,orange:0,red:0};activeUnits.forEach(u=>o[sla(u,now).level]++);return o},[units,now]);
+  const upcoming=todayUnits.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).slice(0,5);
+  const movements=units.filter(isVisibleUnit).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
   return <section id="torre" className="monitor-dashboard">
     <header className="monitor-header">
@@ -134,3 +139,7 @@ function MiniKpi({icon,label,value,note,tone}){return <div className={"mini-kpi 
 function SideList({title,action,items}){return <div className="side-list"><div className="side-list-head"><strong>{title}</strong>{action&&<span>{action}</span>}</div>{items.map((x,i)=><div className="side-row" key={i}><b>{x.time}</b><span>{x.title}<small>{x.sub}</small></span></div>)}</div>}
 function sla(u,now){const start=new Date(u.created_at||Date.now()).getTime(),min=Math.max(0,(now-start)/60000);let level="green";if(min>120)level="red";else if(min>105)level="orange";else if(min>90)level="yellow";return {level,globalMin:min}}
 function formatMinutes(v){const n=Math.floor(v);return n<60?n+" min":Math.floor(n/60)+" h "+String(n%60).padStart(2,"0")+" min"}
+
+function isToday(value){if(!value)return false;return dateKey(value)===dateKey(Date.now())}
+function dateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value))}
+function isVisibleUnit(u){return !u.salida_caseta_at || isToday(u.salida_caseta_at)}
