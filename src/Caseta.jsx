@@ -550,7 +550,7 @@ export default function Caseta({ warehouseId }) {
           </>}
           {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
           {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
-          <button className="caseta-exact-submit" disabled={loading}><Truck size={22}/>{loading?"Registrando ingreso…":accessType==="unidad"?"Registrar ingreso a Caseta":accessType==="visitante"?"Registrar visitante":accessType==="proveedor"?"Registrar proveedor":accessType==="personal_interno"?"Registrar personal interno":accessType==="eventual"?"Registrar eventual":"Registrar otro acceso"}<span>→</span></button>
+          <button type="submit" className="caseta-exact-submit" disabled={loading} aria-label="Registrar ingreso"><Truck size={22}/><span className="caseta-submit-label">{loading?"Registrando…":"Registrar"}</span><span className="caseta-submit-arrow">→</span></button>
         </form>
       </div>
 
