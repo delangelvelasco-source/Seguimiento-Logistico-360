@@ -651,3 +651,11 @@
   .status-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
   .status-list div{padding:8px 6px}
 }
+
+/* ===== Tablet 360°: evitar cualquier recorte del panel de Estado ===== */
+@media (min-width:761px) and (max-width:1399px){
+  .monitor-content{overflow-x:hidden}
+  .monitor-main-grid{grid-template-columns:minmax(0,1fr);width:100%}
+  .warehouse-status{width:100%;max-width:none}
+  .status-list{grid-template-columns:repeat(3,minmax(0,1fr));width:100%;margin-left:0}
+}
