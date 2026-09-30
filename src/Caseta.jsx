@@ -549,7 +549,7 @@ export default function Caseta({ warehouseId }) {
             <div className="exact-two"><label>Teléfono <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.telefono} onChange={e=>setForm({...form,telefono:e.target.value})} placeholder="Contacto"/></div></label><label>Observaciones <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Notas"/></div></label></div>
           </>}
           {error&&<div className="notice error"><strong>No se pudo registrar</strong><span>{error}</span></div>}
-          {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
+          {message&&<div className="notice success" style={{color:"#fff"}}><CheckCircle2 size={17} color="#fff"/><strong style={{color:"#fff"}}>{message}</strong></div>}
           <button type="submit" className="caseta-exact-submit" disabled={loading} aria-label="Registrar ingreso"><Truck size={22}/><span className="caseta-submit-label">{loading?"Registrando…":"Registrar"}</span></button>
         </form>
       </div>
