@@ -74,13 +74,13 @@ export default function Caseta({ warehouseId }) {
     // Citas programadas por CSR para hoy: se muestran en Caseta ordenadas por hora.
     // Se excluyen las citas que ya tienen un ingreso registrado.
     try{
-      const hoy=new Date().toISOString().slice(0,10);
+      const hoy=new Date().toLocaleDateString("sv-SE",{timeZone:"America/Monterrey"});
       const {data:citasHoy}=await supabase
         .from("citas")
         .select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)")
         .eq("almacen_id",targetWarehouseId)
         .eq("fecha",hoy)
-        .not("estado","in",["cancelada","cerrada"])
+        .not("estado","in","(cancelada,cerrada)")
         .order("hora_inicio",{ascending:true});
       const {data:ingresosHoy}=await supabase
         .from("accesos_caseta")
