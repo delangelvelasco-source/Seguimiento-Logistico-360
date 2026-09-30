@@ -65,7 +65,7 @@ export default function TorreControl({warehouseId,onLogout}){
   const upcoming=useMemo(()=>{
     const nowMinutes=new Date().toLocaleTimeString("en-GB",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit"}).slice(0,5);
     return citas
-      .filter(c=>String(c.hora_inicio||"").slice(0,5)>=nowMinutes || c.estado==="confirmada" || c.estado==="borrador")
+      .filter(c=>String(c.hora_inicio||"").slice(0,5)>=nowMinutes)
       .sort((a,b)=>String(a.hora_inicio||"").localeCompare(String(b.hora_inicio||"")))
       .slice(0,5);
   },[citas]);
