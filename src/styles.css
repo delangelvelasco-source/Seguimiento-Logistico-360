@@ -1138,3 +1138,30 @@
 .cita-installation-alert{margin:10px 0;padding:13px 15px;border:1px solid #f0a43b;background:#fff7e8;color:#7a4300;border-radius:12px;display:flex;flex-direction:column;gap:4px}
 .cita-installation-alert strong{font-size:12px;font-weight:900}
 .cita-installation-alert span{font-size:11px;font-weight:700}
+
+
+.csr-extra-window-btn{
+  width:100%;
+  margin-top:14px;
+  min-height:48px;
+  border:1px solid #334155;
+  border-radius:14px;
+  background:linear-gradient(135deg,#17243a,#0d1728);
+  color:#dbe7f5;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.01em;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  box-shadow:0 6px 16px rgba(2,10,25,.18);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease;
+}
+.csr-extra-window-btn:hover{
+  transform:translateY(-1px);
+  border-color:#4f83d1;
+  background:linear-gradient(135deg,#1b3150,#12223a);
+  box-shadow:0 9px 20px rgba(20,65,120,.24);
+}
+.csr-extra-window-btn:active{transform:translateY(0);box-shadow:0 3px 9px rgba(2,10,25,.18)}
