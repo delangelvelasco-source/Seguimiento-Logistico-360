@@ -52,6 +52,21 @@ export default function CSR({warehouseId}){
     return;
   }
   if(!window.confirm("¿Eliminar la cita "+appointment.folio+"?"))return;
+  const {data:ops,error:opsError}=await supabase.from("operaciones_360").select("id,unidad_id").eq("cita_id",appointment.id);
+  if(opsError){setError("No se pudo comprobar la operación asociada: "+opsError.message);return}
+  if(ops?.length){
+    const unitIds=ops.map(o=>o.unidad_id).filter(Boolean);
+    if(unitIds.length){
+      const {data:linked,error:linkedError}=await supabase.from("unidades").select("id,estado").in("id",unitIds);
+      if(linkedError){setError("No se pudo comprobar el estado de la unidad: "+linkedError.message);return}
+      const active=(linked||[]).filter(u=>!["cancelada","salida","liberada"].includes(u.estado));
+      if(active.length){setMessage("⚠️ La cita ya está ligada a una operación activa y no se puede eliminar.");return}
+      const {error:detachError}=await supabase.from("unidades").update({operacion_360_id:null}).in("id",unitIds);
+      if(detachError){setError("No se pudo desvincular la operación: "+detachError.message);return}
+    }
+    const {error:opDeleteError}=await supabase.from("operaciones_360").delete().eq("cita_id",appointment.id);
+    if(opDeleteError){setError("No se pudo eliminar la operación asociada: "+opDeleteError.message);return}
+  }
   const r=await supabase.from("citas").delete().eq("id",appointment.id).eq("csr_usuario_id",csrUserId).select("id").maybeSingle();
   if(r.error){setError("No se pudo eliminar la cita: "+r.error.message);return}
   if(!r.data){setError("La cita no se eliminó. Verifica que la sesión CSR sea la propietaria de la cita.");return}
