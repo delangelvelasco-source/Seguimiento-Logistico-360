@@ -21,7 +21,34 @@ export default function TorreControl({warehouseId}){
     if(c.error){const fallback=await supabase.from("patio_configuracion").select("capacidad_maxima,umbral_alerta_1,umbral_alerta_2,umbral_alerta_3").eq("almacen_id",warehouseId).maybeSingle(); if(!fallback.error)setPatio({ocupacion:(u.data||[]).filter(x=>x.ubicacion_tipo==="patio"||x.ubicacion_tipo==="cajon").length,...fallback.data}); else setError(prev=>prev||c.error.message)}else setPatio(c.data);
     setLastUpdate(new Date());setLoading(false);
   }
-  useEffect(()=>{load();const refresh=setInterval(load,30000);const tick=setInterval(()=>setNow(Date.now()),1000);return()=>{clearInterval(refresh);clearInterval(tick)}},[warehouseId]);
+  useEffect(()=>{
+    if(!warehouseId||!supabase)return;
+    load();
+    const refresh=setInterval(load,5000);
+    const tick=setInterval(()=>setNow(Date.now()),1000);
+    let channel=null;
+    const startRealtime=async()=>{
+      try{
+        const {data:{session}}=await supabase.auth.getSession();
+        if(session?.access_token)await supabase.realtime.setAuth(session.access_token);
+      }catch{}
+      channel=supabase.channel("monitor-almacen-"+warehouseId)
+        .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},()=>load())
+        .on("postgres_changes",{event:"*",schema:"public",table:"rampas",filter:"almacen_id=eq."+warehouseId},()=>load())
+        .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},()=>load())
+        .subscribe();
+    };
+    startRealtime();
+    const onVisibility=()=>{if(document.visibilityState==="visible")load()};
+    window.addEventListener("focus",load);
+    document.addEventListener("visibilitychange",onVisibility);
+    return()=>{
+      clearInterval(refresh);clearInterval(tick);
+      window.removeEventListener("focus",load);
+      document.removeEventListener("visibilitychange",onVisibility);
+      if(channel)supabase.removeChannel(channel);
+    };
+  },[warehouseId]);
   const stats=useMemo(()=>({
     total:units.length,
     patio:units.filter(u=>["patio","cajon"].includes(u.ubicacion_tipo)).length,
@@ -37,7 +64,7 @@ export default function TorreControl({warehouseId}){
   return <section id="torre" className="users-section">
     <div className="panel torre-panel">
       <div className="panel-title"><div><Activity size={19}/><strong>Torre de Control · Las Torres</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>{loading?"Actualizando…":"Actualizar"}</button></div>
-      <p className="section-copy">Vista operativa del flujo completo. El tiempo global se mide desde el registro en Caseta; el tiempo de operación desde el inicio en rampa. Actualización automática cada 30 segundos.</p>
+      <p className="section-copy">Vista operativa del flujo completo. El tiempo global se mide desde el registro en Caseta; el tiempo de operación desde el inicio en rampa. Actualización automática en tiempo real, con respaldo de consulta cada 5 segundos.</p>
       {error&&<div className="notice error"><strong>Error de consulta</strong><span>{error}</span></div>}
       <div className="tower-kpis">
         <Kpi icon={<Truck/>} label="Unidades activas" value={stats.total}/>
