@@ -983,3 +983,46 @@
 .csr-slot.busy small{
   color:#eef2f6;
 }
+
+/* ===== Banner principal ALMACÉN 360 ===== */
+.hero360{margin:24px 32px 18px;min-height:390px;border:1px solid #183450;border-radius:22px;overflow:hidden;display:grid;grid-template-columns:42% 58%;background:radial-gradient(circle at 72% 20%,#174a72 0,transparent 34%),linear-gradient(120deg,#061322,#0a2033 52%,#07101c);position:relative;box-shadow:0 22px 60px #0008}
+.hero360:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,#061322ee 0%,#061322bb 42%,transparent 75%);pointer-events:none}
+.hero360-copy{position:relative;z-index:2;padding:32px 26px 30px 34px;display:flex;flex-direction:column;justify-content:center}
+.hero360-brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.hero360-logo{width:62px;height:62px;border-radius:17px;display:grid;place-items:center;font-size:21px;font-weight:950;color:#fff;background:linear-gradient(145deg,#18a9ff,#1558e8 58%,#11358c);border:1px solid #52c5ff88;box-shadow:0 0 28px #159fff33}
+.hero360-brand strong{font-size:27px;line-height:.8;letter-spacing:-.04em;color:#fff}
+.hero360-brand strong b{color:#10bff7;font-size:35px}
+.hero360-brand span{display:block;color:#b7c9dc;font-size:8px;letter-spacing:.18em;margin-top:8px}
+.hero360-copy h2{font-size:clamp(28px,3vw,48px);line-height:.98;letter-spacing:-.04em;margin:7px 0 12px;color:#fff}
+.hero360-copy h2 b{color:#11bff5}
+.hero360-copy .hero-copy{color:#b2c0d0;font-size:13px;line-height:1.5;margin:0;max-width:520px}
+.hero360-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}
+.hero360-pills span{font-size:9px;font-weight:900;color:#d9e8f7;border:1px solid #31516d;background:#0b2032cc;padding:7px 9px;border-radius:999px}
+.hero360-dashboard{position:relative;z-index:2;align-self:stretch;padding:28px 28px 24px 10px;display:flex;flex-direction:column;justify-content:center}
+.hero360-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#dce9f5;font-size:11px}
+.hero360-top span{display:flex;align-items:center;gap:6px}
+.hero360-top i{width:7px;height:7px;border-radius:50%;background:#20dc86;box-shadow:0 0 12px #20dc86}
+.hero360-top b{font-size:9px;color:#6f87a3}
+.hero360-cards{display:grid;grid-template-columns:125px minmax(240px,1fr) 125px;gap:9px;align-items:stretch}
+.hero360-cards>div{border:1px solid #28425b;border-radius:14px;background:#071525e8;padding:11px;box-shadow:0 10px 25px #0005}
+.hero360-cards>div:first-child{display:grid;gap:5px;align-content:start}
+.hero360-cards>div:first-child strong{font-size:9px;color:#c8d8e8;margin-top:2px}
+.hero360-cards em{font-style:normal;font-size:8px;font-weight:800;padding:5px 6px;border-radius:6px;text-align:center}
+.hero360-cards em.green{background:#087f4a;color:#8dffc6}
+.hero360-cards em.gray{background:#414957;color:#e1e6ec}
+.hero360-calendar>b,.hero360-phone>b{font-size:10px;color:#eaf2fb;display:block;margin-bottom:9px}
+.hero360-days{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.hero360-days span{font-size:7px;text-align:center;color:#8195ad;padding:5px 2px;border-radius:6px}
+.hero360-days strong{font-size:13px;color:#dce7f2}
+.hero360-days .selected{background:#fff;color:#172334}
+.hero360-days .selected strong{color:#101827}
+.hero360-slots{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-top:8px}
+.hero360-slots i{font-style:normal;font-size:8px;color:#c8d5e3;padding:6px;border-radius:6px;background:#083322;border:1px solid #21875b}
+.hero360-slots i b{display:block;color:#53e49d;font-size:7px;margin-top:2px}
+.hero360-slots i.occupied{background:#343a43;border-color:#59616c}
+.hero360-slots i.occupied b{color:#eef2f6}
+.hero360-phone{display:flex;flex-direction:column;gap:7px}
+.hero360-phone span{font-size:8px;color:#91a5bc;border:1px solid #243950;border-radius:6px;padding:7px}
+.hero360-phone button{margin-top:auto;border:0;border-radius:7px;padding:9px;background:linear-gradient(135deg,#148fff,#345de9);color:#fff;font-size:8px;font-weight:900}
+@media(max-width:900px){.hero360{margin:18px 16px;grid-template-columns:1fr;min-height:0}.hero360-copy{padding:25px 22px 16px}.hero360-dashboard{padding:8px 18px 22px}.hero360-cards{grid-template-columns:90px minmax(210px,1fr) 100px;overflow-x:auto}.hero360-cards>div{min-width:0}}
+@media(max-width:600px){.hero360{margin:14px 8px;border-radius:16px}.hero360-copy{padding:21px 17px 10px}.hero360-logo{width:49px;height:49px;border-radius:13px;font-size:17px}.hero360-brand strong{font-size:22px}.hero360-brand strong b{font-size:28px}.hero360-brand span{font-size:6px}.hero360-copy h2{font-size:29px}.hero360-copy .hero-copy{font-size:11px}.hero360-pills{margin-top:13px}.hero360-pills span{font-size:7px;padding:6px 7px}.hero360-dashboard{padding:6px 12px 17px}.hero360-top{font-size:9px}.hero360-cards{grid-template-columns:82px 230px 94px;gap:6px}.hero360-cards>div{padding:8px;border-radius:10px}.hero360-days strong{font-size:11px}}
