@@ -582,3 +582,18 @@
  .monitor-logout{padding:8px}
  .monitor-logout span{display:none}
 }
+
+/* ===== Corrección definitiva de adaptación del área principal ===== */
+.monitor-body{grid-template-columns:minmax(220px,235px) minmax(0,1fr);width:100%;align-items:stretch}
+.monitor-content{width:100%;max-width:none;min-width:0;margin:0;grid-column:2;justify-self:stretch;overflow:hidden}
+.monitor-kpis,.monitor-main-grid,.monitor-toolbar,.monitor-lower-grid{width:100%;min-width:0}
+.monitor-main-grid>*{min-width:0}
+.monitor-lower-grid>*{min-width:0}
+@media(max-width:1199px) and (min-width:761px){
+ .monitor-body{grid-template-columns:88px minmax(0,1fr)}
+ .monitor-content{width:100%;margin:0}
+}
+@media(max-width:760px){
+ .monitor-body{display:block;width:100%}
+ .monitor-content{width:100%;max-width:none;margin:0;grid-column:auto}
+}
