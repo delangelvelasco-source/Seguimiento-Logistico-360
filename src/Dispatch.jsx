@@ -12,7 +12,16 @@ export default function Dispatch({warehouseId}){
   const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at").eq("almacen_id",warehouseId).in("estado",["en_caseta","validando"]).order("created_at",{ascending:false}).limit(50);
   if(error)setError(error.message); else setUnits(data||[]); setLoading(false);
  }
- useEffect(()=>{load()},[warehouseId]);
+ useEffect(()=>{
+  load();
+  if(!warehouseId)return;
+  const channel=supabase.channel("dispatch-live-"+warehouseId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .subscribe();
+  const timer=setInterval(load,15000);
+  return()=>{clearInterval(timer);supabase.removeChannel(channel)};
+},[warehouseId]);
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas||""].join(" ").toLowerCase().includes(query.toLowerCase()));
  async function verPruebaLlegada(u){
   if(!u?.id)return;
