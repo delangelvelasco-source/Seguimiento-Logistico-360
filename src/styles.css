@@ -391,3 +391,156 @@
 @media(max-width:1100px){.monitor-header{gap:12px}.monitor-brand{min-width:250px}.monitor-live{display:none}.monitor-body{grid-template-columns:185px 1fr}.monitor-kpis{grid-template-columns:repeat(3,1fr)}.monitor-main-grid{grid-template-columns:1fr}.monitor-lower-grid{grid-template-columns:1fr}.monitor-sidecards{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){.monitor-header{height:auto;min-height:66px;padding:9px 10px}.monitor-brand{min-width:0}.monitor-brand strong{font-size:12px}.monitor-brand span{font-size:7px}.monitor-logo{width:40px;height:40px;font-size:18px}.monitor-header-right .monitor-time,.monitor-header-right>svg{display:none}.monitor-user{padding-left:8px}.monitor-user div:not(.monitor-avatar){display:none}.monitor-user{gap:5px}.monitor-body{display:block}.monitor-sidebar{display:none}.monitor-content{padding:8px}.monitor-kpis{grid-template-columns:repeat(2,1fr);gap:7px}.mini-kpi{min-height:82px;padding:10px;gap:8px}.mini-icon{width:34px;height:34px}.mini-kpi strong{font-size:22px}.mini-kpi span{font-size:8px}.mini-kpi small{font-size:7px}.ramps-title{height:auto;min-height:52px;padding:9px 10px;align-items:flex-start;gap:8px}.ramps-title>strong{font-size:14px}.ramps-title>div{font-size:7px;gap:5px;flex-wrap:wrap;justify-content:flex-end}.warehouse-visual{height:210px}.warehouse-building{gap:4px;padding-left:6px;padding-right:6px}.dock b{font-size:8px;min-width:24px;top:-17px}.dock-truck{font-size:18px}.warehouse-status{padding:11px}.capacity-ring{gap:8px}.capacity-ring>div{width:80px;height:80px}.status-list{margin-left:88px;margin-top:-74px}.avg-time>div{grid-template-columns:repeat(2,1fr);row-gap:10px}.monitor-toolbar{display:block}.monitor-search{margin-top:8px;min-width:0}.monitor-tabs{padding-bottom:2px}.monitor-sidecards{grid-template-columns:1fr}.monitor-table{min-width:880px}}
 @media(max-width:430px){.monitor-brand strong{font-size:10px}.monitor-header{gap:7px}.monitor-kpis{grid-template-columns:1fr 1fr}.mini-kpi{min-height:74px}.mini-kpi strong{font-size:19px}.monitor-tabs button{padding:9px 10px}.warehouse-visual{height:185px}}
+
+/* ===== Monitor 360 · Responsive premium ===== */
+.monitor-dashboard{width:100%;overflow-x:hidden}
+.monitor-header{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.monitor-content{container-type:inline-size}
+
+/* TV / desktop */
+@media(min-width:1400px){
+  .monitor-header{height:82px;padding:0 28px}
+  .monitor-body{grid-template-columns:235px 1fr}
+  .monitor-content{padding:18px 20px 30px}
+  .monitor-kpis{gap:14px}.mini-kpi{min-height:112px;padding:18px}
+  .ramps-title{height:64px}.warehouse-visual{height:310px}
+  .monitor-table th{font-size:9px}.monitor-table td{font-size:10px;padding:12px}
+}
+
+/* iPad / tablet landscape */
+@media (min-width:761px) and (max-width:1199px){
+  .monitor-body{grid-template-columns:88px 1fr}
+  .monitor-sidebar{overflow:hidden}
+  .monitor-sidebar nav{padding:8px 6px}
+  .monitor-nav{justify-content:center;padding:12px 6px}
+  .monitor-nav span{display:none}
+  .monitor-nav svg{width:20px;height:20px}
+  .monitor-sidebar-footer{padding:12px 7px;text-align:center}
+  .monitor-sidebar-footer strong,.monitor-sidebar-footer small,.monitor-sidebar-footer span{font-size:0}
+  .monitor-sidebar-footer strong:after{content:"MTY II";font-size:10px}
+  .monitor-sidebar-footer button{justify-content:center}
+  .monitor-sidebar-footer button{font-size:0}
+  .monitor-sidebar-footer button svg{margin:0}
+  .monitor-kpis{grid-template-columns:repeat(3,1fr)}
+  .monitor-main-grid{grid-template-columns:1.45fr 1fr}
+  .monitor-lower-grid{grid-template-columns:1fr}
+  .monitor-sidecards{grid-template-columns:1fr 1fr}
+  .warehouse-visual{height:245px}
+}
+
+/* iPad portrait */
+@media (min-width:600px) and (max-width:760px){
+  .monitor-header{height:72px;padding:8px 14px}
+  .monitor-brand strong{font-size:14px}
+  .monitor-logo{width:44px;height:44px}
+  .monitor-user div:not(.monitor-avatar){display:block}
+  .monitor-user{padding-left:12px}
+  .monitor-body{display:block}
+  .monitor-sidebar{display:none}
+  .monitor-content{padding:12px}
+  .monitor-kpis{grid-template-columns:repeat(2,1fr)}
+  .monitor-main-grid{grid-template-columns:1fr}
+  .monitor-lower-grid{grid-template-columns:1fr}
+  .monitor-sidecards{grid-template-columns:1fr 1fr}
+  .warehouse-visual{height:245px}
+  .monitor-table{min-width:900px}
+}
+
+/* Phones: compact app-like layout */
+@media (max-width:599px){
+  html,body,#root{width:100%;min-width:0;overflow-x:hidden}
+  .monitor-dashboard{min-height:100dvh}
+  .monitor-header{position:sticky;height:64px;min-height:64px;padding:7px 9px;gap:8px}
+  .monitor-brand{gap:8px;min-width:0;flex:1}
+  .monitor-logo{width:38px;height:38px;border-radius:9px;font-size:17px}
+  .monitor-brand strong{font-size:11px;line-height:1.1;white-space:nowrap}
+  .monitor-brand span{font-size:6px;letter-spacing:.11em;margin-top:3px}
+  .monitor-header-right{gap:7px}
+  .monitor-header-right .monitor-time,.monitor-header-right>svg{display:none}
+  .monitor-user{padding:0;border:0;gap:5px}
+  .monitor-avatar{width:34px;height:34px;font-size:13px}
+  .monitor-user div:not(.monitor-avatar),.monitor-user>svg{display:none}
+  .monitor-body{display:block;min-height:calc(100dvh - 64px)}
+  .monitor-sidebar{display:none}
+  .monitor-content{padding:7px 8px 28px}
+  .monitor-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:9px}
+  .mini-kpi{min-height:78px;padding:9px;gap:8px;border-radius:12px}
+  .mini-icon{width:34px;height:34px;border-radius:9px}
+  .mini-icon svg{width:18px;height:18px}
+  .mini-kpi span{font-size:8px;white-space:nowrap}
+  .mini-kpi strong{font-size:21px;margin:4px 0 3px}
+  .mini-kpi small{font-size:7px;white-space:nowrap}
+  .monitor-main-grid{display:flex;flex-direction:column;gap:9px}
+  .ramps-hero,.warehouse-status,.units-table-card,.side-list{border-radius:12px}
+  .ramps-title{min-height:49px;padding:9px 11px}
+  .ramps-title>strong{font-size:14px}
+  .ramps-title>div{font-size:7px;gap:4px}
+  .warehouse-visual{height:190px}
+  .warehouse-building{height:67%;padding:25px 6px 7px;gap:4px}
+  .dock b{font-size:7px;min-width:23px;top:-16px;padding:3px}
+  .dock-truck{font-size:16px}
+  .warehouse-status{padding:12px}
+  .status-head{font-size:15px;margin-bottom:9px}
+  .status-head span{font-size:9px}
+  .capacity-ring{gap:9px}
+  .capacity-ring>div{width:78px;height:78px;flex:0 0 78px}
+  .capacity-ring strong{font-size:18px}
+  .status-list{margin-left:87px;margin-top:-72px;margin-bottom:16px}
+  .status-list div{padding:6px 0;font-size:9px}
+  .avg-time{margin-top:13px;padding:11px}
+  .avg-time>strong{font-size:11px}
+  .avg-time>div{grid-template-columns:repeat(2,1fr);gap:10px 7px}
+  .avg-time span{font-size:7px}
+  .avg-time b{font-size:16px;margin-top:5px}
+  .monitor-toolbar{display:block;margin:9px 0}
+  .monitor-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+  .monitor-tabs::-webkit-scrollbar{display:none}
+  .monitor-tabs button{font-size:8px;padding:10px 11px;border-radius:9px;flex:0 0 auto}
+  .monitor-search{min-width:0;width:100%;height:43px;margin-top:7px;padding:8px 10px;border-radius:10px}
+  .monitor-search input{font-size:9px}
+  .monitor-lower-grid{display:flex;flex-direction:column;gap:9px}
+  .table-title{padding:11px 12px}
+  .table-title strong{font-size:12px}
+  .table-title button{padding:6px 8px}
+  .monitor-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .monitor-table{min-width:850px}
+  .monitor-table th{font-size:7px;padding:9px 8px}
+  .monitor-table td{font-size:8px;padding:10px 8px}
+  .monitor-sidecards{display:grid;grid-template-columns:1fr;gap:9px}
+  .side-list{padding:11px}
+  .side-list-head strong{font-size:12px}
+  .side-row{grid-template-columns:45px 1fr;padding:9px 0}
+  .side-row>b{font-size:8px}
+  .side-row>span{font-size:10px}
+  .side-row small{font-size:8px}
+}
+
+/* Very small phones */
+@media(max-width:380px){
+  .monitor-content{padding-left:6px;padding-right:6px}
+  .monitor-kpis{gap:5px}
+  .mini-kpi{min-height:72px;padding:8px}
+  .mini-icon{width:31px;height:31px}
+  .mini-kpi span{font-size:7px}.mini-kpi strong{font-size:19px}.mini-kpi small{font-size:6px}
+  .ramps-title>strong{font-size:13px}
+  .warehouse-visual{height:175px}
+  .monitor-tabs button{padding:9px 9px;font-size:7px}
+}
+
+/* Landscape phone: prioritize dashboard density */
+@media(max-width:900px) and (orientation:landscape){
+  .monitor-header{height:58px;min-height:58px}
+  .monitor-body{min-height:calc(100dvh - 58px)}
+  .monitor-content{padding:7px 10px 18px}
+  .monitor-kpis{grid-template-columns:repeat(5,minmax(130px,1fr));overflow-x:auto}
+  .monitor-main-grid{display:grid;grid-template-columns:1.5fr 1fr}
+  .warehouse-visual{height:175px}
+  .monitor-lower-grid{grid-template-columns:1fr 250px;display:grid}
+  .monitor-sidecards{grid-template-columns:1fr}
+}
+
+/* Safe area for iOS */
+@supports(padding:max(0px)){
+  .monitor-header{padding-left:max(9px,env(safe-area-inset-left));padding-right:max(9px,env(safe-area-inset-right))}
+  .monitor-content{padding-bottom:max(28px,env(safe-area-inset-bottom))}
+}
