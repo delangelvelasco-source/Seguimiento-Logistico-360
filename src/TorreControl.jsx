@@ -63,12 +63,23 @@ export default function TorreControl({warehouseId,onLogout}){
   const filtered=useMemo(()=>units.filter(u=>[u.folio,u.linea_transporte,u.placas_tracto,u.placas_caja].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
   const risk=useMemo(()=>{const o={green:0,yellow:0,orange:0,red:0};activeUnits.forEach(u=>o[sla(u,now).level]++);return o},[units,now]);
   const upcoming=useMemo(()=>{
-    const nowMinutes=new Date().toLocaleTimeString("en-GB",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit"}).slice(0,5);
     return citas
-      .filter(c=>String(c.hora_inicio||"").slice(0,5)>=nowMinutes)
       .sort((a,b)=>String(a.hora_inicio||"").localeCompare(String(b.hora_inicio||"")))
-      .slice(0,5);
-  },[citas]);
+      .slice(0,8);
+  },[citas,now]);
+
+  const citaStatus=(c)=>{
+    const inicio=String(c?.hora_inicio||"").slice(0,5);
+    if(!inicio)return {late:false,minutes:0,label:""};
+    const [h,m]=inicio.split(":").map(Number);
+    const nowLocal=new Date(new Date(now).toLocaleString("en-US",{timeZone:"America/Monterrey"}));
+    const inicioLocal=new Date(nowLocal);
+    inicioLocal.setHours(h,m,0,0);
+    const minutes=Math.max(0,Math.floor((nowLocal-inicioLocal)/60000));
+    return minutes>0
+      ? {late:true,minutes,label:"Retraso +"+minutes+" min"}
+      : {late:false,minutes:0,label:"A tiempo"};
+  };
   const movements=units.filter(isVisibleUnit).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
   return <section id="torre" className="monitor-dashboard">
@@ -138,7 +149,14 @@ export default function TorreControl({warehouseId,onLogout}){
             <div className="monitor-table-wrap"><table className="monitor-table"><thead><tr><th>Hora llegada</th><th>Transportista</th><th>Unidad</th><th>Operación</th><th>Pallets</th><th>Rampa</th><th>Estatus</th><th>Tiempo</th><th>Acciones</th></tr></thead><tbody>{filtered.filter(u=>tab==="patio"?["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":true).map(u=>{const s=sla(u,now);return <tr key={u.id}><td>{new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</td><td>{u.linea_transporte||"—"}</td><td>{u.placas_tracto||"—"} / {u.placas_caja||"—"}</td><td><span className="type-pill">{u.operacion_tipo||"Recepción"}</span></td><td><strong>{u.pallets ?? "—"}</strong></td><td><span className="ramp-pill">{ramps.find(r=>r.id===u.rampa_id)?.codigo||"—"}</span></td><td><span className={"status-pill "+s.level}>{STAGE_LABEL[u.estado]||u.estado}</span></td><td><b className={s.level}>{formatMinutes(s.globalMin)}</b></td><td><Eye size={17}/></td></tr>})}</tbody></table>{!filtered.length&&<div className="monitor-empty">No hay unidades para mostrar.</div>}</div>
           </section>
           <aside className="monitor-sidecards">
-            <SideList title="Próximas Citas" action="Ver todas" items={upcoming.map(c=>({time:String(c.hora_inicio||"").slice(0,5),title:c.tipo_operacion==="embarque"?"Embarque":"Recibo",sub:(c.precarga?.linea_transporte||"Línea pendiente")+" · "+c.folio}))}/>
+            <SideList title="Próximas Citas" action="Ver todas" items={upcoming.map(c=>{
+              const s=citaStatus(c);
+              return {
+                time:String(c.hora_inicio||"").slice(0,5),
+                title:(c.tipo_operacion==="embarque"?"Embarque":"Recibo")+(s.late?" · "+s.label:""),
+                sub:(c.precarga?.linea_transporte||"Línea pendiente")+" · "+c.folio
+              };
+            })}/>
             <SideList title="Últimos Movimientos" items={movements.map(u=>({time:new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),title:STAGE_LABEL[u.estado]||"Movimiento",sub:u.folio}))}/>
           </aside>
         </div>
