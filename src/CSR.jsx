@@ -9,7 +9,17 @@ export default function CSR({warehouseId}){
  const [practiceAppointment,setPracticeAppointment]=useState(null),[qrData,setQrData]=useState("");
  const [practiceMsg,setPracticeMsg]=useState(""),[evidenceModal,setEvidenceModal]=useState(null),[evidenceLoading,setEvidenceLoading]=useState(false) ,[selectedEvidence,setSelectedEvidence]=useState(null);
  async function load(){if(!warehouseId)return;setLoading(true);const {data:{user}}=await supabase.auth.getUser();setCsrUserId(user?.id||"");setError("");const select="id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,csr_confirmacion_at,operacion_360_id";const pending=supabase.from("unidades").select(select).eq("almacen_id",warehouseId).eq("estado","validando").order("dispatch_registro_at",{ascending:false}).limit(50);const now=new Date();const day=(now.getDay()+6)%7;const weekStart=new Date(now);weekStart.setHours(0,0,0,0);weekStart.setDate(now.getDate()-day);const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+7);const agenda=supabase.from("citas").select("id,folio,csr_usuario_id,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,estado,unidades_solicitadas,cita_datos_precarga(*)").eq("almacen_id",warehouseId).gte("fecha",weekStart.toISOString().slice(0,10)).lt("fecha",weekEnd.toISOString().slice(0,10)).order("fecha",{ascending:true}).order("hora_inicio",{ascending:true}).limit(200);const [{data,error},{data:agendaData,error:agendaError}]=await Promise.all([pending,agenda]);if(error)setError(error.message);else setUnits(data||[]);if(!agendaError)setAppointments((agendaData||[]).map(a=>({...a,precarga:Array.isArray(a.cita_datos_precarga)?a.cita_datos_precarga[0]:a.cita_datos_precarga})));setLoading(false)}
- useEffect(()=>{load();const timer=setInterval(load,15000);return()=>clearInterval(timer)},[warehouseId]);
+ useEffect(()=>{
+  load();
+  if(!warehouseId)return;
+  const channel=supabase.channel("csr-live-"+warehouseId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .on("postgres_changes",{event:"*",schema:"public",table:"citas",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .on("postgres_changes",{event:"*",schema:"public",table:"cita_datos_precarga",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .subscribe();
+  const timer=setInterval(load,15000);
+  return()=>{clearInterval(timer);supabase.removeChannel(channel)};
+},[warehouseId]);
 
  function generarCitaPractica(){
   const stamp=new Date();
