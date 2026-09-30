@@ -27,6 +27,7 @@ export default function Caseta({ warehouseId }) {
   const [scannerError,setScannerError]=useState("");
   const [scanner,setScanner]=useState(null);
   const [citaEncontrada,setCitaEncontrada]=useState(null);
+  const [citasPorArribar,setCitasPorArribar]=useState([]);
   const loadSeqRef=useRef(0);
 
   async function load(showMessage=false){
@@ -69,6 +70,32 @@ export default function Caseta({ warehouseId }) {
         ultimoError=rpcError||ultimoError;
       }
     }
+
+    // Citas programadas por CSR para hoy: se muestran en Caseta ordenadas por hora.
+    // Se excluyen las citas que ya tienen un ingreso registrado.
+    try{
+      const hoy=new Date().toISOString().slice(0,10);
+      const {data:citasHoy}=await supabase
+        .from("citas")
+        .select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)")
+        .eq("almacen_id",targetWarehouseId)
+        .eq("fecha",hoy)
+        .not("estado","in",["cancelada","cerrada"])
+        .order("hora_inicio",{ascending:true});
+      const {data:ingresosHoy}=await supabase
+        .from("accesos_caseta")
+        .select("folio,estado")
+        .eq("almacen_id",targetWarehouseId)
+        .eq("tipo_acceso","unidad")
+        .in("estado",["dentro","salio"])
+        .not("folio","is",null);
+      const foliosConAcceso=new Set((ingresosHoy||[]).map(x=>x.folio).filter(Boolean));
+      const pendientes=(citasHoy||[]).filter(x=>!foliosConAcceso.has(x.folio)).map(x=>({
+        ...x,
+        precarga:Array.isArray(x.cita_datos_precarga)?(x.cita_datos_precarga[0]||null):(x.cita_datos_precarga||null)
+      }));
+      setCitasPorArribar(pendientes);
+    }catch{ /* La agenda no debe impedir el registro de ingresos. */ }
 
     // Nunca borres el último estado correcto por un fallo temporal de red/RPC.
     if(!Array.isArray(filas)){
@@ -129,6 +156,10 @@ export default function Caseta({ warehouseId }) {
     const postgresChannel=supabase.channel("caseta-postgres-"+warehouseId)
       .on("postgres_changes",{
         event:"*",schema:"public",table:"accesos_caseta",
+        filter:"almacen_id=eq."+warehouseId
+      },refrescarInmediato)
+      .on("postgres_changes",{
+        event:"*",schema:"public",table:"citas",
         filter:"almacen_id=eq."+warehouseId
       },refrescarInmediato)
       .subscribe((status)=>{
@@ -564,6 +595,15 @@ export default function Caseta({ warehouseId }) {
     await load();setLoading(false);
   }
 
+  async function cargarCitaPorArribar(cita){
+    if(!cita?.folio)return;
+    setForm(prev=>({...prev,folio_cita:cita.folio}));
+    await buscarCita(cita.folio);
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  const citasPendientesOrdenadas=[...citasPorArribar].sort((a,b)=>String(a.hora_inicio||"").localeCompare(String(b.hora_inicio||"")));
+
   // Mantener las unidades dentro primero; las que ya salieron pasan automáticamente al final de la cola.
   const ordenarCola=(items)=>[...items].sort((a,b)=>{
     const aDentro=a.estado==="dentro"?0:1;
@@ -637,6 +677,23 @@ export default function Caseta({ warehouseId }) {
         </div>
         <div className="evidence-note"><Camera size={15}/> Las fotografías son evidencia; los datos se capturan manualmente.</div>
       </div>
+    </div>
+
+    <div className="caseta-upcoming-appointments">
+      <div className="upcoming-head">
+        <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Citas por arribar</h3><p>Citas registradas por CSR para hoy, ordenadas por hora.</p></div></div>
+        <span className="upcoming-count">{citasPendientesOrdenadas.length} pendientes</span>
+      </div>
+      {citasPendientesOrdenadas.length?<div className="upcoming-list">{citasPendientesOrdenadas.map((cita,index)=>{
+        const p=cita.precarga||{};
+        const hora=String(cita.hora_inicio||"").slice(0,5);
+        const fin=String(cita.hora_fin||"").slice(0,5);
+        return <button type="button" key={cita.id} className={"upcoming-cita "+(index===0?"next":"")} onClick={()=>cargarCitaPorArribar(cita)}>
+          <span className="upcoming-time"><Clock size={17}/><strong>{hora}</strong><small>{fin?"– "+fin:""}</small></span>
+          <span className="upcoming-main"><strong>{cita.folio}</strong><span>{p.operador_nombre||"Operador pendiente"} · {p.linea_transporte||"Línea pendiente"}</span><small>{cita.tipo_operacion==="embarque"?"Embarque":"Recibo"} · Tracto {p.tracto_numero||"—"} · Caja {p.caja_numero||"—"}{cita.pallets!=null?" · "+cita.pallets+" pallets":""}</small></span>
+          <span className="upcoming-action">Cargar cita →</span>
+        </button>;
+      })}</div>:<div className="upcoming-empty"><Clock size={22}/><strong>No hay citas pendientes por arribar</strong><span>Las citas registradas por CSR aparecerán aquí automáticamente.</span></div>}
     </div>
 
     <div className="caseta-recent-exact">
