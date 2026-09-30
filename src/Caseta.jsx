@@ -394,8 +394,24 @@ export default function Caseta({ warehouseId }) {
       if(cita){
         const {data:precarga}=await supabase.from("cita_datos_precarga").select("linea_transporte,operador_nombre,contacto,tracto_numero,tracto_placas,caja_numero,caja_placas,observaciones").eq("cita_id",cita.id).maybeSingle();
         setForm(prev=>({...prev,folio_cita:cita.folio||folio,nombre:precarga?.operador_nombre||prev.nombre,empresa:precarga?.linea_transporte||prev.empresa,telefono:precarga?.contacto||prev.telefono,tracto_numero:precarga?.tracto_numero||prev.tracto_numero,tracto_placas:precarga?.tracto_placas||prev.tracto_placas,caja_numero:precarga?.caja_numero||prev.caja_numero,caja_placas:precarga?.caja_placas||prev.caja_placas,operacion_tipo:cita.tipo_operacion||prev.operacion_tipo,referencia:cita.referencia||precarga?.observaciones||prev.referencia}));
-        setCitaEncontrada({...cita,...precarga});
-        setMessage("Cita encontrada. Los datos disponibles se cargaron automáticamente; puedes corregirlos si es necesario.");
+        const {data:ingresoActivo,error:ingresoError}=await supabase
+          .from("accesos_caseta")
+          .select("id,folio,nombre,empresa,tracto_placas,caja_placas,entrada_at,estado,unidad_id")
+          .eq("almacen_id",warehouseId)
+          .eq("estado","dentro")
+          .eq("tipo_acceso","unidad")
+          .eq("folio",cita.folio)
+          .order("entrada_at",{ascending:false})
+          .limit(1)
+          .maybeSingle();
+        if(ingresoError)throw ingresoError;
+        const citaActiva={...cita,...precarga,yaEnInstalaciones:Boolean(ingresoActivo),ingresoActivo:ingresoActivo||null};
+        setCitaEncontrada(citaActiva);
+        if(ingresoActivo){
+          setMessage("⚠️ ESTA CITA YA ESTÁ EN LAS INSTALACIONES · Folio "+cita.folio+" · "+(ingresoActivo.nombre||"Unidad")+" · "+(ingresoActivo.tracto_placas||"Sin placa"));
+        }else{
+          setMessage("Cita encontrada. Los datos disponibles se cargaron automáticamente; puedes corregirlos si es necesario.");
+        }
       }else{
         try{
           const saved=localStorage.getItem("seguimiento360_practice_cita");
@@ -499,6 +515,10 @@ export default function Caseta({ warehouseId }) {
       return;
     }
 
+    if(citaEncontrada?.yaEnInstalaciones){
+      setError("Esta cita ya está en las instalaciones. No se puede registrar un segundo ingreso.");
+      setLoading(false);return;
+    }
     const {data:resultado,error:registroError}=await supabase.rpc("registrar_ingreso_caseta_completo", {
       p_almacen_id:warehouseId,p_folio_cita:form.folio_cita.trim()||null,p_nombre:form.nombre.trim(),p_linea:form.empresa.trim(),p_tracto_numero:form.tracto_numero.trim()||null,p_tracto_placas:form.tracto_placas.trim().toUpperCase(),p_caja_numero:form.caja_numero.trim()||null,p_caja_placas:form.caja_placas.trim().toUpperCase()||null,p_operacion_tipo:form.operacion_tipo,p_referencia:form.referencia.trim()||null,p_cita_id:citaEncontrada?.id||null
     });
