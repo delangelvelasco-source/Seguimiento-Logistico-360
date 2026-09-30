@@ -34,6 +34,12 @@ export default function TorreControl({warehouseId,onLogout}){
     if(!warehouseId||!supabase)return;
     load();
     const refresh=setInterval(load,3000),tick=setInterval(()=>setNow(Date.now()),1000);
+    const alertRefresh=setInterval(async()=>{
+      try{
+        const {data}=await supabase.rpc("listar_alertas_citas_monitor",{p_almacen_id:warehouseId});
+        if(Array.isArray(data))setAlertasCita(data);
+      }catch{}
+    },1000);
     let channel=null;
     const start=async()=>{
       try{const {data:{session}}=await supabase.auth.getSession();if(session?.access_token)await supabase.realtime.setAuth(session.access_token)}catch{}
@@ -48,7 +54,7 @@ export default function TorreControl({warehouseId,onLogout}){
     start();
     const vis=()=>document.visibilityState==="visible"&&load();
     window.addEventListener("focus",load);document.addEventListener("visibilitychange",vis);
-    return()=>{clearInterval(refresh);clearInterval(tick);window.removeEventListener("focus",load);document.removeEventListener("visibilitychange",vis);if(channel)supabase.removeChannel(channel)};
+    return()=>{clearInterval(refresh);clearInterval(tick);clearInterval(alertRefresh);window.removeEventListener("focus",load);document.removeEventListener("visibilitychange",vis);if(channel)supabase.removeChannel(channel)};
   },[warehouseId]);
 
   const todayUnits=useMemo(()=>units.filter(u=>isToday(u.created_at)),[units]);
@@ -140,6 +146,15 @@ export default function TorreControl({warehouseId,onLogout}){
             <div className="avg-time"><strong>Tiempo promedio</strong><div><span>◷ Espera en patio<b>0 min</b></span><span>▣ Descarga<b>0 min</b></span><span>▣ Carga<b>0 min</b></span><span>▣ Salida<b>0 min</b></span></div></div>
           </section>
         </div>
+
+        {alertasCita.length>0&&<div className="monitor-arrival-alert monitor-arrival-alert-top" role="alert">
+          <div className="monitor-arrival-alert-icon"><AlertTriangle size={24}/></div>
+          <div className="monitor-arrival-alert-body">
+            <strong>🚨 ARRIBO FUERA DE CITA</strong>
+            <span>{alertasCita.length===1?"Unidad detectada fuera de su cita programada.":alertasCita.length+" unidades detectadas fuera de cita."}</span>
+            <div className="monitor-arrival-alert-items">{alertasCita.slice(0,4).map(a=><b key={a.unidad_id}>{a.folio} · {a.tipo_alerta==="sin_cita"?"SIN CITA":"FUERA DE CITA "+(a.minutos_diferencia>0?"+":"")+a.minutos_diferencia+" MIN"}</b>)}</div>
+          </div>
+        </div>}
 
         <div className="monitor-toolbar">
           <div className="monitor-tabs">
