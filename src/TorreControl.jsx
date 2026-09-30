@@ -72,14 +72,21 @@ export default function TorreControl({warehouseId,onLogout}){
     const inicio=String(c?.hora_inicio||"").slice(0,5);
     if(!inicio)return {late:false,minutes:0,label:""};
     const [h,m]=inicio.split(":").map(Number);
-    const nowLocal=new Date(new Date(now).toLocaleString("en-US",{timeZone:"America/Monterrey"}));
-    const inicioLocal=new Date(nowLocal);
-    inicioLocal.setHours(h,m,0,0);
-    const minutes=Math.max(0,Math.floor((nowLocal-inicioLocal)/60000));
+    const parts=new Intl.DateTimeFormat("en-US",{
+      timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",hour12:false
+    }).formatToParts(new Date(now));
+    const nh=Number(parts.find(x=>x.type==="hour")?.value||0);
+    const nm=Number(parts.find(x=>x.type==="minute")?.value||0);
+    const minutes=Math.max(0,(nh*60+nm)-(h*60+m));
     return minutes>0
       ? {late:true,minutes,label:"Retraso +"+minutes+" min"}
       : {late:false,minutes:0,label:"A tiempo"};
   };
+
+  const citasRetrasadas=useMemo(
+    ()=>upcoming.filter(c=>citaStatus(c).late),
+    [upcoming,now]
+  );
   const movements=units.filter(isVisibleUnit).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
   return <section id="torre" className="monitor-dashboard">
@@ -137,12 +144,17 @@ export default function TorreControl({warehouseId,onLogout}){
             <button className={tab==="patio"?"active":""} onClick={()=>setTab("patio")}>En Patio ({stats.patio})</button>
             <button className={tab==="citas"?"active":""} onClick={()=>setTab("citas")}>Citas Próximas ({upcoming.length})</button>
             <button className={tab==="completadas"?"active":""} onClick={()=>setTab("completadas")}>Completadas ({stats.completed})</button>
-            <button className={tab==="retrasadas"?"active":""} onClick={()=>setTab("retrasadas")}>Retrasadas ({stats.delayed})</button>
+            <button className={tab==="retrasadas"?"active":""} onClick={()=>setTab("retrasadas")}>Retrasadas ({stats.delayed+citasRetrasadas.length})</button>
           </div>
           <div className="monitor-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, folio o transportista…"/><Filter size={17}/></div>
         </div>
 
-        {error&&<div className="monitor-error">{error}</div>}
+        {error&&<div className="monitor-error">{error}</div>}        {citasRetrasadas.length>0&&<div className="monitor-appointment-alert" role="alert">
+          <div className="monitor-appointment-alert-icon"><AlertTriangle size={22}/></div>
+          <div><strong>ALERTA DE RETRASO</strong><span>{citasRetrasadas.length===1?"Hay 1 cita que ya superó su hora programada.":"Hay "+citasRetrasadas.length+" citas que ya superaron su hora programada."}</span></div>
+          <div className="monitor-appointment-alert-list">{citasRetrasadas.slice(0,3).map(c=>{const s=citaStatus(c);return <b key={c.id}>{c.folio} · {String(c.hora_inicio||"").slice(0,5)} · +{s.minutes} min</b>})}</div>
+        </div>}
+
         <div className="monitor-lower-grid">
           <section className="units-table-card">
             <div className="table-title"><strong>{tab==="patio"?"Unidades en Patio":tab==="completadas"?"Unidades Completadas":tab==="retrasadas"?"Unidades Retrasadas":"Unidades en Proceso"}</strong><button onClick={load} disabled={loading}><RefreshCw size={15}/>{loading?"Actualizando":"Actualizar"}</button></div>
