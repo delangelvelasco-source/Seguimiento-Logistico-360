@@ -142,4 +142,6 @@ function formatMinutes(v){const n=Math.floor(v);return n<60?n+" min":Math.floor(
 
 function isToday(value){if(!value)return false;return dateKey(value)===dateKey(Date.now())}
 function dateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value))}
-function isVisibleUnit(u){return !u.salida_caseta_at || isToday(u.salida_caseta_at)}
+// El monitor operativo trabaja por jornada: al cambiar el día se ocultan
+// todas las unidades de jornadas anteriores, sin borrar sus registros.
+function isVisibleUnit(u){return isToday(u.created_at)}
