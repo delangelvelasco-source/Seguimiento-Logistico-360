@@ -566,7 +566,7 @@ export default function Caseta({ warehouseId }) {
 
     <div className="caseta-recent-exact">
       <div className="recent-exact-head">
-        <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Monitor operativo</h3><p>Seguimiento en tiempo real de las unidades transportistas. Los demás accesos quedan disponibles en el botón inferior.</p></div></div>
+        <div><div className="exact-icon"><Clock size={22}/></div><div><h3>Monitor operativo</h3><p>Seguimiento en tiempo real de las unidades transportistas.</p></div></div>
         <div className="recent-exact-actions"><span>{transportistas.length} unidades</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
       </div>
       {transportistas.length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Tipo</th><th>Nombre</th><th>Empresa</th><th>Operación</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{transportistas.map(renderAccessRow)}</tbody></table></div>:<div className="exact-empty"><Truck size={24}/><strong>Sin unidades registradas</strong><span>Las unidades transportistas aparecerán aquí en cuanto se registre un ingreso.</span></div>}
