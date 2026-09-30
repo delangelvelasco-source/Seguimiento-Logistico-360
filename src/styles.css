@@ -1178,3 +1178,35 @@
 
 /* Caseta · cantidad de pallets de la cita */
 .cita-pallet-field{display:block}.cita-pallet-field>span{display:block;margin-bottom:6px;font-size:12px;font-weight:900;color:#dce7f4}.cita-pallet-field small{display:block;margin-top:5px;font-size:9px;color:#63d8a0;font-weight:700}.cita-pallet-field input{font-weight:900}
+
+
+/* Agenda de citas CSR visible en Caseta */
+.caseta-upcoming-appointments{margin:18px 0 22px;padding:18px;border:1px solid #dfe7f0;border-radius:18px;background:linear-gradient(180deg,#fff,#f8fbff);box-shadow:0 8px 24px rgba(15,35,60,.06)}
+.upcoming-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}
+.upcoming-head>div{display:flex;align-items:center;gap:12px}
+.upcoming-head h3{margin:0;font-size:18px;color:#132238}
+.upcoming-head p{margin:3px 0 0;font-size:12px;color:#718096}
+.upcoming-count{font-size:12px;font-weight:800;color:#1677d2;background:#eaf4ff;border:1px solid #cfe6ff;padding:7px 10px;border-radius:999px;white-space:nowrap}
+.upcoming-list{display:grid;gap:9px}
+.upcoming-cita{width:100%;display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:14px;text-align:left;border:1px solid #dbe5ef;border-radius:14px;background:#fff;padding:12px 14px;cursor:pointer;transition:.16s ease}
+.upcoming-cita:hover{transform:translateY(-1px);border-color:#7ab7ee;box-shadow:0 5px 16px rgba(20,80,140,.09)}
+.upcoming-cita.next{border-color:#4b9bea;box-shadow:0 0 0 2px rgba(75,155,234,.12)}
+.upcoming-time{display:flex;align-items:center;gap:5px;color:#1473c9}
+.upcoming-time strong{font-size:18px}
+.upcoming-time small{font-size:11px;color:#7a8797}
+.upcoming-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.upcoming-main strong{font-size:13px;color:#162438}
+.upcoming-main span{font-size:12px;font-weight:700;color:#34465a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upcoming-main small{font-size:11px;color:#77869a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upcoming-action{font-size:11px;font-weight:900;color:#1473c9;white-space:nowrap}
+.upcoming-empty{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:20px;color:#708096;text-align:center}
+.upcoming-empty strong{color:#42546a}
+.upcoming-empty span{width:100%;font-size:11px}
+@media(max-width:700px){
+  .caseta-upcoming-appointments{padding:13px;margin:12px 0 16px}
+  .upcoming-head{align-items:flex-start}
+  .upcoming-head h3{font-size:16px}
+  .upcoming-cita{grid-template-columns:82px 1fr;padding:11px}
+  .upcoming-action{grid-column:2;font-size:10px}
+  .upcoming-time strong{font-size:16px}
+}
