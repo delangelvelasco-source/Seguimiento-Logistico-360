@@ -51,7 +51,7 @@ function App() {
         // Vite cambia main.jsx por un asset con hash en producción.
         // Comparamos el módulo real servido por index.html para detectar cualquier build nuevo.
         const currentScript = Array.from(document.scripts)
-          .find(el => el.type === "module" || (el.src && /assets\\//.test(el.src)));
+          .find(el => el.type === "module" || (el.src && /assets\//.test(el.src)));
         const currentAsset = currentScript?.getAttribute("src") || "";
         const url = new URL("./index.html", window.location.href);
         url.searchParams.set("__version_check", Date.now().toString());
