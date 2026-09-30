@@ -102,9 +102,12 @@ export default function TorreControl({warehouseId,onLogout}){
 
           <section className="warehouse-status">
             <div className="status-head"><strong>Estado del Almacén</strong><span>Rampas totales <b>{ramps.length}</b></span></div>
-            <div className="capacity-ring"><div><strong>{ramps.length?Math.round(operational.length/ramps.length*100):0}%</strong><span>Capacidad<br/>de operación</span></div><em>Operación Normal</em></div>
-            <div className="status-list"><div>En uso <b>{occupied.size}</b></div><div>Disponibles <b>{Math.max(0,operational.length-occupied.size)}</b></div><div>Bloqueadas <b>{ramps.filter(r=>r.activa&&r.estado!=="operativa").length}</b></div></div>
-            <div className="avg-time"><strong>Tiempo promedio</strong><div><span>◷ Espera en patio<b>18 min</b></span><span>▣ Descarga<b>42 min</b></span><span>▣ Carga<b>38 min</b></span><span>▣ Salida<b>15 min</b></span></div></div>
+            <div className="capacity-summary">
+              <div className="capacity-ring"><div><strong>{ramps.length?Math.round(operational.length/ramps.length*100):0}%</strong><span>Capacidad<br/>operativa</span></div></div>
+              <div className="capacity-side"><em>Operación Normal</em><span>Capacidad disponible</span><b>{Math.max(0,operational.length-occupied.size)} rampas libres</b></div>
+            </div>
+            <div className="status-list"><div><span>En uso</span><b>{occupied.size}</b></div><div><span>Disponibles</span><b>{Math.max(0,operational.length-occupied.size)}</b></div><div><span>Bloqueadas</span><b>{ramps.filter(r=>r.activa&&r.estado!=="operativa").length}</b></div></div>
+            <div className="avg-time"><strong>Tiempo promedio</strong><div><span>◷ Espera en patio<b>0 min</b></span><span>▣ Descarga<b>0 min</b></span><span>▣ Carga<b>0 min</b></span><span>▣ Salida<b>0 min</b></span></div></div>
           </section>
         </div>
 
