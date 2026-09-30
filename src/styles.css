@@ -818,3 +818,15 @@
   }
   .caseta-exact-submit .caseta-submit-arrow{font-size:24px}
 }
+
+
+/* ===== Mensajes de éxito Caseta legibles en móvil ===== */
+.caseta-page .notice.success,
+.caseta-page .notice.success strong,
+.caseta-page .notice.success span{
+  color:#fff !important;
+}
+.caseta-page .notice.success{
+  background:#0c2a1f;
+  border-color:#2fbd7a;
+}
