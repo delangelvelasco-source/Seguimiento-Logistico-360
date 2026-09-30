@@ -103,7 +103,7 @@ export default function TorreControl({warehouseId,onLogout}){
           <section className="warehouse-status">
             <div className="status-head"><strong>Estado del Almacén</strong><span>Rampas totales <b>{ramps.length}</b></span></div>
             <div className="capacity-summary">
-              <div className="capacity-ring"><div style={{"--capacity":`${ramps.length?Math.round(operational.length/ramps.length*100):0}%`}}><strong>{ramps.length?Math.round(operational.length/ramps.length*100):0}%</strong><span>Capacidad<br/>operativa</span></div></div>
+              <div className="capacity-ring"><div style={{background:`radial-gradient(circle,#0d1926 56%,transparent 57%),conic-gradient(#28d889 0 ${ramps.length?Math.round(operational.length/ramps.length*100):0}%,#1e2b3c ${ramps.length?Math.round(operational.length/ramps.length*100):0}% 100%)`}}><strong>{ramps.length?Math.round(operational.length/ramps.length*100):0}%</strong><span>Capacidad<br/>operativa</span></div></div>
               <div className="capacity-side"><em>Operación Normal</em><span>Capacidad disponible</span><b>{Math.max(0,operational.length-occupied.size)} rampas libres</b></div>
             </div>
             <div className="status-list"><div><span>En uso</span><b>{occupied.size}</b></div><div><span>Disponibles</span><b>{Math.max(0,operational.length-occupied.size)}</b></div><div><span>Bloqueadas</span><b>{ramps.filter(r=>r.activa&&r.estado!=="operativa").length}</b></div></div>
