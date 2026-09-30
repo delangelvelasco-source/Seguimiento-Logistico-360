@@ -1077,3 +1077,29 @@
 }
 
 .csr-delete-hint{display:inline-block;margin-top:7px;padding:3px 7px;border-radius:6px;background:#fff0f0;color:#c73535;font-size:8px;font-weight:900;cursor:pointer;border:1px solid #f1bcbc}.csr-delete-hint:hover{background:#ffe0e0}
+
+
+/* Evidencia de Caseta para CSR */
+.csr-evidence-modal{position:fixed;inset:0;z-index:1200;background:rgba(4,12,25,.78);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px}
+.csr-evidence-card{width:min(920px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.35);padding:22px}
+.csr-evidence-head{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #e5eaf1;padding-bottom:14px}
+.csr-evidence-head div{display:flex;flex-direction:column;gap:3px}
+.csr-evidence-head strong{font-size:20px;color:#10223f}
+.csr-evidence-head span{font-size:12px;color:#64748b;font-weight:700}
+.csr-evidence-close{width:38px;height:38px;border:1px solid #dbe2eb;background:#f8fafc;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:#334155}
+.csr-evidence-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.csr-evidence-summary>div{background:#f5f8fc;border:1px solid #e3e9f1;border-radius:12px;padding:11px}
+.csr-evidence-summary b{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#718096;margin-bottom:4px}
+.csr-evidence-summary span{font-size:13px;font-weight:800;color:#172b4d;word-break:break-word}
+.csr-evidence-photos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.csr-evidence-photo{border:1px solid #dfe6ef;border-radius:16px;padding:12px;background:#f8fafc}
+.csr-evidence-photo-title{font-size:13px;font-weight:900;color:#172b4d;margin-bottom:10px}
+.csr-evidence-photo img{display:block;width:100%;height:360px;object-fit:contain;background:#e9eef5;border-radius:12px}
+.csr-evidence-empty{height:360px;display:grid;place-items:center;background:#edf2f7;border-radius:12px;color:#64748b;font-size:12px;font-weight:700}
+@media(max-width:700px){
+ .csr-evidence-modal{padding:10px}
+ .csr-evidence-card{padding:15px;border-radius:17px;max-height:95vh}
+ .csr-evidence-summary{grid-template-columns:1fr 1fr}
+ .csr-evidence-photos{grid-template-columns:1fr}
+ .csr-evidence-photo img,.csr-evidence-empty{height:300px}
+}
