@@ -44,40 +44,73 @@ const roleOptions = [
 function App() {
   useEffect(() => {
     let stopped = false;
+    let checking = false;
+
     const checkForNewBuild = async () => {
+      if (checking || stopped || !navigator.onLine) return;
+      checking = true;
       try {
-        // Vite cambia main.jsx por un asset con hash en producción.
-        // Comparamos el módulo real servido por index.html para detectar cualquier build nuevo.
         const currentScript = Array.from(document.scripts)
-          .find(el => el.type === "module" || (el.src && /assets\//.test(el.src)));
-        const currentAsset = currentScript?.getAttribute("src") || "";
+          .find(el => el.type === "module" && el.src);
+        const currentAsset = currentScript?.src || "";
+
         const url = new URL("./index.html", window.location.href);
-        url.searchParams.set("__version_check", Date.now().toString());
+        url.searchParams.set("__seg360_build_check", Date.now().toString());
+
         const response = await fetch(url.toString(), {
           cache: "no-store",
-          headers: { "Cache-Control": "no-cache, no-store, max-age=0" }
+          headers: {
+            "Cache-Control": "no-cache, no-store, max-age=0",
+            "Pragma": "no-cache"
+          }
         });
         if (!response.ok || stopped) return;
+
         const html = await response.text();
-        const match = html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i)
-          || html.match(/<script[^>]+src=["']([^"']+)["'][^>]+type=["']module["']/i);
+        const match =
+          html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i) ||
+          html.match(/<script[^>]+src=["']([^"']+)["'][^>]+type=["']module["']/i);
+
         const remoteAsset = match?.[1] || "";
-        if (
-          currentAsset &&
-          remoteAsset &&
-          new URL(currentAsset, window.location.href).pathname !==
-            new URL(remoteAsset, window.location.href).pathname &&
-          !stopped
-        ) {
+        if (!currentAsset || !remoteAsset) return;
+
+        const currentPath = new URL(currentAsset, window.location.href).pathname;
+        const remotePath = new URL(remoteAsset, window.location.href).pathname;
+
+        if (currentPath !== remotePath && !stopped) {
           window.location.reload();
         }
-      } catch {}
+      } catch {
+        // El monitoreo operativo continúa aunque la comprobación de versión falle.
+      } finally {
+        checking = false;
+      }
     };
-    checkForNewBuild();
-    const timer = window.setInterval(checkForNewBuild, 30000);
-    return () => { stopped = true; window.clearInterval(timer); };
-  }, []);
 
+    checkForNewBuild();
+
+    // Tablet / móvil: comprobar también al volver a primer plano o recuperar red.
+    const timer = window.setInterval(checkForNewBuild, 10000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") checkForNewBuild();
+    };
+    const onFocus = () => checkForNewBuild();
+    const onOnline = () => checkForNewBuild();
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("pageshow", onFocus);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("pageshow", onFocus);
+    };
+  }, []);
 
   const [mobileOpen,setMobileOpen]=useState(false);
   const [focusSection,setFocusSection]=useState("");
