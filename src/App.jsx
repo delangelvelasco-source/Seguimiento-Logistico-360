@@ -4,14 +4,13 @@ import Caseta from "./Caseta";
 import Dispatch from "./Dispatch";
 import CSR from "./CSR";
 import Operacion from "./Operacion";
-import Documentacion from "./Documentacion";
 import Guardia from "./Guardia";
 import TorreControl from "./TorreControl";
 import Practica from "./Practica";
 import { Activity, ArrowRight, Box, CheckCircle2, ClipboardList, ClipboardCheck, Clock3, Factory, LayoutDashboard, LogIn, MapPin, Menu, ShieldCheck, Truck, Users, X, UserPlus, Save, UserCheck, UserX, RefreshCw, Wrench, LogOut } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-const stages = [["caseta","Caseta","Ingreso y validación"],["dispatch","Dispatch","Cita y transporte"],["csr","CSR","Validación documental"],["operacion","Operación","Rampa y proceso"],["documentacion","Documentación","Revisión documental"],["guardia","Guardia","Salida y liberación"]];
+const stages = [["caseta","Caseta","Ingreso y validación"],["dispatch","Dispatch","Cita y transporte"],["csr","CSR","Validación documental"],["operacion","Operación","Rampa y proceso"],["guardia","Guardia","Salida y liberación"]];
 
 const roleAccess = {
   torre: ["admin_global","admin_almacen","team_lead","supervisor","operacion","monitor_almacen"],
@@ -305,7 +304,7 @@ function App() {
 {canAccess("dispatch")&&effectiveWarehouseId&&<Dispatch warehouseId={effectiveWarehouseId}/>}
 {canAccess("csr")&&effectiveWarehouseId&&<CSR warehouseId={effectiveWarehouseId}/>}
 {canAccess("operacion")&&effectiveWarehouseId&&<Operacion warehouseId={effectiveWarehouseId}/>}
-{canAccess("documentacion")&&effectiveWarehouseId&&<Documentacion warehouseId={effectiveWarehouseId}/>}
+
 {canAccess("guardia")&&effectiveWarehouseId&&<Guardia warehouseId={effectiveWarehouseId}/>}<section className="next"><div><p className="eyebrow">SIGUIENTE ETAPA</p><h3>Construir los módulos operativos sobre esta base.</h3><p>Agenda CSR, Caseta, Dispatch, Patio, Guardia y Torre de Control.</p></div><div className="architecture"><span>GitHub</span><b>→</b><span>Frontend</span><b>→</b><span>Supabase</span><b>→</b><span>Producción</span></div></section><footer>Seguimiento Logístico 360° · Torre de Control · v0.4.0</footer></main></div>{(idleWarning||sessionLocked)&&<div className="session-lock-overlay"><div className="session-lock-card"><div className="session-lock-icon"><ShieldCheck size={24}/></div><p className="eyebrow">{sessionLocked?"SESIÓN BLOQUEADA":"SEGURIDAD DE SESIÓN"}</p><h2>{sessionLocked?"Sesión bloqueada por inactividad":"Tu sesión está por bloquearse"}</h2><p>{sessionLocked?"Por seguridad, el acceso fue bloqueado después de 15 minutos sin actividad. Inicia sesión nuevamente para continuar.":"Llevas 13 minutos sin actividad. Si necesitas continuar, confirma que sigues aquí."}</p>{sessionLocked?<button className="login-btn" onClick={logout}>Volver a iniciar sesión <LogIn size={17}/></button>:<button className="login-btn" onClick={()=>{setIdleWarning(false);window.dispatchEvent(new Event("pointerdown"))}}>Continuar sesión <CheckCircle2 size={17}/></button>}</div></div>}</>;
 }
 function Metric({icon,label,value}){return <div className="metric"><div className="metric-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong></div></div>}
