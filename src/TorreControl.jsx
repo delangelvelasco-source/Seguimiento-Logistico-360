@@ -6,14 +6,14 @@ const ACTIVE_STATES=["en_caseta","validando","espera_turno","rampa_asignada","en
 const STAGE_LABEL={en_caseta:"Caseta",validando:"Dispatch / CSR",espera_turno:"Espera turno",rampa_asignada:"Rampa asignada",en_operacion:"Operación",documentacion:"Documentación",liberada:"Lista para Guardia"};
 const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada"];
 
-export default function TorreControl({warehouseId}){
+export default function TorreControl({warehouseId,onLogout}){
   const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null),[loading,setLoading]=useState(false),[error,setError]=useState(""),[now,setNow]=useState(Date.now()),[lastUpdate,setLastUpdate]=useState(null);
   async function load(){
     if(!warehouseId)return;
     setLoading(true);setError("");
     const [u,r,c]=await Promise.all([
-      supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,operacion_tipo,rampa_id,ubicacion_tipo,ubicacion_at,created_at,operacion_inicio_at,operacion_fin_at,desentrampe_at,salida_autorizada,salida_bloqueada,operacion_360_id").eq("almacen_id",warehouseId).in("estado",ACTIVE_STATES).order("created_at",{ascending:false}).limit(100),
-      supabase.from("rampas").select("id,nombre,codigo,estado,activa,motivo").eq("almacen_id",warehouseId).order("nombre"),
+      supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
+      supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
       supabase.from("vista_capacidad_patio").select("*").eq("almacen_id",warehouseId).maybeSingle()
     ]);
     if(u.error)setError(u.error.message);else setUnits(u.data||[]);
@@ -63,7 +63,7 @@ export default function TorreControl({warehouseId}){
   const patioCapacity=Number(patio?.capacidad_maxima||20), patioOccupancy=Number(patio?.ocupacion??stats.patio), patioPct=Math.min(100,Math.round(patioOccupancy/patioCapacity*100));
   return <section id="torre" className="users-section">
     <div className="panel torre-panel">
-      <div className="panel-title"><div><Activity size={19}/><strong>Torre de Control · Las Torres</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>{loading?"Actualizando…":"Actualizar"}</button></div>
+      <div className="panel-title"><div><Activity size={19}/><strong>Torre de Control · Las Torres</strong></div><div style={{display:"flex",gap:8}}><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>{loading?"Actualizando…":"Actualizar"}</button>{onLogout&&<button className="secondary-btn" onClick={onLogout}>Cerrar sesión</button>}</div></div>
       <p className="section-copy">Vista operativa del flujo completo. El tiempo global se mide desde el registro en Caseta; el tiempo de operación desde el inicio en rampa. Actualización automática en tiempo real, con respaldo de consulta cada 5 segundos.</p>
       {error&&<div className="notice error"><strong>Error de consulta</strong><span>{error}</span></div>}
       <div className="tower-kpis">
