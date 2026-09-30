@@ -74,11 +74,23 @@ function App() {
         const remoteAsset = match?.[1] || "";
         if (!currentAsset || !remoteAsset) return;
 
-        const currentPath = new URL(currentAsset, window.location.href).pathname;
-        const remotePath = new URL(remoteAsset, window.location.href).pathname;
+        const currentUrl = new URL(currentAsset, window.location.href);
+        const remoteUrl = new URL(remoteAsset, window.location.href);
 
-        if (currentPath !== remotePath && !stopped) {
-          window.location.reload();
+        // Comparar también el query de versión. El nombre/ruta del asset puede
+        // permanecer igual en una publicación y la tablet podría conservar JS viejo.
+        const currentVersion = currentUrl.searchParams.get("v") || currentUrl.search;
+        const remoteVersion = remoteUrl.searchParams.get("v") || remoteUrl.search;
+
+        if (
+          (currentUrl.pathname !== remoteUrl.pathname || currentVersion !== remoteVersion) &&
+          !stopped
+        ) {
+          const hash = window.location.hash || "";
+          const freshUrl = new URL(window.location.href);
+          freshUrl.searchParams.set("__seg360_force_refresh", Date.now().toString());
+          freshUrl.hash = hash;
+          window.location.replace(freshUrl.toString());
         }
       } catch {
         // El monitoreo operativo continúa aunque la comprobación de versión falle.
@@ -90,7 +102,7 @@ function App() {
     checkForNewBuild();
 
     // Tablet / móvil: comprobar también al volver a primer plano o recuperar red.
-    const timer = window.setInterval(checkForNewBuild, 10000);
+    const timer = window.setInterval(checkForNewBuild, 5000);
     const onVisible = () => {
       if (document.visibilityState === "visible") checkForNewBuild();
     };
