@@ -892,3 +892,24 @@
   .csr-day{min-width:94px}
   .csr-calendar-head strong{font-size:15px}
 }
+
+
+/* ===== CSR agenda operativa ===== */
+.csr-operation-switch{display:flex;gap:8px;margin:12px 0}
+.csr-operation-switch button{flex:1;min-height:44px;border:1px solid #263750;border-radius:10px;background:#0d1725;color:#9aaac0;font-weight:800}
+.csr-operation-switch button.active{background:#1769e8;color:#fff;border-color:#1769e8}
+.csr-slot{width:100%;min-height:52px;padding:7px;border:1px solid #24354c;border-radius:8px;background:#101b2a;color:#dfe8f5;text-align:left}
+.csr-slot.free{cursor:pointer}
+.csr-slot.free:hover{border-color:#3d78df}
+.csr-slot.busy{background:#17202d;border-color:#344155;opacity:.9}
+.csr-slot strong,.csr-slot span,.csr-slot small{display:block}
+.csr-slot strong{font-size:11px}.csr-slot span{font-size:9px;color:#8da0b8}.csr-slot small{font-size:9px;color:#65d99a;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csr-scheduler{margin:12px 0;padding:14px;border:1px solid #29466a;border-radius:12px;background:#0e1b2c}
+.csr-scheduler>div{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.csr-scheduler p{font-size:12px;color:#91a2b9}
+.csr-scheduler select{width:100%;min-height:44px;margin:8px 0;padding:0 10px;border:1px solid #2a3c55;border-radius:9px;background:#0a111d;color:#e8eef7}
+@media(max-width:900px){
+ .csr-operation-switch{position:sticky;top:0;z-index:3;background:#080f1a;padding:6px 0}
+ .csr-calendar-grid{grid-template-columns:repeat(7,112px)}
+ .csr-day{min-width:112px}
+}
