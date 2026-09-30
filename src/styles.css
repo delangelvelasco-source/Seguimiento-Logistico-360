@@ -363,3 +363,11 @@
 @media(max-width:600px){.qr-scanner-overlay{padding:10px}.qr-scanner-card{width:100%;max-height:calc(100vh - 20px);padding:12px;border-radius:18px}.qr-reader{min-height:250px;padding:6px}.qr-reader video{max-height:55vh}.cita-scan-btn{width:36px;height:36px;right:48px}}
 
 .session-lock-overlay{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px;background:#02050bcc;backdrop-filter:blur(12px)}.session-lock-card{width:min(460px,100%);padding:28px;border:1px solid #33445f;border-radius:20px;background:#0b121e;box-shadow:0 30px 90px #000b;text-align:center}.session-lock-icon{width:54px;height:54px;margin:0 auto 14px;display:grid;place-items:center;border-radius:16px;background:#15243a;color:#8fb1ff}.session-lock-card h2{margin:8px 0 10px;font-size:24px}.session-lock-card p:not(.eyebrow){color:#8997ac;font-size:13px;line-height:1.55;margin:0 auto 18px;max-width:380px}.session-lock-card .login-btn{margin-top:10px}
+
+/* Monitor Almacén · vista dedicada para TV/tableta */
+.monitor-screen{min-height:100vh;background:radial-gradient(circle at 70% -10%,#17233c 0,transparent 35%),#070b13;padding:22px 0 32px}
+.monitor-screen .users-section{max-width:1500px;margin:0 auto}
+.monitor-screen .torre-panel{border-radius:20px;padding:22px}
+.monitor-screen .tower-kpis{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.monitor-screen{padding:10px 0 22px}.monitor-screen .users-section{margin:0 10px}.monitor-screen .torre-panel{padding:15px;border-radius:18px}.monitor-screen .panel-title strong{font-size:16px}.monitor-screen .section-copy{font-size:11px}.monitor-screen .tower-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.monitor-screen .users-section{margin:0 7px}.monitor-screen .torre-panel{padding:12px}.monitor-screen .panel-title{align-items:flex-start}.monitor-screen .panel-title>div:first-child{min-width:0}.monitor-screen .panel-title strong{font-size:14px}.monitor-screen .panel-title>div:last-child{flex-shrink:0;gap:5px!important}.monitor-screen .secondary-btn{padding:7px 8px;font-size:9px}.monitor-screen .tower-kpi{padding:11px}.monitor-screen .tower-kpi strong{font-size:20px}.monitor-screen .tower-card{padding:12px}.monitor-screen .tower-card-title span{font-size:11px}.monitor-screen .tower-card-title small{font-size:9px}.monitor-screen .tower-table{min-width:820px}}
