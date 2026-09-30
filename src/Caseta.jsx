@@ -660,3 +660,6 @@ export default function Caseta({ warehouseId }) {
     {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>{scannerMode==="gafete"?"Escanear QR de gafete":"Escanear QR de cita"}</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>{scannerMode==="gafete"?"Apunta la cámara al QR del gafete. Más adelante el sistema podrá generar estos QR desde Administración.":"Apunta la cámara al QR generado por CSR."}</small></div></div>}
   </section>
 }
+
+/* Cantidad de pallets de cita */
+.cita-pallet-field{display:block}.cita-pallet-field>span{display:block;margin-bottom:6px;font-size:12px;font-weight:900;color:#dce7f4}.cita-pallet-field small{display:block;margin-top:5px;font-size:9px;color:#63d8a0;font-weight:700}.cita-pallet-field input{font-weight:900}
