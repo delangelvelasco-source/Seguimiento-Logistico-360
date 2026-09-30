@@ -49,26 +49,17 @@ export default function CSR({warehouseId}){
  </div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
 
-function WeeklyCalendar({appointments=[]}){
- const now=new Date();
- const start=new Date(now);
- const offset=(now.getDay()+6)%7;
- start.setDate(now.getDate()-offset);
- start.setHours(0,0,0,0);
- const days=Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d});
+function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){
+ const now=new Date(); const start=new Date(now); const offset=(now.getDay()+6)%7; start.setDate(now.getDate()-offset); start.setHours(0,0,0,0);
  const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
  const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+ const slots=[]; for(let d=0;d<7;d++){const hours=d<5?Array.from({length:10},(_,i)=>8+i):d===5?[8,9,10]:[];hours.forEach(h=>{for(let w=1;w<=2;w++){const dt=new Date(start);dt.setDate(start.getDate()+d);dt.setHours(h,0,0,0);slots.push({dt,w})}})}
+ const visible=appointments.filter(a=>(a.operacion_tipo||"recibo")===operation);
  return <div className="csr-week-calendar">
-  <div className="csr-calendar-head"><div><strong>Calendario semanal</strong><span>Citas programadas de la semana</span></div><span className="tag">{appointments.length} cita(s)</span></div>
-  <div className="csr-calendar-grid">{days.map((d,i)=>{
-   const dayAppointments=appointments.filter(a=>a.cita_at&&sameDay(new Date(a.cita_at),d));
-   return <div className={"csr-day"+(sameDay(d,now)?" today":"")} key={d.toISOString()}>
-    <div className="csr-day-head"><b>{labels[i]}</b><strong>{d.getDate()}</strong></div>
-    <div className="csr-day-list">
-     {dayAppointments.map(a=><div className="csr-appointment" key={a.id}><strong>{new Date(a.cita_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</strong><span>{a.folio}</span><small>{a.linea_transporte||"Sin transportista"} · {a.operacion_tipo||"Operación"}</small></div>)}
-     {!dayAppointments.length&&<small className="csr-empty-day">Sin citas</small>}
-    </div>
-   </div>
-  })}</div>
+  <div className="csr-calendar-head"><div><strong>Calendario semanal · {operation==="recibo"?"Recibos":"Embarques"}</strong><span>2 ventanas por hora · actualización automática</span></div><span className="tag">{visible.length} cita(s)</span></div>
+  <div className="csr-calendar-grid">{labels.map((label,i)=>{const day=new Date(start);day.setDate(start.getDate()+i);const daySlots=slots.filter(s=>sameDay(s.dt,day));return <div className={"csr-day"+(sameDay(day,now)?" today":"")} key={label}>
+   <div className="csr-day-head"><b>{label}</b><strong>{day.getDate()}</strong></div>
+   <div className="csr-day-list">{daySlots.length?daySlots.map(s=>{const booked=visible.find(a=>a.cita_at&&Math.abs(new Date(a.cita_at)-s.dt)<1800000);return <button type="button" className={"csr-slot "+(booked?"busy":"free")} disabled={!!booked} onClick={()=>onSlot?.(s.dt.toISOString())}><strong>{String(s.dt.getHours()).padStart(2,"0")}:00</strong><span>Ventana {s.w}</span>{booked?<small>{booked.folio}</small>:<small>Disponible</small>}</button>}):<small className="csr-empty-day">Sin operación</small>}</div>
+  </div>})}</div>
  </div>
 }
