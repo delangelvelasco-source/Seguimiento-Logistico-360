@@ -44,6 +44,28 @@ const roleOptions = [
 ];
 
 function App() {
+  useEffect(() => {
+    let stopped = false;
+    const checkForNewBuild = async () => {
+      try {
+        const currentScript = document.querySelector('script[src*="main.jsx"]')?.getAttribute("src") || "";
+        const currentVersion = new URL(currentScript, window.location.href).searchParams.get("v") || "";
+        const url = new URL("./index.html", window.location.href);
+        url.searchParams.set("__version_check", Date.now().toString());
+        const response = await fetch(url.toString(), { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        if (!response.ok || stopped) return;
+        const html = await response.text();
+        const match = html.match(/main\\.jsx\\?v=([^"'&\\s]+)/);
+        const remoteVersion = match?.[1] || "";
+        if (remoteVersion && currentVersion && remoteVersion !== currentVersion && !stopped) window.location.reload();
+      } catch {}
+    };
+    checkForNewBuild();
+    const timer = window.setInterval(checkForNewBuild, 30000);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, []);
+
+
   const [mobileOpen,setMobileOpen]=useState(false);
   const [focusSection,setFocusSection]=useState("");
   const [session,setSession]=useState(null);
