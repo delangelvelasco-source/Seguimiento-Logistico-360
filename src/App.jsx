@@ -48,16 +48,31 @@ function App() {
     let stopped = false;
     const checkForNewBuild = async () => {
       try {
-        const currentScript = document.querySelector('script[src*="main.jsx"]')?.getAttribute("src") || "";
-        const currentVersion = new URL(currentScript, window.location.href).searchParams.get("v") || "";
+        // Vite cambia main.jsx por un asset con hash en producción.
+        // Comparamos el módulo real servido por index.html para detectar cualquier build nuevo.
+        const currentScript = Array.from(document.scripts)
+          .find(el => el.type === "module" || (el.src && /assets\\//.test(el.src)));
+        const currentAsset = currentScript?.getAttribute("src") || "";
         const url = new URL("./index.html", window.location.href);
         url.searchParams.set("__version_check", Date.now().toString());
-        const response = await fetch(url.toString(), { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        const response = await fetch(url.toString(), {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store, max-age=0" }
+        });
         if (!response.ok || stopped) return;
         const html = await response.text();
-        const match = html.match(/main\\.jsx\\?v=([^"'&\\s]+)/);
-        const remoteVersion = match?.[1] || "";
-        if (remoteVersion && currentVersion && remoteVersion !== currentVersion && !stopped) window.location.reload();
+        const match = html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i)
+          || html.match(/<script[^>]+src=["']([^"']+)["'][^>]+type=["']module["']/i);
+        const remoteAsset = match?.[1] || "";
+        if (
+          currentAsset &&
+          remoteAsset &&
+          new URL(currentAsset, window.location.href).pathname !==
+            new URL(remoteAsset, window.location.href).pathname &&
+          !stopped
+        ) {
+          window.location.reload();
+        }
       } catch {}
     };
     checkForNewBuild();
