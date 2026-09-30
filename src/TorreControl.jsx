@@ -6,7 +6,7 @@ const STAGE_LABEL={en_caseta:"Caseta",validando:"Validando",espera_turno:"En esp
 const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada"];
 
 export default function TorreControl({warehouseId,onLogout}){
-  const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null);
+  const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null),[citas,setCitas]=useState([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState(""),[now,setNow]=useState(Date.now()),[lastUpdate,setLastUpdate]=useState(null),[tab,setTab]=useState("proceso"),[query,setQuery]=useState("");
   const loadSeq=useRef(0);
 
@@ -14,15 +14,17 @@ export default function TorreControl({warehouseId,onLogout}){
     if(!warehouseId)return;
     const seq=++loadSeq.current;
     setLoading(true);setError("");
-    const [u,r,c]=await Promise.all([
+    const [u,r,c,p]=await Promise.all([
       supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
-      supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId})
+      supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId}),
+      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).eq("fecha",new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())).not("estado","in","(cancelada,cerrada)").order("hora_inicio",{ascending:true})
     ]);
     if(seq!==loadSeq.current)return;
     if(u.error)setError(u.error.message);else setUnits((u.data||[]).filter(isVisibleUnit));
     if(r.error)setError(prev=>prev||r.error.message);else setRamps(r.data||[]);
     if(c.error)setError(prev=>prev||c.error.message);else setPatio(c.data?.[0]||null);
+    if(p.error)setError(prev=>prev||p.error.message);else setCitas((p.data||[]).map(x=>({...x,precarga:Array.isArray(x.cita_datos_precarga)?(x.cita_datos_precarga[0]||null):(x.cita_datos_precarga||null)})));
     setLastUpdate(new Date());setLoading(false);
   }
 
@@ -37,6 +39,7 @@ export default function TorreControl({warehouseId,onLogout}){
         .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},load)
         .on("postgres_changes",{event:"*",schema:"public",table:"rampas",filter:"almacen_id=eq."+warehouseId},load)
         .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},load)
+        .on("postgres_changes",{event:"*",schema:"public",table:"citas",filter:"almacen_id=eq."+warehouseId},load)
         .subscribe();
     };
     start();
@@ -59,7 +62,13 @@ export default function TorreControl({warehouseId,onLogout}){
   const operational=ramps.filter(r=>r.activa&&r.estado==="operativa"),occupied=new Set(units.map(u=>u.rampa_id).filter(Boolean));
   const filtered=useMemo(()=>units.filter(u=>[u.folio,u.linea_transporte,u.placas_tracto,u.placas_caja].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
   const risk=useMemo(()=>{const o={green:0,yellow:0,orange:0,red:0};activeUnits.forEach(u=>o[sla(u,now).level]++);return o},[units,now]);
-  const upcoming=todayUnits.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).slice(0,5);
+  const upcoming=useMemo(()=>{
+    const nowMinutes=new Date().toLocaleTimeString("en-GB",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit"}).slice(0,5);
+    return citas
+      .filter(c=>String(c.hora_inicio||"").slice(0,5)>=nowMinutes || c.estado==="confirmada" || c.estado==="borrador")
+      .sort((a,b)=>String(a.hora_inicio||"").localeCompare(String(b.hora_inicio||"")))
+      .slice(0,5);
+  },[citas]);
   const movements=units.filter(isVisibleUnit).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
   return <section id="torre" className="monitor-dashboard">
@@ -129,7 +138,7 @@ export default function TorreControl({warehouseId,onLogout}){
             <div className="monitor-table-wrap"><table className="monitor-table"><thead><tr><th>Hora llegada</th><th>Transportista</th><th>Unidad</th><th>Operación</th><th>Pallets</th><th>Rampa</th><th>Estatus</th><th>Tiempo</th><th>Acciones</th></tr></thead><tbody>{filtered.filter(u=>tab==="patio"?["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":true).map(u=>{const s=sla(u,now);return <tr key={u.id}><td>{new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</td><td>{u.linea_transporte||"—"}</td><td>{u.placas_tracto||"—"} / {u.placas_caja||"—"}</td><td><span className="type-pill">{u.operacion_tipo||"Recepción"}</span></td><td><strong>{u.pallets ?? "—"}</strong></td><td><span className="ramp-pill">{ramps.find(r=>r.id===u.rampa_id)?.codigo||"—"}</span></td><td><span className={"status-pill "+s.level}>{STAGE_LABEL[u.estado]||u.estado}</span></td><td><b className={s.level}>{formatMinutes(s.globalMin)}</b></td><td><Eye size={17}/></td></tr>})}</tbody></table>{!filtered.length&&<div className="monitor-empty">No hay unidades para mostrar.</div>}</div>
           </section>
           <aside className="monitor-sidecards">
-            <SideList title="Próximas Citas" action="Ver todas" items={upcoming.map(u=>({time:new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),title:u.operacion_tipo||"Recepción",sub:u.linea_transporte||"—"}))}/>
+            <SideList title="Próximas Citas" action="Ver todas" items={upcoming.map(c=>({time:String(c.hora_inicio||"").slice(0,5),title:c.tipo_operacion==="embarque"?"Embarque":"Recibo",sub:(c.precarga?.linea_transporte||"Línea pendiente")+" · "+c.folio}))}/>
             <SideList title="Últimos Movimientos" items={movements.map(u=>({time:new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),title:STAGE_LABEL[u.estado]||"Movimiento",sub:u.folio}))}/>
           </aside>
         </div>
