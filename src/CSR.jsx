@@ -120,7 +120,7 @@ export default function CSR({warehouseId}){
   <p>{new Date(selectedSlot).toLocaleString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</p>
   <div className="csr-form-section">
    <div className="csr-form-grid">
-    <label>Operación<select value={operation} onChange={e=>setOperation(e.target.value)}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label><label>Cuenta o cliente <span>(opcional · solo Dispatch)</span><input placeholder="Cuenta / cliente" value={appointmentForm.cuentaCliente} onChange={e=>setAppointmentForm({...appointmentForm,cuentaCliente:e.target.value})}/></label><label>Línea de transporte<input autoComplete="organization" placeholder="Empresa transportista" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/></label>
+    <label>Línea de transporte<input autoComplete="organization" placeholder="Empresa transportista" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/></label>
     <label className="csr-pallet-field">Pallets <span>(requerido)</span><input required type="number" min="0" step="1" inputMode="numeric" placeholder="Ej. 20" aria-label="Cantidad de pallets" value={appointmentForm.pallets} onChange={e=>setAppointmentForm({...appointmentForm,pallets:e.target.value})}/><small className="csr-pallet-note">Cantidad de pallets de la cita</small></label>
     <label>Número de caja<input autoCapitalize="characters" placeholder="Ej. R344" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/></label>
     <label>Placa de caja<input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaCaja} onChange={e=>setAppointmentForm({...appointmentForm,placaCaja:e.target.value.toUpperCase()})}/></label>
@@ -162,7 +162,7 @@ function AdditionalWindowMenu({initial,operation,onClose,onSubmit}){
 }
 
 function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,onAdditionalWindow,onDelete,onViewEvidence}){
- const CSR_BUILD_VERSION="2026-09-30-148";
+ const CSR_BUILD_VERSION="2026-09-30-149";
  const now=new Date();
  const start=new Date(now);
  const offset=(now.getDay()+6)%7;
