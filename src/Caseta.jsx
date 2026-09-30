@@ -27,6 +27,7 @@ export default function Caseta({ warehouseId }) {
   const [scannerError,setScannerError]=useState("");
   const [scanner,setScanner]=useState(null);
   const [citaEncontrada,setCitaEncontrada]=useState(null);
+  const [horaActual,setHoraActual]=useState(()=>new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date()));
   const [citasPorArribar,setCitasPorArribar]=useState([]);
   const loadSeqRef=useRef(0);
 
@@ -111,6 +112,17 @@ export default function Caseta({ warehouseId }) {
       if(showMessage)setRefreshLoading(false);
     }
   }
+  useEffect(()=>{
+    const actualizarHora=()=>{
+      setHoraActual(new Intl.DateTimeFormat("es-MX",{
+        timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",hour12:false
+      }).format(new Date()));
+    };
+    actualizarHora();
+    const timer=setInterval(actualizarHora,1000);
+    return()=>clearInterval(timer);
+  },[]);
+
   useEffect(()=>{
     if(!warehouseId)return;
     let activo=true;
@@ -632,7 +644,7 @@ export default function Caseta({ warehouseId }) {
       <div className="caseta-hero-divider"/>
       <div className="caseta-hero-title"><div className="eyebrow">CONTROL DE ACCESO</div><h2>Caseta</h2><p>Registro de unidades, visitantes y proveedores</p></div>
       <div className="caseta-hero-status"><div className="caseta-active"><span className="dot"/> Caseta activa</div><strong>MTY-II | Las Torres</strong></div>
-      <div className="caseta-clock">10:00</div>
+      <div className="caseta-clock" aria-label="Hora actual">{horaActual}</div>
     </div>
 
     <div className="access-selector">
