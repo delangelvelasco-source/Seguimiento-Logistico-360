@@ -669,3 +669,69 @@
   .status-list b{flex:0 0 auto}
 }
 @media(max-width:700px){.warehouse-building{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;padding:22px 8px 7px}.dock b{font-size:9px;padding:3px 5px;top:4px;left:4px}.dock-truck{font-size:22px;left:25%}}
+
+/* ===== Monitor: rampas y anillo coordinados ===== */
+.warehouse-building{
+  padding:38px 12px 10px;
+  clip-path:none;
+}
+.dock{
+  overflow:hidden;
+  min-height:0;
+}
+.dock b{
+  top:0;
+  left:0;
+  right:0;
+  width:100%;
+  min-width:0;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 4px;
+  border-radius:3px 3px 0 0;
+  font-size:14px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.04em;
+  box-shadow:0 2px 5px #0005;
+}
+.dock-door{
+  top:27%;
+  bottom:15%;
+}
+.capacity-ring>div{
+  background:radial-gradient(circle,#0d1926 56%,transparent 57%),conic-gradient(#28d889 0 var(--capacity,0%),#1e2b3c var(--capacity,0%) 100%);
+}
+@media(min-width:1400px){
+  .warehouse-building{padding-top:42px}
+  .dock b{height:34px;font-size:15px}
+  .dock-door{top:25%}
+}
+@media(max-width:1199px) and (min-width:761px){
+  .warehouse-building{padding-top:34px}
+  .dock b{height:27px;font-size:12px}
+  .dock-door{top:27%}
+}
+@media(max-width:700px){
+  .warehouse-building{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:7px;
+    padding:34px 8px 7px;
+  }
+  .dock b{
+    top:0;
+    left:0;
+    right:0;
+    width:100%;
+    height:24px;
+    font-size:10px;
+    padding:0 2px;
+  }
+  .dock-door{top:30%;bottom:14%}
+}
+@media(max-width:430px){
+  .warehouse-building{padding-top:31px}
+  .dock b{height:22px;font-size:9px}
+}
