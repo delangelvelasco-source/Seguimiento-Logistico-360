@@ -521,7 +521,14 @@ export default function Caseta({ warehouseId }) {
       const {data:accesoUnidad,error:accesoUnidadError}=await supabase.from("accesos_caseta").select("id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
       if(accesoUnidadError||!accesoUnidad){setError("El ingreso se registró, pero no se pudo localizar el acceso para asignar el gafete.");setLoading(false);return;}
       const {error:gafeteError}=await supabase.rpc("asignar_gafete_caseta",{p_acceso_id:accesoUnidad.id,p_gafete_numero:gafete.numero,p_tipo_acceso:"unidad"});
-      if(gafeteError){setError("El ingreso se registró, pero no se pudo asignar el gafete: "+(gafeteError.message||"error desconocido"));setLoading(false);return;}
+      if(gafeteError){
+        const {data:accesoConError}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
+        const evidenciaConError=accesoConError?await guardarEvidencias(accesoConError.id,accesoConError.unidad_id,user?.id):{guardadas:0,error:"No se localizó el acceso para guardar evidencia."};
+        setError("El ingreso se registró, pero no se pudo asignar el gafete: "+(gafeteError.message||"error desconocido")+(evidenciaConError.error?" · "+evidenciaConError.error:""));
+        setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
+        setCapturedPhoto("");setCapturedId("");
+        await load();setLoading(false);return;
+      }
     }
     const {data:accesoNuevo}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
     const evidencia=accesoNuevo?await guardarEvidencias(accesoNuevo.id,accesoNuevo.unidad_id,user?.id):{guardadas:0,error:"No se localizó el acceso para guardar evidencia."};
