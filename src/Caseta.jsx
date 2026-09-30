@@ -468,6 +468,7 @@ export default function Caseta({ warehouseId }) {
       setError("");
       setMessage(`✓ ${etiqueta} registrado correctamente. Folio ${folioAccesoNuevo}. Acceso abierto.`);
       setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
+      setCapturedPhoto("");setCapturedId("");
       setLoading(false);
       await load();
       return;
@@ -486,6 +487,7 @@ export default function Caseta({ warehouseId }) {
     }
     setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
     setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
+    setCapturedPhoto("");setCapturedId("");
     await load();setLoading(false);
   }
 
