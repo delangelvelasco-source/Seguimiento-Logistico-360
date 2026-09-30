@@ -4,7 +4,7 @@ import { CalendarPlus, CheckCircle2, ClipboardCheck, FileCheck2, RefreshCw, Sear
 import { supabase } from "./lib/supabase";
 
 export default function CSR({warehouseId}){
- const [units,setUnits]=useState([]),[appointments,setAppointments]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[operation,setOperation]=useState("recibo"),[selectedUnit,setSelectedUnit]=useState(null),[selectedSlot,setSelectedSlot]=useState("");
+ const [units,setUnits]=useState([]),[appointments,setAppointments]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[operation,setOperation]=useState("recibo"),[selectedSlot,setSelectedSlot]=useState(""),[appointmentForm,setAppointmentForm]=useState({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:""});
  const [practice,setPractice]=useState({cliente:"WABCO",operacion:"recibo",fecha:new Date().toISOString().slice(0,10),hora:"10:00",unidades:"1",pallets:"0",referencia:"REF-WABCO-45821"});
  const [practiceAppointment,setPracticeAppointment]=useState(null),[qrData,setQrData]=useState("");
  const [practiceMsg,setPracticeMsg]=useState("");
@@ -40,12 +40,26 @@ export default function CSR({warehouseId}){
  <div className="csr-operation-switch"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 Recibos</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 Embarques</button></div>
  {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}<WeeklyCalendar appointments={appointments} operation={operation} onSlot={(slot)=>{setSelectedSlot(slot);setSelectedUnit(null)}}/>
  {selectedSlot&&<div className="csr-scheduler">
-  <div><strong>Programar cita</strong><button className="secondary-btn" onClick={()=>setSelectedSlot("")}>Cerrar</button></div>
-  <p>{operation==="recibo"?"Recibo":"Embarque"} · {new Date(selectedSlot).toLocaleString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</p>
-  <select value={selectedUnit?.id||""} onChange={e=>setSelectedUnit(units.find(u=>u.id===e.target.value)||null)}>
-   <option value="">Selecciona una unidad pendiente</option>{filtered.map(u=><option key={u.id} value={u.id}>{u.folio} · {u.linea_transporte||"Sin línea"}</option>)}
-  </select>
-  <button className="login-btn" disabled={!selectedUnit} onClick={async()=>{if(!selectedUnit)return;const {error:e}=await supabase.from("unidades").update({cita_at:selectedSlot,cita_confirmada:true,operacion_tipo:operation,updated_at:new Date().toISOString()}).eq("id",selectedUnit.id);if(e)setError(e.message);else{setMessage("Cita programada y visible en tiempo real.");setSelectedSlot("");setSelectedUnit(null);await load()}}}>Confirmar programación</button>
+  <div><strong>Programar cita · {operation==="recibo"?"Recibo":"Embarque"}</strong><button type="button" className="secondary-btn" onClick={()=>setSelectedSlot("")}>Cerrar</button></div>
+  <p>{new Date(selectedSlot).toLocaleString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</p>
+  <div className="csr-form-grid">
+   <input placeholder="Nombre del operador" value={appointmentForm.operador} onChange={e=>setAppointmentForm({...appointmentForm,operador:e.target.value})}/>
+   <input placeholder="Línea de transporte" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/>
+   <input placeholder="Contacto" value={appointmentForm.contacto} onChange={e=>setAppointmentForm({...appointmentForm,contacto:e.target.value})}/>
+   <input placeholder="Número de tracto" value={appointmentForm.tracto} onChange={e=>setAppointmentForm({...appointmentForm,tracto:e.target.value})}/>
+   <input placeholder="Placa tracto" value={appointmentForm.placaTracto} onChange={e=>setAppointmentForm({...appointmentForm,placaTracto:e.target.value.toUpperCase()})}/>
+   <input placeholder="Número de caja" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/>
+   <input placeholder="Placa caja" value={appointmentForm.placaCaja} onChange={e=>setAppointmentForm({...appointmentForm,placaCaja:e.target.value.toUpperCase()})}/>
+   <input placeholder="Referencia" value={appointmentForm.referencia} onChange={e=>setAppointmentForm({...appointmentForm,referencia:e.target.value})}/>
+  </div>
+  <button className="login-btn" disabled={!appointmentForm.operador.trim()||!appointmentForm.linea.trim()||!appointmentForm.placaTracto.trim()} onClick={async()=>{
+    setError("");setMessage("");const d=new Date(selectedSlot);const fecha=d.toISOString().slice(0,10);const hora=d.toTimeString().slice(0,5);const folio="C-"+fecha.slice(2).replaceAll("-","")+"-"+d.getTime().toString().slice(-6);
+    const {data:cita,error:e}=await supabase.from("citas").insert({almacen_id:warehouseId,folio,tipo_operacion:operation,fecha,hora_inicio:hora,hora_fin:(d.getHours()+1).toString().padStart(2,"0")+":00",referencia:appointmentForm.referencia||null,estado:"programada",unidades_solicitadas:1}).select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,estado,unidades_solicitadas").single();
+    if(e){setError("No se pudo crear la cita: "+e.message);return}
+    const {error:pe}=await supabase.from("cita_datos_precarga").insert({cita_id:cita.id,linea_transporte:appointmentForm.linea,operador_nombre:appointmentForm.operador,contacto:appointmentForm.contacto||null,tracto_numero:appointmentForm.tracto||null,tracto_placas:appointmentForm.placaTracto,caja_numero:appointmentForm.caja||null,caja_placas:appointmentForm.placaCaja||null,observaciones:appointmentForm.referencia||null});
+    if(pe){setError("La cita se creó, pero no se pudo guardar la precarga: "+pe.message);return}
+    setMessage("Cita programada. La información quedó disponible para Caseta al ingresar el folio.");setSelectedSlot("");setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:""});await load();
+  }}>Guardar cita y enviar a Caseta</button>
  </div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
 
