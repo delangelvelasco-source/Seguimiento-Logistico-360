@@ -784,11 +784,11 @@
 
 /* ===== Caseta móvil: interfaz enfocada en registrar ingreso ===== */
 @media (max-width:900px){
-  .caseta-steps,
-  .caseta-bottom-nav{
+  .caseta-page .caseta-steps,
+  .caseta-page .caseta-bottom-nav{
     display:none !important;
   }
-  .caseta-exact-submit{
+  .caseta-page .caseta-exact-submit{
     position:relative;
     z-index:2;
     height:60px;
