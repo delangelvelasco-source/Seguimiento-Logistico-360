@@ -158,7 +158,7 @@ function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,
    <button type="button" className="secondary-btn csr-extra-window-btn" onClick={()=>setWindowRequest({fecha:selectedDay,hora:"18:00",motivo:"",referencia:"",observaciones:"",unidades:1})}>
     + Solicitar ventana adicional
    </button>
-   {windowRequest&&<AdditionalWindowMenu initial={windowRequest} operation={operation} onClose={()=>setWindowRequest(null)} onSubmit={async form=>{const ok=await onAdditionalWindow?.(form);setWindowRequest(null)}}/>}
+   {windowRequest&&<AdditionalWindowMenu initial={windowRequest} operation={operation} onClose={()=>setWindowRequest(null)} onSubmit={form=>onAdditionalWindow?.(form)}/>} 
   </div>
  </div>
 }
