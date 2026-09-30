@@ -96,7 +96,7 @@ export default function TorreControl({warehouseId,onLogout}){
             <div className="ramps-title"><strong>Rampas MTY-II · Las Torres</strong><div><span className="legend green"/>Disponible <span className="legend blue"/>En uso <span className="legend gray"/>Bloqueada</div></div>
             <div className="warehouse-visual">
               <div className="warehouse-sky"><span>LAS TORRES · MTY II</span></div>
-              <div className="warehouse-building">{Array.from({length:Math.max(ramps.length,10)},(_,i)=>{const r=ramps[i];const state=r?.estado==="operativa"?(occupied.has(r.id)?"busy":"free"):"blocked";return <div className={"dock "+state} key={r?.id||i}><b>{r?.codigo||"R"+String(i+1).padStart(2,"0")}</b><div className="dock-door"/><div className="dock-truck">{state==="blocked"?"":state==="busy"?"▰":"▱"}</div></div>})}</div>
+              <div className="warehouse-building">{Array.from({length:Math.max(ramps.length,19)},(_,i)=>{const r=ramps[i];const state=r?.estado==="operativa"?(occupied.has(r.id)?"busy":"free"):"blocked";return <div className={"dock "+state} key={r?.id||"visual-"+i}><b>RAMPA {String(i+1).padStart(2,"0")}</b><div className="dock-door"/><div className="dock-truck">{state==="blocked"?"":state==="busy"?"▰":"▱"}</div></div>})}</div>
             </div>
           </section>
 
