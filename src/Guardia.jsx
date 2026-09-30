@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, LockKeyhole, RefreshCw, Search, ShieldCheck, Unlock } from "lucide-react";
+import { CheckCircle2, Eye, LockKeyhole, RefreshCw, Search, ShieldCheck, Unlock, X } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 export default function Guardia({warehouseId}) {
- const [units,setUnits]=useState([]),[seals,setSeals]=useState({}),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[saving,setSaving]=useState("");
+ const [units,setUnits]=useState([]),[seals,setSeals]=useState({}),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[saving,setSaving]=useState(""),[evidenceModal,setEvidenceModal]=useState(null),[selectedEvidence,setSelectedEvidence]=useState(null);
  async function load(){
   if(!warehouseId)return;setLoading(true);setError("");
   const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,salida_autorizada,salida_bloqueada,salida_bloqueo_motivo,operacion_360_id").eq("almacen_id",warehouseId).eq("estado","liberada").order("updated_at",{ascending:false}).limit(50);
@@ -13,6 +13,24 @@ export default function Guardia({warehouseId}) {
  }
  useEffect(()=>{load()},[warehouseId]);
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].join(" ").toLowerCase().includes(query.toLowerCase()));
+ async function verPruebaLlegada(u){
+  setError("");
+  try{
+    const {data:acceso,error:ae}=await supabase.from("accesos_caseta").select("id,folio,nombre,empresa,tracto_placas,caja_placas,entrada_at,salida_at,estado,operacion_tipo").eq("unidad_id",u.id).eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(1).maybeSingle();
+    if(ae)throw ae;
+    if(!acceso){setError("No se encontró la prueba de llegada de esta unidad.");return;}
+    const {data:evidencias,error:ee}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("acceso_id",acceso.id).order("created_at",{ascending:false});
+    if(ee)throw ee;
+    const paths=(evidencias||[]).map(e=>e.storage_path).filter(Boolean);
+    let photos=[];
+    if(paths.length){
+      const {data:urls,error:ue}=await supabase.storage.from("evidencias-caseta").createSignedUrls(paths,3600);
+      if(ue)throw ue;
+      photos=(urls||[]).map((x,i)=>({...evidencias[i],signedUrl:x?.signedUrl||""}));
+    }
+    setSelectedEvidence(null);setEvidenceModal({acceso,unidad:u,photos});
+  }catch(err){setError("No se pudo consultar la prueba de llegada: "+(err?.message||"error desconocido"));}
+ }
  async function reviewSeal(u){
   const list=seals[u.id]||[];if(!list.length){setError("No hay sello registrado para esta unidad. Debe revisarse antes de autorizar salida.");return}
   const mismatch=list.some(s=>s.requiere_revision||s.resultado!=="coincide"||!s.verificado_at);
@@ -54,7 +72,7 @@ export default function Guardia({warehouseId}) {
   {loading?<div className="empty">Cargando Guardia…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=>{const list=seals[u.id]||[],ok=list.length>0&&list.every(s=>s.resultado==="coincide"&&!s.requiere_revision&&s.verificado_at);return <div className="dispatch-card" key={u.id}>
    <div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · Documentación validada</span></div><span className={ok?"tag":"tag"}>{ok?"Sello verificado":"Revisión pendiente"}</span></div>
    <div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Sellos</b>{list.length}</span></div>
-   <div className="button-row"><button className="secondary-btn" onClick={()=>reviewSeal(u)}><LockKeyhole size={15}/>Verificar sellos</button><button className="secondary-btn" onClick={()=>block(u)}><LockKeyhole size={15}/>Bloquear salida</button><button className="login-btn compact" onClick={()=>authorize(u)} disabled={!ok||u.salida_autorizada||saving===u.id}><Unlock size={15}/>{u.salida_autorizada?"Salida autorizada":"Autorizar salida"}</button>{u.salida_autorizada&&<button className="secondary-btn" onClick={()=>exitUnit(u)} disabled={saving===u.id}><CheckCircle2 size={15}/>Registrar salida física</button>}</div>
+   <div className="button-row"><button className="secondary-btn" onClick={()=>verPruebaLlegada(u)}><Eye size={15}/>Prueba de llegada</button><button className="secondary-btn" onClick={()=>reviewSeal(u)}><LockKeyhole size={15}/>Verificar sellos</button><button className="secondary-btn" onClick={()=>block(u)}><LockKeyhole size={15}/>Bloquear salida</button><button className="login-btn compact" onClick={()=>authorize(u)} disabled={!ok||u.salida_autorizada||saving===u.id}><Unlock size={15}/>{u.salida_autorizada?"Salida autorizada":"Autorizar salida"}</button>{u.salida_autorizada&&<button className="secondary-btn" onClick={()=>exitUnit(u)} disabled={saving===u.id}><CheckCircle2 size={15}/>Registrar salida física</button>}</div>
   </div>})}</div>:<div className="empty">No hay unidades listas para Guardia.</div>}
- </div></section>
+ </div>{evidenceModal&&<div className="csr-evidence-modal" role="dialog" aria-modal="true"><div className="csr-evidence-card"><div className="csr-evidence-head"><div><strong>Prueba de llegada</strong><span>{evidenceModal.acceso?.folio||evidenceModal.unidad?.folio||"Unidad"}</span></div><button type="button" className="csr-evidence-close" onClick={()=>setEvidenceModal(null)} aria-label="Cerrar"><X size={20}/></button></div><div className="csr-evidence-summary"><div><b>Operador</b><span>{evidenceModal.acceso?.nombre||evidenceModal.unidad?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{evidenceModal.acceso?.empresa||evidenceModal.unidad?.linea_transporte||"—"}</span></div><div><b>Placa tracto</b><span>{evidenceModal.acceso?.tracto_placas||evidenceModal.unidad?.tracto_placas||"—"}</span></div><div><b>Placa caja</b><span>{evidenceModal.acceso?.caja_placas||evidenceModal.unidad?.caja_placas||"—"}</span></div></div><div className="csr-evidence-actions">{["placa","identificacion"].map(tipo=>{const photo=evidenceModal.photos?.find(p=>p.tipo===tipo);return <button type="button" className={"csr-evidence-choice"+(selectedEvidence===tipo?" active":"")} onClick={()=>setSelectedEvidence(tipo)} key={tipo}><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{photo?.signedUrl?"Ver evidencia fotográfica":"Sin fotografía"}</small></div><Eye size={16}/></button>})}</div>{selectedEvidence&&<div className="csr-evidence-viewer"><div className="csr-evidence-photo-title">{selectedEvidence==="placa"?"Evidencia de placa":"Evidencia de ID / INE"}</div>{(()=>{const photo=evidenceModal.photos?.find(p=>p.tipo===selectedEvidence);return photo?.signedUrl?<img src={photo.signedUrl} alt={selectedEvidence==="placa"?"Evidencia de placa":"Evidencia de identificación"}/>:<div className="csr-evidence-empty">No hay fotografía guardada.</div>})()}</div>}</div></div>} </section>
 }
