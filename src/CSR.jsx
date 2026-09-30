@@ -43,12 +43,12 @@ export default function CSR({warehouseId}){
   <div><strong>{selectedAppointment?"Modificar cita":"Programar cita"} · {operation==="recibo"?"Recibo":"Embarque"}</strong><button type="button" className="secondary-btn" onClick={()=>setSelectedSlot("")}>Cerrar</button></div>
   <p>{new Date(selectedSlot).toLocaleString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</p>
   <div className="csr-form-section">
-   <div className="csr-form-title">Datos que recibirá Caseta</div>
+   <div className="csr-form-title">Datos que recibirá Caseta</div><div className="csr-form-hint">Para generar la cita basta con la línea de transporte y al menos una placa (tracto o caja). Los datos faltantes se pueden completar o modificar después.</div>
    <div className="csr-form-grid">
     <label>Operador<input autoComplete="name" placeholder="Nombre y apellidos" value={appointmentForm.operador} onChange={e=>setAppointmentForm({...appointmentForm,operador:e.target.value})}/></label>
     <label>Línea de transporte<input autoComplete="organization" placeholder="Empresa transportista" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/></label>
-    <label>Placa de tracto<input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaTracto} onChange={e=>setAppointmentForm({...appointmentForm,placaTracto:e.target.value.toUpperCase()})}/></label>
-    <label>Número de tracto<input inputMode="numeric" placeholder="Número económico" value={appointmentForm.tracto} onChange={e=>setAppointmentForm({...appointmentForm,tracto:e.target.value})}/></label>
+    <label>Placa de tracto <span>(opcional)</span><input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaTracto} onChange={e=>setAppointmentForm({...appointmentForm,placaTracto:e.target.value.toUpperCase()})}/></label>
+    <label>Número de tracto <span>(opcional)</span><input inputMode="numeric" placeholder="Número económico" value={appointmentForm.tracto} onChange={e=>setAppointmentForm({...appointmentForm,tracto:e.target.value})}/></label>
     <label>Número de caja <span>(opcional)</span><input inputMode="numeric" placeholder="Número económico" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/></label>
     <label>Placa de caja <span>(opcional)</span><input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaCaja} onChange={e=>setAppointmentForm({...appointmentForm,placaCaja:e.target.value.toUpperCase()})}/></label>
     <label>Contacto <span>(opcional)</span><input type="tel" inputMode="tel" placeholder="Teléfono" value={appointmentForm.contacto} onChange={e=>setAppointmentForm({...appointmentForm,contacto:e.target.value})}/></label>
