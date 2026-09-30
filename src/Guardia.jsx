@@ -11,7 +11,16 @@ export default function Guardia({warehouseId}) {
   if(data?.length){const {data:ss,error:se}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_documentado,numero_fisico,resultado,requiere_revision,verificado_at,observaciones").in("unidad_id",data.map(x=>x.id));if(se)setError(se.message);else{const g={};(ss||[]).forEach(s=>(g[s.unidad_id] ||= []).push(s));setSeals(g)}}else setSeals({});
   setLoading(false);
  }
- useEffect(()=>{load()},[warehouseId]);
+ useEffect(()=>{
+  load();
+  if(!warehouseId)return;
+  const channel=supabase.channel("guardia-live-"+warehouseId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},()=>load())
+    .on("postgres_changes",{event:"*",schema:"public",table:"sellos_unidad"},()=>load())
+    .subscribe();
+  const timer=setInterval(load,15000);
+  return()=>{clearInterval(timer);supabase.removeChannel(channel)};
+},[warehouseId]);
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].join(" ").toLowerCase().includes(query.toLowerCase()));
  async function verPruebaLlegada(u){
   setError("");
