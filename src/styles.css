@@ -946,3 +946,40 @@
   .csr-form-grid{grid-template-columns:1fr;width:100%;box-sizing:border-box}
   .csr-form-grid label,.csr-form-grid input{width:100%;box-sizing:border-box}
 }
+
+/* ===== CSR calendario: estados de lectura rápida ===== */
+.csr-day.today{
+  border-color:#3d78df;
+  box-shadow:0 0 0 1px #3d78df,0 0 16px #3d78df22;
+}
+.csr-day.today .csr-day-head{
+  background:#fff;
+  border-bottom-color:#d7dee8;
+}
+.csr-day.today .csr-day-head b,
+.csr-day.today .csr-day-head strong{
+  color:#101827;
+}
+.csr-slot.free{
+  background:#0b2a1d;
+  border-color:#23895d;
+}
+.csr-slot.free:hover{
+  background:#0e3826;
+  border-color:#35c987;
+}
+.csr-slot.free small{
+  color:#55e39b;
+  font-weight:800;
+}
+.csr-slot.busy{
+  background:#343a43;
+  border-color:#59616c;
+  color:#eef2f6;
+  opacity:1;
+}
+.csr-slot.busy strong,
+.csr-slot.busy span,
+.csr-slot.busy small{
+  color:#eef2f6;
+}
