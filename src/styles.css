@@ -804,20 +804,6 @@
   margin-left:0;
   line-height:1;
 }
-.caseta-exact-submit .caseta-submit-arrow{
-  font-size:25px;
-  margin-left:5px;
-  line-height:1;
-}
-@media(max-width:900px){
-  .caseta-exact-submit{
-    min-height:60px;
-    height:60px;
-    font-size:18px;
-    gap:10px;
-  }
-  .caseta-exact-submit .caseta-submit-arrow{font-size:24px}
-}
 
 
 /* ===== Mensajes de éxito Caseta legibles en móvil ===== */
@@ -1031,9 +1017,9 @@
 .csr-hero-banner{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:18px;min-height:270px;margin-bottom:18px;padding:24px;border:1px solid #1b4260;border-radius:20px;overflow:hidden;background:radial-gradient(circle at 78% 20%,#12618a 0,transparent 35%),linear-gradient(120deg,#061321,#092338 60%,#071321);box-shadow:0 18px 45px #0006}
 .csr-hero-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;padding-right:8px}
 .csr-hero-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}.csr-hero-logo{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#15aef5,#1759e8);color:#fff;font-weight:950;font-size:16px;box-shadow:0 0 25px #159fff44}.csr-hero-brand strong{display:block;color:#fff;font-size:20px;line-height:1}.csr-hero-brand small{display:block;color:#9db2c8;font-size:7px;letter-spacing:.16em;margin-top:6px}
-.csr-hero-copy h2{font-size:clamp(25px,3vw,39px);line-height:.98;letter-spacing:-.04em;color:#fff;margin:6px 0 9px}.csr-hero-copy h2 b{color:#0ec3f6}.csr-hero-copy p{margin:0;color:#aebfd0;font-size:11px;line-height:1.45;max-width:510px}
+.csr-hero-copy p{margin:0;color:#aebfd0;font-size:11px;line-height:1.45;max-width:510px}
 .csr-hero-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.csr-hero-tags span{font-size:7px;font-weight:900;color:#dbe8f5;padding:6px 8px;border:1px solid #2c4c67;background:#0a1b2bcc;border-radius:999px}
-.csr-hero-preview{align-self:center;border:1px solid #294b66;border-radius:14px;background:#061321dd;padding:12px;box-shadow:0 12px 30px #0006}.csr-preview-head{display:flex;justify-content:space-between;color:#dce8f3;font-size:9px;margin-bottom:8px}.csr-preview-head span{color:#65e8a5}.csr-preview-grid{display:grid;gap:7px}.csr-preview-days{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.csr-preview-days i{font-style:normal;text-align:center;color:#7890a9;font-size:7px;padding:5px;border-radius:6px}.csr-preview-days b{font-size:12px;color:#e8f0f7}.csr-preview-days .sel{background:#fff;color:#162235}.csr-preview-days .sel b{color:#101827}.csr-preview-slots{display:grid;grid-template-columns:repeat(2,1fr);gap:4px}.csr-preview-slots span{font-size:7px;color:#d4e2ee;padding:7px;border-radius:6px;background:#073321;border:1px solid #22915e}.csr-preview-slots b{display:block;color:#56e6a0;margin-top:2px}.csr-preview-slots .occ{background:#383e47;border-color:#59616b}.csr-preview-slots .occ b{color:#edf2f6}
+
 .csr-hero-refresh{position:absolute;right:20px;top:20px;z-index:4;background:#0a1828dd!important}
 @media(max-width:760px){.csr-hero-banner{grid-template-columns:1fr;gap:10px;min-height:0;padding:17px}.csr-hero-copy{padding-top:7px}.csr-hero-copy h2{font-size:28px}.csr-hero-preview{margin-top:2px}.csr-hero-refresh{top:14px;right:14px}.csr-hero-brand{padding-right:70px}}
 
