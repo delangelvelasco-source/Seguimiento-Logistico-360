@@ -43,7 +43,6 @@ export default function CSR({warehouseId}){
   <div><strong>{selectedAppointment?"Modificar cita":"Programar cita"} · {operation==="recibo"?"Recibo":"Embarque"}</strong><button type="button" className="secondary-btn" onClick={()=>setSelectedSlot("")}>Cerrar</button></div>
   <p>{new Date(selectedSlot).toLocaleString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</p>
   <div className="csr-form-section">
-   <div className="csr-form-title">Datos que recibirá Caseta</div><div className="csr-form-hint">Para generar la cita basta con la línea de transporte y al menos una placa (tracto o caja). Los datos faltantes se pueden completar o modificar después.</div>
    <div className="csr-form-grid">
     <label>Operador<input autoComplete="name" placeholder="Nombre y apellidos" value={appointmentForm.operador} onChange={e=>setAppointmentForm({...appointmentForm,operador:e.target.value})}/></label>
     <label>Línea de transporte<input autoComplete="organization" placeholder="Empresa transportista" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/></label>
