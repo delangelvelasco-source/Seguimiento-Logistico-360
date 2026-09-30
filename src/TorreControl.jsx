@@ -6,7 +6,7 @@ const STAGE_LABEL={en_caseta:"Caseta",validando:"Validando",espera_turno:"En esp
 const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada"];
 
 export default function TorreControl({warehouseId,onLogout}){
-  const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null),[citas,setCitas]=useState([]);
+  const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null),[citas,setCitas]=useState([]),[alertasCita,setAlertasCita]=useState([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState(""),[now,setNow]=useState(Date.now()),[lastUpdate,setLastUpdate]=useState(null),[tab,setTab]=useState("proceso"),[query,setQuery]=useState("");
   const loadSeq=useRef(0);
 
@@ -14,17 +14,19 @@ export default function TorreControl({warehouseId,onLogout}){
     if(!warehouseId)return;
     const seq=++loadSeq.current;
     setLoading(true);setError("");
-    const [u,r,c,p]=await Promise.all([
+    const [u,r,c,p,a]=await Promise.all([
       supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId}),
-      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).eq("fecha",new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())).not("estado","in","(cancelada,cerrada)").order("hora_inicio",{ascending:true})
+      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).eq("fecha",new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())).not("estado","in","(cancelada,cerrada)").order("hora_inicio",{ascending:true}),
+      supabase.rpc("listar_alertas_citas_monitor",{p_almacen_id:warehouseId})
     ]);
     if(seq!==loadSeq.current)return;
     if(u.error)setError(u.error.message);else setUnits((u.data||[]).filter(isVisibleUnit));
     if(r.error)setError(prev=>prev||r.error.message);else setRamps(r.data||[]);
     if(c.error)setError(prev=>prev||c.error.message);else setPatio(c.data?.[0]||null);
     if(p.error)setError(prev=>prev||p.error.message);else setCitas((p.data||[]).map(x=>({...x,precarga:Array.isArray(x.cita_datos_precarga)?(x.cita_datos_precarga[0]||null):(x.cita_datos_precarga||null)})));
+    if(a.error)setError(prev=>prev||a.error.message);else setAlertasCita(a.data||[]);
     setLastUpdate(new Date());setLoading(false);
   }
 
@@ -40,6 +42,7 @@ export default function TorreControl({warehouseId,onLogout}){
         .on("postgres_changes",{event:"*",schema:"public",table:"rampas",filter:"almacen_id=eq."+warehouseId},load)
         .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},load)
         .on("postgres_changes",{event:"*",schema:"public",table:"citas",filter:"almacen_id=eq."+warehouseId},load)
+        .on("postgres_changes",{event:"*",schema:"public",table:"operaciones_360",filter:"almacen_id=eq."+warehouseId},load)
         .subscribe();
     };
     start();
@@ -149,7 +152,16 @@ export default function TorreControl({warehouseId,onLogout}){
           <div className="monitor-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, folio o transportista…"/><Filter size={17}/></div>
         </div>
 
-        {error&&<div className="monitor-error">{error}</div>}        {citasRetrasadas.length>0&&<div className="monitor-appointment-alert" role="alert">
+        {error&&<div className="monitor-error">{error}</div>}        {alertasCita.length>0&&<div className="monitor-arrival-alert" role="alert">
+          <div className="monitor-arrival-alert-icon"><AlertTriangle size={24}/></div>
+          <div className="monitor-arrival-alert-body">
+            <strong>🚨 ALERTA DE ARRIBO FUERA DE CITA</strong>
+            <span>{alertasCita.length===1?"Una unidad llegó fuera de su cita o sin cita programada.":alertasCita.length+" unidades llegaron fuera de cita o sin cita programada."}</span>
+            <div className="monitor-arrival-alert-items">{alertasCita.slice(0,4).map(a=><b key={a.unidad_id}>{a.folio} · {a.tipo_alerta==="sin_cita"?"SIN CITA":"FUERA DE CITA "+(a.minutos_diferencia>0?"+":"")+a.minutos_diferencia+" MIN"} · {a.linea_transporte||"—"}</b>)}</div>
+          </div>
+        </div>}
+
+        {citasRetrasadas.length>0&&<div className="monitor-appointment-alert" role="alert">
           <div className="monitor-appointment-alert-icon"><AlertTriangle size={22}/></div>
           <div><strong>ALERTA DE RETRASO</strong><span>{citasRetrasadas.length===1?"Hay 1 cita que ya superó su hora programada.":"Hay "+citasRetrasadas.length+" citas que ya superaron su hora programada."}</span></div>
           <div className="monitor-appointment-alert-list">{citasRetrasadas.slice(0,3).map(c=>{const s=citaStatus(c);return <b key={c.id}>{c.folio} · {String(c.hora_inicio||"").slice(0,5)} · +{s.minutes} min</b>})}</div>
