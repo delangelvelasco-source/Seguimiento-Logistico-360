@@ -625,3 +625,29 @@
   .avg-time{margin-top:11px}
   .avg-time>div{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* ===== Corrección final Estado del Almacén: evitar recorte horizontal ===== */
+.warehouse-status{width:100%;min-width:0;overflow:hidden}
+.capacity-summary{width:100%;min-width:0}
+.capacity-summary .capacity-ring{flex:0 0 105px;min-width:105px}
+.capacity-side{min-width:0;flex:1}
+.status-list{width:100%;min-width:0}
+.status-list div{min-width:0}
+.status-list div span{overflow:hidden;text-overflow:ellipsis}
+.status-list b{flex:0 0 auto}
+@media(max-width:1100px){
+  .capacity-summary .capacity-ring{flex-basis:92px;min-width:92px}
+  .capacity-ring>div{width:92px;height:92px}
+  .status-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .status-list div{padding:8px 7px}
+  .status-list div span{font-size:8px}
+  .status-list b{font-size:12px}
+}
+@media(max-width:760px){
+  .capacity-summary .capacity-ring{flex-basis:82px;min-width:82px}
+  .capacity-ring>div{width:82px;height:82px}
+  .capacity-ring strong{font-size:18px}
+  .capacity-ring span{font-size:8px;line-height:1.1}
+  .status-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .status-list div{padding:8px 6px}
+}
