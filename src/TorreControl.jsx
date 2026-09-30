@@ -154,7 +154,9 @@ export default function TorreControl({warehouseId,onLogout}){
               return {
                 time:String(c.hora_inicio||"").slice(0,5),
                 title:(c.tipo_operacion==="embarque"?"Embarque":"Recibo")+(s.late?" · "+s.label:""),
-                sub:(c.precarga?.linea_transporte||"Línea pendiente")+" · "+c.folio
+                sub:(c.precarga?.linea_transporte||"Línea pendiente")+" · "+c.folio,
+                late:s.late,
+                delay:s.minutes
               };
             })}/>
             <SideList title="Últimos Movimientos" items={movements.map(u=>({time:new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),title:STAGE_LABEL[u.estado]||"Movimiento",sub:u.folio}))}/>
@@ -166,7 +168,7 @@ export default function TorreControl({warehouseId,onLogout}){
 }
 
 function MiniKpi({icon,label,value,note,tone}){return <div className={"mini-kpi "+tone}><div className="mini-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{note}</small></div></div>}
-function SideList({title,action,items}){return <div className="side-list"><div className="side-list-head"><strong>{title}</strong>{action&&<span>{action}</span>}</div>{items.map((x,i)=><div className="side-row" key={i}><b>{x.time}</b><span>{x.title}<small>{x.sub}</small></span></div>)}</div>}
+function SideList({title,action,items}){return <div className="side-list"><div className="side-list-head"><strong>{title}</strong>{action&&<span>{action}</span>}</div>{items.map((x,i)=><div className={"side-row "+(x.late?"late":"")} key={i}><b>{x.time}</b><span>{x.title}{x.late&&<em className="appointment-delay">RETRASO +{x.delay} MIN</em>}<small>{x.sub}</small></span></div>)}</div>}
 function sla(u,now){const start=new Date(u.created_at||Date.now()).getTime(),min=Math.max(0,(now-start)/60000);let level="green";if(min>120)level="red";else if(min>105)level="orange";else if(min>90)level="yellow";return {level,globalMin:min}}
 function formatMinutes(v){const n=Math.floor(v);return n<60?n+" min":Math.floor(n/60)+" h "+String(n%60).padStart(2,"0")+" min"}
 
