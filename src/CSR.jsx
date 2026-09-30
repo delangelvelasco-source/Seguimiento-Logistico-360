@@ -45,7 +45,7 @@ export default function CSR({warehouseId}){
   <div className="csr-form-section">
    <div className="csr-form-grid">
     <label>Línea de transporte<input autoComplete="organization" placeholder="Empresa transportista" value={appointmentForm.linea} onChange={e=>setAppointmentForm({...appointmentForm,linea:e.target.value})}/></label>
-    <label>Número de caja<input inputMode="numeric" placeholder="Número económico" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/></label>
+    <label>Número de caja<input autoCapitalize="characters" placeholder="Ej. R344" value={appointmentForm.caja} onChange={e=>setAppointmentForm({...appointmentForm,caja:e.target.value})}/></label>
     <label>Placa de caja<input autoCapitalize="characters" placeholder="ABC-123-X" value={appointmentForm.placaCaja} onChange={e=>setAppointmentForm({...appointmentForm,placaCaja:e.target.value.toUpperCase()})}/></label>
     <label>Operador <span>(opcional)</span><input autoComplete="name" placeholder="Nombre y apellidos" value={appointmentForm.operador} onChange={e=>setAppointmentForm({...appointmentForm,operador:e.target.value})}/></label>
     <label>Contacto <span>(opcional)</span><input type="tel" inputMode="tel" placeholder="Teléfono" value={appointmentForm.contacto} onChange={e=>setAppointmentForm({...appointmentForm,contacto:e.target.value})}/></label>
