@@ -51,6 +51,7 @@ export default function Caseta({ warehouseId }) {
       .from("accesos_caseta")
       .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,tracto_placas,operacion_tipo,estado,entrada_at,salida_at")
       .eq("almacen_id",targetWarehouseId)
+      .neq("estado","cancelado")
       .order("entrada_at",{ascending:false})
       .limit(50);
 
@@ -426,6 +427,30 @@ export default function Caseta({ warehouseId }) {
     return {numero:String(data.gafete_numero||numero).toUpperCase()};
   }
 
+  async function guardarEvidencias(accesoId, unidadId, userId){
+    const evidencias=[
+      {tipo:"placa",data:capturedPhoto},
+      {tipo:"identificacion",data:capturedId}
+    ].filter(x=>x.data);
+    if(!accesoId||!evidencias.length)return {guardadas:0,error:null};
+    let guardadas=0;
+    for(const item of evidencias){
+      try{
+        const blob=await fetch(item.data).then(r=>r.blob());
+        const extension=(blob.type||"image/jpeg").split("/")[1]||"jpeg";
+        const path=warehouseId+"/"+accesoId+"/"+item.tipo+"-"+Date.now()+"."+extension;
+        const upload=await supabase.storage.from("evidencias-caseta").upload(path,blob,{contentType:blob.type||"image/jpeg",cacheControl:"31536000",upsert:false});
+        if(upload.error)throw upload.error;
+        const {error:dbError}=await supabase.from("evidencias_caseta").insert({acceso_id:accesoId,almacen_id:warehouseId,unidad_id:unidadId,tipo:item.tipo,storage_path:path,creado_por:userId||null});
+        if(dbError)throw dbError;
+        guardadas++;
+      }catch(err){
+        return {guardadas,error:err?.message||"No se pudo guardar la evidencia."};
+      }
+    }
+    return {guardadas,error:null};
+  }
+
   async function registrar(e){
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
@@ -479,13 +504,32 @@ export default function Caseta({ warehouseId }) {
     });
     if(registroError){setError(registroError.message||"No se pudo registrar el ingreso.");setLoading(false);return;}
     if(!resultado?.ok){setError("No se pudo confirmar el registro.");setLoading(false);return;}
+    if(resultado?.duplicado){
+      const aviso="La unidad ya tiene un ingreso activo. Se conserva el último registro y no se creó otro ingreso.";
+      if(capturedPhoto||capturedId){
+        const {data:accesoExistente}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("id",resultado.acceso_id).maybeSingle();
+        if(accesoExistente){
+          const ev=await guardarEvidencias(accesoExistente.id,accesoExistente.unidad_id,user?.id);
+          setMessage(ev.error?aviso+" La evidencia no pudo guardarse: "+ev.error:aviso+" Evidencia actualizada.");
+        }else setMessage(aviso);
+      }else setMessage(aviso);
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
+      setCapturedPhoto("");setCapturedId("");
+      await load();setLoading(false);return;
+    }
     if(gafete){
       const {data:accesoUnidad,error:accesoUnidadError}=await supabase.from("accesos_caseta").select("id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
       if(accesoUnidadError||!accesoUnidad){setError("El ingreso se registró, pero no se pudo localizar el acceso para asignar el gafete.");setLoading(false);return;}
       const {error:gafeteError}=await supabase.rpc("asignar_gafete_caseta",{p_acceso_id:accesoUnidad.id,p_gafete_numero:gafete.numero,p_tipo_acceso:"unidad"});
       if(gafeteError){setError("El ingreso se registró, pero no se pudo asignar el gafete: "+(gafeteError.message||"error desconocido"));setLoading(false);return;}
     }
-    setMessage("Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
+    const {data:accesoNuevo}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
+    const evidencia=accesoNuevo?await guardarEvidencias(accesoNuevo.id,accesoNuevo.unidad_id,user?.id):{guardadas:0,error:"No se localizó el acceso para guardar evidencia."};
+    setMessage(evidencia.error
+      ? "Ingreso registrado. La evidencia no pudo guardarse: "+evidencia.error
+      : evidencia.guardadas
+        ? "Ingreso registrado. Evidencia de placa e identificación guardada para CSR."
+        : "Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
     setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
     setCapturedPhoto("");setCapturedId("");
     await load();setLoading(false);
