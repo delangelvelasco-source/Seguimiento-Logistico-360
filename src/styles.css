@@ -938,3 +938,11 @@
 }
 
 .csr-form-hint{margin:-3px 0 10px;color:#7187a1;font-size:10px;line-height:1.45}
+
+/* CSR: formulario ocupa todo el panel y se adapta al dispositivo */
+.csr-form-section{width:100%;box-sizing:border-box}
+@media(max-width:900px){
+  .csr-scheduler{width:100%;box-sizing:border-box}
+  .csr-form-grid{grid-template-columns:1fr;width:100%;box-sizing:border-box}
+  .csr-form-grid label,.csr-form-grid input{width:100%;box-sizing:border-box}
+}
