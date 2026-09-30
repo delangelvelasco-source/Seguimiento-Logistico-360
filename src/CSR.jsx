@@ -67,17 +67,54 @@ export default function CSR({warehouseId}){
  </div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
 
-function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){\n const CSR_BUILD_VERSION="2026-09-30-142";const [selectedDay,setSelectedDay]=useState("");
- const now=new Date(); const start=new Date(now); const offset=(now.getDay()+6)%7; start.setDate(now.getDate()-offset); start.setHours(0,0,0,0);
+function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){
+ const CSR_BUILD_VERSION="2026-09-30-142";
+ const now=new Date();
+ const start=new Date(now);
+ const offset=(now.getDay()+6)%7;
+ start.setDate(now.getDate()-offset);start.setHours(0,0,0,0);
+ const todayKey=now.toISOString().slice(0,10);
+ const [selectedDay,setSelectedDay]=useState(todayKey);
  const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
  const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
- const slots=[]; for(let d=0;d<7;d++){const hours=d<5?Array.from({length:10},(_,i)=>8+i):d===5?[8,9,10]:[];hours.forEach(h=>{for(let w=1;w<=2;w++){const dt=new Date(start);dt.setDate(start.getDate()+d);dt.setHours(h,w===1?0:30,0,0);slots.push({dt,w})}})}
+ const days=labels.map((label,i)=>{const day=new Date(start);day.setDate(start.getDate()+i);return {label,day,key:day.toISOString().slice(0,10)}});
+ const slots=[];
+ for(let d=0;d<7;d++){
+   const hours=d<5?Array.from({length:10},(_,i)=>8+i):d===5?[8,9,10]:[];
+   hours.forEach(h=>{for(let w=1;w<=2;w++){const dt=new Date(start);dt.setDate(start.getDate()+d);dt.setHours(h,w===1?0:30,0,0);slots.push({dt,w})}});
+ }
  const visible=appointments.filter(a=>(a.tipo_operacion||"recibo")===operation);
+ const selected=days.find(d=>d.key===selectedDay)||days[0];
+ const selectedSlots=slots.filter(s=>sameDay(s.dt,selected.day));
  return <div className="csr-week-calendar">
-  <div className="csr-calendar-head"><div><strong>Calendario semanal · {operation==="recibo"?"Recibos":"Embarques"}</strong><span>2 ventanas por hora · actualización automática</span></div><span className="tag">{visible.length} cita(s)</span></div>
-  <div className="csr-calendar-grid">{labels.map((label,i)=>{const day=new Date(start);day.setDate(start.getDate()+i);const daySlots=slots.filter(s=>sameDay(s.dt,day));return <div className={"csr-day"+(sameDay(day,now)?" today":"")+(selectedDay===day.toISOString().slice(0,10)?" selected":"")} key={label}>
-   <div className="csr-day-head"><b>{label}</b><strong>{day.getDate()}</strong></div>
-   <div className="csr-day-list">{daySlots.length?daySlots.map(s=>{const booked=visible.find(a=>a.fecha&&a.hora_inicio&&new Date(a.fecha+"T"+String(a.hora_inicio).slice(0,5)).getTime()===s.dt.getTime());return <button type="button" className={"csr-slot "+(booked?"busy":"free")} onClick={()=>{setSelectedDay(day.toISOString().slice(0,10));onSlot?.(s.dt.toISOString(),booked)}}><strong>{String(s.dt.getHours()).padStart(2,"0")}:{String(s.dt.getMinutes()).padStart(2,"0")}</strong><span>Ventana {s.w}</span>{booked?<small>Modificar · {booked.folio}</small>:<small>Disponible</small>}</button>}):<small className="csr-empty-day">Sin operación</small>}</div>
-  </div>})}</div>
+  <div className="csr-calendar-head">
+   <div><strong>Agenda de {operation==="recibo"?"Recibos":"Embarques"}</strong><span>Selecciona un día para ver sus ventanas disponibles</span></div>
+   <span className="tag">{visible.length} cita(s)</span>
+  </div>
+  <div className="csr-date-rail">
+   {days.map(({label,day,key})=>{
+    const dayCount=visible.filter(a=>a.fecha===key).length;
+    const active=selectedDay===key;
+    return <button type="button" className={"csr-date-card"+(active?" selected":"")+(sameDay(day,now)?" today":"")} onClick={()=>setSelectedDay(key)} key={key}>
+      <span>{label}</span><strong>{day.getDate()}</strong><small>{dayCount?dayCount+" cita(s)":day.getDay()===0?"Sin operación":day.getDay()===6?"6 ventanas":"20 ventanas"}</small>
+    </button>
+   })}
+  </div>
+  <div className="csr-agenda-panel">
+   <div className="csr-agenda-head">
+    <div><span>HORARIOS DEL DÍA</span><strong>{selected.label} {selected.day.getDate()} · {selected.day.toLocaleDateString("es-MX",{month:"long"})}</strong></div>
+    <div className="csr-agenda-legend"><i className="free-dot"/> Disponible <i className="busy-dot"/> Ocupado</div>
+   </div>
+   <div className="csr-agenda-grid">
+    {selectedSlots.length?selectedSlots.map(s=>{
+      const booked=visible.find(a=>a.fecha&&a.hora_inicio&&new Date(a.fecha+"T"+String(a.hora_inicio).slice(0,5)).getTime()===s.dt.getTime());
+      return <button type="button" className={"csr-agenda-slot "+(booked?"busy":"free")} onClick={()=>{setSelectedDay(selected.key);onSlot?.(s.dt.toISOString(),booked)}} key={s.dt.toISOString()}>
+       <strong>{String(s.dt.getHours()).padStart(2,"0")}:{String(s.dt.getMinutes()).padStart(2,"0")}</strong>
+       <span>Ventana {s.w}</span>
+       <small>{booked?"Modificar · "+booked.folio:"Disponible"}</small>
+      </button>
+    }):<div className="csr-agenda-empty">Este día no tiene operación programada.</div>}
+   </div>
+  </div>
  </div>
 }
