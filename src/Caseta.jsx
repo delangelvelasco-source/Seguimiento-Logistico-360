@@ -505,7 +505,9 @@ export default function Caseta({ warehouseId }) {
     if(registroError){setError(registroError.message||"No se pudo registrar el ingreso.");setLoading(false);return;}
     if(!resultado?.ok){setError("No se pudo confirmar el registro.");setLoading(false);return;}
     if(resultado?.duplicado){
-      const aviso="La unidad ya tiene un ingreso activo. Se conserva el último registro y no se creó otro ingreso.";
+      const aviso=resultado.duplicado_por==="placa de caja"
+        ? "La caja "+(form.caja_placas.trim().toUpperCase()||"indicada")+" ya tiene un ingreso activo. No se creó otro ingreso."
+        : "La unidad ya tiene un ingreso activo por la placa de tracto. No se creó otro ingreso.";
       if(capturedPhoto||capturedId){
         const {data:accesoExistente}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("id",resultado.acceso_id).maybeSingle();
         if(accesoExistente){
