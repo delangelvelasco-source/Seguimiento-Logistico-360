@@ -392,7 +392,7 @@ export default function Caseta({ warehouseId }) {
       if(citaError)throw citaError;
       if(cita){
         const {data:precarga}=await supabase.from("cita_datos_precarga").select("linea_transporte,operador_nombre,contacto,tracto_numero,tracto_placas,caja_numero,caja_placas,observaciones").eq("cita_id",cita.id).maybeSingle();
-        setForm(prev=>({...prev,folio_cita:cita.folio||folio,nombre:precarga?.operador_nombre||prev.nombre,empresa:precarga?.linea_transporte||prev.empresa,tracto_placas:precarga?.tracto_placas||prev.tracto_placas,caja_placas:precarga?.caja_placas||prev.caja_placas,operacion_tipo:cita.tipo_operacion||prev.operacion_tipo,referencia:cita.referencia||prev.referencia}));
+        setForm(prev=>({...prev,folio_cita:cita.folio||folio,nombre:precarga?.operador_nombre||prev.nombre,empresa:precarga?.linea_transporte||prev.empresa,telefono:precarga?.contacto||prev.telefono,tracto_numero:precarga?.tracto_numero||prev.tracto_numero,tracto_placas:precarga?.tracto_placas||prev.tracto_placas,caja_numero:precarga?.caja_numero||prev.caja_numero,caja_placas:precarga?.caja_placas||prev.caja_placas,operacion_tipo:cita.tipo_operacion||prev.operacion_tipo,referencia:cita.referencia||precarga?.observaciones||prev.referencia}));
         setCitaEncontrada({...cita,...precarga});
         setMessage("Cita encontrada. Los datos disponibles se cargaron automáticamente; puedes corregirlos si es necesario.");
       }else{
