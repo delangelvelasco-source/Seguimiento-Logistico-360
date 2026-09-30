@@ -544,3 +544,41 @@
   .monitor-header{padding-left:max(9px,env(safe-area-inset-left));padding-right:max(9px,env(safe-area-inset-right))}
   .monitor-content{padding-bottom:max(28px,env(safe-area-inset-bottom))}
 }
+
+/* ===== Refinamiento visual + salida visible ===== */
+.monitor-logout{display:flex;align-items:center;gap:7px;border:1px solid #304762;background:#101f31;color:#d9e4f0;border-radius:9px;padding:9px 11px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.2s}
+.monitor-logout:hover{background:#17304a;border-color:#4a6a8e}
+.monitor-logout svg{color:#76aaff}
+.monitor-header-right{flex-shrink:0}
+.monitor-content{max-width:1800px;margin:0 auto}
+.mini-kpi{box-shadow:0 8px 22px rgba(0,0,0,.14)}
+.ramps-hero,.warehouse-status,.units-table-card,.side-list{box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.ramps-title{background:linear-gradient(180deg,#101f31,#0c1826)}
+.warehouse-status{background:linear-gradient(145deg,#0d1b2a,#0a1521)}
+.monitor-tabs button{transition:.2s}
+.monitor-tabs button:hover{border-color:#4773a6;transform:translateY(-1px)}
+.monitor-search:focus-within{border-color:#3f7fe0;box-shadow:0 0 0 3px rgba(63,127,224,.12)}
+@media(max-width:599px){
+ .monitor-header{padding:7px 8px}
+ .monitor-brand strong{font-size:10.5px}
+ .monitor-header-right{gap:5px}
+ .monitor-user{display:flex}
+ .monitor-logout{width:36px;height:36px;padding:0;justify-content:center;border-radius:50%;font-size:0}
+ .monitor-logout span{display:none}
+ .monitor-logout svg{width:16px;height:16px}
+ .monitor-content{padding-top:9px}
+ .monitor-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .mini-kpi:last-child{grid-column:1/-1;max-width:calc(50% - 3.5px)}
+ .ramps-title>div{max-width:210px}
+ .warehouse-visual{height:200px}
+ .warehouse-building{height:64%;padding-top:29px}
+ .dock{border-width:1.5px}
+ .warehouse-status{padding:13px}
+ .capacity-ring>div{width:82px;height:82px;flex-basis:82px}
+ .status-list{margin-left:93px}
+ .monitor-tabs button{font-size:8px}
+}
+@media(min-width:600px) and (max-width:1100px){
+ .monitor-logout{padding:8px}
+ .monitor-logout span{display:none}
+}
