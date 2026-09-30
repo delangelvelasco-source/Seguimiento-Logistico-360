@@ -1116,3 +1116,21 @@
 .csr-evidence-viewer{border:1px solid #dfe6ef;border-radius:16px;padding:12px;background:#f8fafc}
 .csr-evidence-viewer img{display:block;width:100%;max-height:480px;object-fit:contain;background:#e9eef5;border-radius:12px;margin-top:8px}
 @media(max-width:600px){.csr-evidence-actions{grid-template-columns:1fr}.csr-evidence-choice{padding:12px}}
+
+
+/* Menú de solicitud de ventana adicional */
+.csr-window-modal{position:fixed;inset:0;z-index:1250;background:rgba(4,12,25,.78);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px}
+.csr-window-card{width:min(680px,100%);background:#fff;border-radius:22px;box-shadow:0 25px 90px rgba(0,0,0,.38);padding:22px}
+.csr-window-head{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid #e4e9f0;padding-bottom:15px;margin-bottom:18px}
+.csr-window-head div{display:flex;flex-direction:column;gap:4px}
+.csr-window-head span{font-size:10px;font-weight:900;letter-spacing:.12em;color:#2563eb}
+.csr-window-head strong{font-size:21px;color:#142744}
+.csr-window-head small{font-size:11px;color:#718096;font-weight:700}
+.csr-window-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.csr-window-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:900;color:#334155}
+.csr-window-grid label span{font-size:10px;color:#94a3b8;font-weight:700}
+.csr-window-grid input,.csr-window-grid textarea{width:100%;box-sizing:border-box;border:1px solid #d6dee9;border-radius:11px;padding:12px;background:#f8fafc;color:#172b4d;font:inherit;font-weight:700}
+.csr-window-grid textarea{min-height:90px;resize:vertical}
+.csr-window-grid .full{grid-column:1/-1}
+.csr-window-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:15px;border-top:1px solid #e4e9f0}
+@media(max-width:600px){.csr-window-modal{padding:10px}.csr-window-card{padding:16px;border-radius:17px}.csr-window-grid{grid-template-columns:1fr}.csr-window-grid .full{grid-column:auto}.csr-window-actions{flex-direction:column-reverse}.csr-window-actions button{width:100%}}
