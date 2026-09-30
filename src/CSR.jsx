@@ -38,7 +38,7 @@ export default function CSR({warehouseId}){
  }
  return <section id="csr" className="users-section"><div className="panel"><div className="csr-hero-banner"><div className="csr-hero-copy"><div className="csr-hero-brand"><span className="csr-hero-logo">360</span><div><strong>ALMACÉN 360</strong><small>CONTROL · VISIBILIDAD · EFICIENCIA</small></div></div><div className="eyebrow">CSR · PROGRAMACIÓN DE CITAS</div><p>Programa Recibos y Embarques en tiempo real y comparte el folio directamente con Caseta.</p><div className="csr-hero-tags"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 RECIBOS</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 EMBARQUES</button><span>🟢 DISPONIBLE</span><span>⚫ OCUPADO</span></div></div><button className="secondary-btn csr-hero-refresh" onClick={load}><RefreshCw size={15}/>Actualizar</button></div>
  <div id="csr-calendar" className="csr-operation-switch"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 Recibos</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 Embarques</button></div>
- {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}<WeeklyCalendar appointments={appointments} operation={operation} onSlot={(slot,appointment)=>{setSelectedSlot(slot);setSelectedAppointment(appointment||null);setAppointmentForm({operador:appointment?.precarga?.operador_nombre||"",linea:appointment?.precarga?.linea_transporte||"",contacto:appointment?.precarga?.contacto||"",tracto:appointment?.precarga?.tracto_numero||"",placaTracto:appointment?.precarga?.tracto_placas||"",caja:appointment?.precarga?.caja_numero||"",placaCaja:appointment?.precarga?.caja_placas||"",referencia:appointment?.referencia||appointment?.precarga?.observaciones||"",cuentaCliente:appointment?.cuenta_cliente||""})}}/>
+ {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}<WeeklyCalendar appointments={appointments} operation={operation} onAdditionalWindow={()=>setMessage("Solicitud de ventana adicional enviada para revisión.")} onSlot={(slot,appointment)=>{setSelectedSlot(slot);setSelectedAppointment(appointment||null);setAppointmentForm({operador:appointment?.precarga?.operador_nombre||"",linea:appointment?.precarga?.linea_transporte||"",contacto:appointment?.precarga?.contacto||"",tracto:appointment?.precarga?.tracto_numero||"",placaTracto:appointment?.precarga?.tracto_placas||"",caja:appointment?.precarga?.caja_numero||"",placaCaja:appointment?.precarga?.caja_placas||"",referencia:appointment?.referencia||appointment?.precarga?.observaciones||"",cuentaCliente:appointment?.cuenta_cliente||""})}}/>
  {selectedSlot&&<div className="csr-scheduler">
   <div><strong>{selectedAppointment?"Modificar cita":"Programar cita"} · {operation==="recibo"?"Recibo":"Embarque"}</strong><button type="button" className="secondary-btn" onClick={()=>setSelectedSlot("")}>Cerrar</button></div>
   <p>{new Date(selectedSlot).toLocaleString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</p>
@@ -67,7 +67,7 @@ export default function CSR({warehouseId}){
  </div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>{loading?<div className="empty">Cargando validaciones…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Referencia</b>Disponible en operación</span></div><div className="button-row"><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Requiere revisión</button><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar y pasar a Operación</button></div></div>)}</div>:<div className="empty">No hay unidades pendientes de CSR.</div>}</div></section>
 }
 
-function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){
+function WeeklyCalendar({appointments=[],operation="recibo",onSlot,onAdditionalWindow}){
  const CSR_BUILD_VERSION="2026-09-30-142";
  const now=new Date();
  const start=new Date(now);
@@ -80,7 +80,7 @@ function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){
  const days=labels.map((label,i)=>{const day=new Date(start);day.setDate(start.getDate()+i);return {label,day,key:day.toISOString().slice(0,10)}});
  const slots=[];
  for(let d=0;d<7;d++){
-   const hours=d<5?Array.from({length:10},(_,i)=>8+i):d===5?[8,9,10]:[];
+   const hours=d<5?Array.from({length:11},(_,i)=>8+i):d===5?[8,9,10]:[];
    hours.forEach(h=>{for(let w=1;w<=2;w++){const dt=new Date(start);dt.setDate(start.getDate()+d);dt.setHours(h,w===1?0:30,0,0);slots.push({dt,w})}});
  }
  const visible=appointments.filter(a=>(a.tipo_operacion||"recibo")===operation);
@@ -96,7 +96,7 @@ function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){
     const dayCount=visible.filter(a=>a.fecha===key).length;
     const active=selectedDay===key;
     return <button type="button" className={"csr-date-card"+(active?" selected":"")+(sameDay(day,now)?" today":"")} onClick={()=>setSelectedDay(key)} key={key}>
-      <span>{label}</span><strong>{day.getDate()}</strong><small>{dayCount?dayCount+" cita(s)":day.getDay()===0?"Sin operación":day.getDay()===6?"6 ventanas":"20 ventanas"}</small>
+      <span>{label}</span><strong>{day.getDate()}</strong><small>{dayCount?dayCount+" cita(s)":day.getDay()===0?"Sin operación":day.getDay()===6?"6 ventanas":"22 ventanas"}</small>
     </button>
    })}
   </div>
@@ -115,6 +115,9 @@ function WeeklyCalendar({appointments=[],operation="recibo",onSlot}){
       </button>
     }):<div className="csr-agenda-empty">Este día no tiene operación programada.</div>}
    </div>
+   <button type="button" className="secondary-btn csr-extra-window-btn" onClick={onAdditionalWindow}>
+    + Solicitar ventana adicional
+   </button>
   </div>
  </div>
 }
