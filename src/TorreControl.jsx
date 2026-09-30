@@ -96,14 +96,14 @@ export default function TorreControl({warehouseId,onLogout}){
             <div className="ramps-title"><strong>Rampas MTY-II · Las Torres</strong><div><span className="legend green"/>Disponible <span className="legend blue"/>En uso <span className="legend gray"/>Bloqueada</div></div>
             <div className="warehouse-visual">
               <div className="warehouse-sky"><span>LAS TORRES · MTY II</span></div>
-              <div className="warehouse-building">{Array.from({length:Math.max(ramps.length,19)},(_,i)=>{const r=ramps[i];const state=r?.estado==="operativa"?(occupied.has(r.id)?"busy":"free"):"blocked";return <div className={"dock "+state} key={r?.id||"visual-"+i}><b>RAMPA {String(i+1).padStart(2,"0")}</b><div className="dock-door"/><div className="dock-truck">{state==="blocked"?"":state==="busy"?"▰":"▱"}</div></div>})}</div>
+              <div className="warehouse-building">{Array.from({length:Math.max(ramps.length,19)},(_,i)=>{const r=ramps[i];const state=r?.estado==="operativa"?(occupied.has(r.id)?"busy":"free"):"blocked";return <div className={"dock "+state} key={r?.id||"visual-"+i}><b>{String(i+1).padStart(2,"0")}</b><div className="dock-door"/><div className="dock-truck">{state==="blocked"?"":state==="busy"?"▰":"▱"}</div></div>})}</div>
             </div>
           </section>
 
           <section className="warehouse-status">
             <div className="status-head"><strong>Estado del Almacén</strong><span>Rampas totales <b>{ramps.length}</b></span></div>
             <div className="capacity-summary">
-              <div className="capacity-ring"><div><strong>{ramps.length?Math.round(operational.length/ramps.length*100):0}%</strong><span>Capacidad<br/>operativa</span></div></div>
+              <div className="capacity-ring"><div style={{"--capacity":`${ramps.length?Math.round(operational.length/ramps.length*100):0}%`}}><strong>{ramps.length?Math.round(operational.length/ramps.length*100):0}%</strong><span>Capacidad<br/>operativa</span></div></div>
               <div className="capacity-side"><em>Operación Normal</em><span>Capacidad disponible</span><b>{Math.max(0,operational.length-occupied.size)} rampas libres</b></div>
             </div>
             <div className="status-list"><div><span>En uso</span><b>{occupied.size}</b></div><div><span>Disponibles</span><b>{Math.max(0,operational.length-occupied.size)}</b></div><div><span>Bloqueadas</span><b>{ramps.filter(r=>r.activa&&r.estado!=="operativa").length}</b></div></div>
