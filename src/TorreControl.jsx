@@ -39,14 +39,16 @@ export default function TorreControl({warehouseId,onLogout}){
   }
 
   useEffect(()=>{
+    const updateClock=()=>setNow(Date.now());
+    updateClock();
+    const timer=window.setInterval(updateClock,1000);
+    return()=>window.clearInterval(timer);
+  },[]);
+
+  useEffect(()=>{
     if(!warehouseId||!supabase)return;
     load();
     const refresh=setInterval(load,3000);
-    const tick=setInterval(()=>{
-      const t=Date.now();
-      setNow(t);
-      setMonitorClock(formatMonitorClock());
-    },1000);
     const alertRefresh=setInterval(async()=>{
       try{
         const {data}=await supabase.rpc("listar_alertas_citas_monitor",{p_almacen_id:warehouseId});
@@ -67,7 +69,7 @@ export default function TorreControl({warehouseId,onLogout}){
     start();
     const vis=()=>document.visibilityState==="visible"&&load();
     window.addEventListener("focus",load);document.addEventListener("visibilitychange",vis);
-    return()=>{clearInterval(refresh);clearInterval(tick);clearInterval(alertRefresh);window.removeEventListener("focus",load);document.removeEventListener("visibilitychange",vis);if(channel)supabase.removeChannel(channel)};
+    return()=>{clearInterval(refresh);clearInterval(alertRefresh);window.removeEventListener("focus",load);document.removeEventListener("visibilitychange",vis);if(channel)supabase.removeChannel(channel)};
   },[warehouseId]);
 
   const todayUnits=useMemo(()=>units.filter(u=>isToday(u.created_at)),[units]);
