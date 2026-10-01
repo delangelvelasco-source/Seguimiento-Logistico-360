@@ -8,6 +8,14 @@ const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_o
 export default function TorreControl({warehouseId,onLogout}){
   const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null),[citas,setCitas]=useState([]),[alertasCita,setAlertasCita]=useState([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState(""),[now,setNow]=useState(Date.now()),[lastUpdate,setLastUpdate]=useState(null),[tab,setTab]=useState("proceso"),[query,setQuery]=useState("");
+  const formatMonitorClock=()=>{
+    const d=new Date();
+    return {
+      time:new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(d),
+      date:new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(d)
+    };
+  };
+  const [monitorClock,setMonitorClock]=useState(()=>formatMonitorClock());
   const loadSeq=useRef(0);
 
   async function load(){
@@ -33,7 +41,12 @@ export default function TorreControl({warehouseId,onLogout}){
   useEffect(()=>{
     if(!warehouseId||!supabase)return;
     load();
-    const refresh=setInterval(load,3000),tick=setInterval(()=>setNow(Date.now()),1000);
+    const refresh=setInterval(load,3000);
+    const tick=setInterval(()=>{
+      const t=Date.now();
+      setNow(t);
+      setMonitorClock(formatMonitorClock());
+    },1000);
     const alertRefresh=setInterval(async()=>{
       try{
         const {data}=await supabase.rpc("listar_alertas_citas_monitor",{p_almacen_id:warehouseId});
@@ -101,8 +114,8 @@ export default function TorreControl({warehouseId,onLogout}){
   return <section id="torre" className="monitor-dashboard">
     <header className="monitor-header">
       <div className="monitor-brand"><div className="monitor-logo">360</div><div><strong>Seguimiento Logístico 360°</strong><span>TORRE DE CONTROL</span></div></div>
-      <div className="monitor-live"><i/> Actualización en tiempo real <small>{lastUpdate?"· "+lastUpdate.toLocaleTimeString("es-MX"):""}</small></div>
-      <div className="monitor-header-right"><div className="monitor-time">{new Date(now).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}<small>{new Date(now).toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</small></div><Bell size={22}/><div className="monitor-user"><div className="monitor-avatar">M</div><div><strong>Monitor MTYII</strong><span>Las Torres</span></div><ChevronDown size={17}/></div>{onLogout&&<button className="monitor-logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={16}/><span>Cerrar sesión</span></button>}</div>
+      <div className="monitor-live"><i/> Actualización en tiempo real <small>{lastUpdate?"· Última sincronización "+new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(lastUpdate):"· Sincronizando…"}</small></div>
+      <div className="monitor-header-right"><div className="monitor-time"><strong>{monitorClock.time}</strong><small>{monitorClock.date}</small></div><Bell size={22}/><div className="monitor-user"><div className="monitor-avatar">M</div><div><strong>Monitor MTYII</strong><span>Las Torres</span></div><ChevronDown size={17}/></div>{onLogout&&<button className="monitor-logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={16}/><span>Cerrar sesión</span></button>}</div>
     </header>
 
     <div className="monitor-body">
