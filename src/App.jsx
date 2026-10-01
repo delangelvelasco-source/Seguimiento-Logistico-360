@@ -45,82 +45,78 @@ function App() {
   useEffect(() => {
     let stopped = false;
     let checking = false;
+    const getCurrentAsset = () => Array.from(document.scripts).find(el => el.type === "module" && el.src)?.src || "";
 
     const checkForNewBuild = async () => {
       if (checking || stopped || !navigator.onLine) return;
       checking = true;
       try {
-        const currentScript = Array.from(document.scripts)
-          .find(el => el.type === "module" && el.src);
-        const currentAsset = currentScript?.src || "";
+        const currentAsset = getCurrentAsset();
+        if (!currentAsset) return;
 
-        const url = new URL("./index.html", window.location.href);
-        url.searchParams.set("__seg360_build_check", Date.now().toString());
-
-        const response = await fetch(url.toString(), {
+        // Primero se consulta un archivo diminuto y sin caché. Esto permite que
+        // una tablet detecte una publicación nueva aunque conserve index.html.
+        const versionUrl = new URL("./version.json", window.location.href);
+        versionUrl.searchParams.set("_", Date.now().toString());
+        const versionResponse = await fetch(versionUrl.toString(), {
           cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache, no-store, max-age=0",
-            "Pragma": "no-cache"
-          }
+          headers: {"Cache-Control":"no-cache, no-store, max-age=0","Pragma":"no-cache"}
         });
-        if (!response.ok || stopped) return;
 
-        const html = await response.text();
-        const match =
-          html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i) ||
-          html.match(/<script[^>]+src=["']([^"']+)["'][^>]+type=["']module["']/i);
-
-        const remoteAsset = match?.[1] || "";
-        if (!currentAsset || !remoteAsset) return;
+        let remoteVersion = "";
+        if (versionResponse.ok) {
+          const payload = await versionResponse.json();
+          remoteVersion = String(payload?.build || "");
+        }
 
         const currentUrl = new URL(currentAsset, window.location.href);
-        const remoteUrl = new URL(remoteAsset, window.location.href);
+        const currentVersion = currentUrl.searchParams.get("v") || currentUrl.search || "";
 
-        // Comparar también el query de versión. El nombre/ruta del asset puede
-        // permanecer igual en una publicación y la tablet podría conservar JS viejo.
-        const currentVersion = currentUrl.searchParams.get("v") || currentUrl.search;
-        const remoteVersion = remoteUrl.searchParams.get("v") || remoteUrl.search;
+        // Fallback para despliegues donde version.json todavía no exista.
+        if (!remoteVersion) {
+          const indexUrl = new URL("./index.html", window.location.href);
+          indexUrl.searchParams.set("_", Date.now().toString());
+          const response = await fetch(indexUrl.toString(), {
+            cache: "no-store",
+            headers: {"Cache-Control":"no-cache, no-store, max-age=0","Pragma":"no-cache"}
+          });
+          if (!response.ok) return;
+          const html = await response.text();
+          const match = html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i)
+            || html.match(/<script[^>]+src=["']([^"']+)["'][^>]+type=["']module["']/i);
+          if (match?.[1]) {
+            const remoteUrl = new URL(match[1], window.location.href);
+            remoteVersion = remoteUrl.searchParams.get("v") || remoteUrl.search || "";
+          }
+        }
 
-        if (
-          (currentUrl.pathname !== remoteUrl.pathname || currentVersion !== remoteVersion) &&
-          !stopped
-        ) {
-          const hash = window.location.hash || "";
+        if (remoteVersion && currentVersion && remoteVersion !== currentVersion && !stopped) {
           const freshUrl = new URL(window.location.href);
           freshUrl.searchParams.set("__seg360_force_refresh", Date.now().toString());
-          freshUrl.hash = hash;
+          freshUrl.hash = window.location.hash || "";
           window.location.replace(freshUrl.toString());
         }
       } catch {
-        // El monitoreo operativo continúa aunque la comprobación de versión falle.
+        // La operación continúa aunque la comprobación de publicación falle.
       } finally {
         checking = false;
       }
     };
 
     checkForNewBuild();
-
-    // Tablet / móvil: comprobar también al volver a primer plano o recuperar red.
     const timer = window.setInterval(checkForNewBuild, 5000);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") checkForNewBuild();
-    };
-    const onFocus = () => checkForNewBuild();
-    const onOnline = () => checkForNewBuild();
-
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("pageshow", onFocus);
+    const events = [
+      ["visibilitychange", () => document.visibilityState === "visible" && checkForNewBuild(), document],
+      ["focus", checkForNewBuild, window],
+      ["online", checkForNewBuild, window],
+      ["pageshow", checkForNewBuild, window]
+    ];
+    events.forEach(([name,fn,target]) => target.addEventListener(name,fn));
 
     return () => {
       stopped = true;
       window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("pageshow", onFocus);
+      events.forEach(([name,fn,target]) => target.removeEventListener(name,fn));
     };
   }, []);
 
