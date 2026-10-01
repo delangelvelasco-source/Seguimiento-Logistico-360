@@ -69,7 +69,7 @@ export default function TorreControl({warehouseId,onLogout}){
 
   const capacity=Number(patio?.capacidad_maxima||20),occupancy=Number(patio?.ocupacion??stats.patio),pct=Math.min(100,Math.round(occupancy/capacity*100));
   const operational=ramps.filter(r=>r.activa&&r.estado==="operativa"),occupied=new Set(units.map(u=>u.rampa_id).filter(Boolean));
-  const filtered=useMemo(()=>units.filter(u=>[u.folio,u.linea_transporte,u.placas_tracto,u.placas_caja].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
+  const filtered=useMemo(()=>units.filter(u=>[u.folio,u.linea_transporte,u.tracto_placas,u.caja_placas].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
   const risk=useMemo(()=>{const o={green:0,yellow:0,orange:0,red:0};activeUnits.forEach(u=>o[sla(u,now).level]++);return o},[units,now]);
   const upcoming=useMemo(()=>{
     return citas
