@@ -42,7 +42,7 @@ export default function TorreControl({warehouseId,onLogout}){
   useEffect(()=>{
     const pageRefresh=window.setInterval(()=>{
       if(document.visibilityState==="visible") window.location.reload();
-    },60000);
+    },30000);
     return()=>window.clearInterval(pageRefresh);
   },[]);
 
