@@ -38,6 +38,14 @@ export default function TorreControl({warehouseId,onLogout}){
     return()=>window.clearInterval(timer);
   },[]);
 
+  // Refresco automático de la página: mantiene la TV/monitor en la versión más reciente.
+  useEffect(()=>{
+    const pageRefresh=window.setInterval(()=>{
+      if(document.visibilityState==="visible") window.location.reload();
+    },60000);
+    return()=>window.clearInterval(pageRefresh);
+  },[]);
+
   useEffect(()=>{
     if(!warehouseId||!supabase)return;
     load();
