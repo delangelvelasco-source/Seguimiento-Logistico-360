@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, Bell, CalendarDays, CheckCircle2, ChevronDown,
 import { supabase } from "./lib/supabase";
 
 const STAGE_LABEL={en_caseta:"Caseta",validando:"Validando",espera_turno:"En espera",rampa_asignada:"Posicionamiento",en_operacion:"Operación",documentacion:"Documentación",liberada:"Lista para Guardia"};
-const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada"];
+const STAGE_ORDER=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada"];\nconst RAMP_OCCUPYING_STATES=["rampa_asignada","en_operacion"];
 
 export default function TorreControl({warehouseId,onLogout}){
   const [units,setUnits]=useState([]),[ramps,setRamps]=useState([]),[patio,setPatio]=useState(null),[citas,setCitas]=useState([]),[alertasCita,setAlertasCita]=useState([]);
@@ -75,7 +75,7 @@ export default function TorreControl({warehouseId,onLogout}){
   }),[todayUnits,activeUnits,now]);
 
   const capacity=Number(patio?.capacidad_maxima||20),occupancy=Number(patio?.ocupacion??stats.patio),pct=Math.min(100,Math.round(occupancy/capacity*100));
-  const operational=ramps.filter(r=>r.activa&&r.estado==="operativa"),occupied=new Set(units.map(u=>u.rampa_id).filter(Boolean));
+  const operational=ramps.filter(r=>r.activa&&r.estado==="operativa");\n  const rampUnits=activeUnits.filter(u=>RAMP_OCCUPYING_STATES.includes(u.estado)&&u.rampa_id);\n  const occupied=new Set(rampUnits.map(u=>u.rampa_id).filter(Boolean));\n  const assignedCount=rampUnits.filter(u=>u.estado==="rampa_asignada").length;\n  const operationCount=rampUnits.filter(u=>u.estado==="en_operacion").length;\n  const availableRamps=Math.max(0,operational.length-occupied.size);\n  const availabilityPct=operational.length?Math.round(availableRamps/operational.length*100):0;\n  const avgWait=averageMinutes(activeUnits.filter(u=>["patio","cajon"].includes(u.ubicacion_tipo)),u=>u.created_at,u=>u.operacion_inicio_at||null,now);\n  const avgOperation=averageMinutes(todayUnits.filter(u=>u.operacion_inicio_at),u=>u.operacion_inicio_at,u=>u.operacion_fin_at,now);\n  const avgExit=averageMinutes(todayUnits.filter(u=>u.operacion_fin_at),u=>u.operacion_fin_at,u=>u.salida_caseta_at,now);
   const filtered=useMemo(()=>units.filter(u=>[u.folio,u.linea_transporte,u.tracto_placas,u.caja_placas].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase())),[units,query]);
   const risk=useMemo(()=>{const o={green:0,yellow:0,orange:0,red:0};activeUnits.forEach(u=>o[sla(u,now).level]++);return o},[units,now]);
   const upcoming=useMemo(()=>{
@@ -136,10 +136,10 @@ export default function TorreControl({warehouseId,onLogout}){
 
         <div className="monitor-main-grid">
           <section className="ramps-hero">
-            <div className="ramps-title"><strong>Rampas MTY-II · Las Torres</strong><div><span className="legend green"/>Disponible <span className="legend blue"/>En uso <span className="legend gray"/>Bloqueada</div></div>
+            <div className="ramps-title"><strong>Rampas MTY-II · Las Torres</strong><div><span className="legend green"/>Disponible <span className="legend blue"/>Asignada <span className="legend" style={{background:"#f59e0b"}}/>En operación <span className="legend gray"/>Bloqueada</div></div>
             <div className="warehouse-visual">
               <div className="warehouse-sky"><span>LAS TORRES · MTY II</span></div>
-              <div className="warehouse-building">{Array.from({length:Math.max(ramps.length,19)},(_,i)=>{const r=ramps[i];const state=r?.estado==="operativa"?(occupied.has(r.id)?"busy":"free"):"blocked";return <div className={"dock "+state} key={r?.id||"visual-"+i}><b>{String(i+1).padStart(2,"0")}</b><div className="dock-door"/><div className="dock-truck">{state==="blocked"?"":state==="busy"?"▰":"▱"}</div></div>})}</div>
+              <div className="warehouse-building">{Array.from({length:Math.max(ramps.length,19)},(_,i)=>{const r=ramps[i];const unit=r&&r.id?rampUnits.find(u=>u.rampa_id===r.id):null;const state=r?.estado==="operativa"?(unit?"busy":"free"):"blocked";const operating=unit?.estado==="en_operacion";return <div className={"dock "+state} key={r?.id||"visual-"+i} style={operating?{borderColor:"#f59e0b"}:undefined}><b style={operating?{background:"#d97706"}:undefined}>{String(i+1).padStart(2,"0")}</b><div className="dock-door"/><div className="dock-truck" style={operating?{color:"#fbbf24"}:undefined}>{state==="blocked"?"":state==="busy"?"▰":"▱"}</div></div>})}</div>
             </div>
           </section>
 
@@ -192,7 +192,7 @@ export default function TorreControl({warehouseId,onLogout}){
         <div className="monitor-lower-grid">
           <section className="units-table-card">
             <div className="table-title"><strong>{tab==="patio"?"Unidades en Patio":tab==="completadas"?"Unidades Completadas":tab==="retrasadas"?"Unidades Retrasadas":"Unidades en Proceso"}</strong><button onClick={load} disabled={loading}><RefreshCw size={15}/>{loading?"Actualizando":"Actualizar"}</button></div>
-            <div className="monitor-table-wrap"><table className="monitor-table"><thead><tr><th>Hora llegada</th><th>Transportista</th><th>Unidad</th><th>Operación</th><th>Pallets</th><th>Rampa</th><th>Estatus</th><th>Tiempo</th><th>Acciones</th></tr></thead><tbody>{filtered.filter(u=>tab==="patio"?["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":true).map(u=>{const s=sla(u,now);return <tr key={u.id}><td>{new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</td><td>{u.linea_transporte||"—"}</td><td>{u.tracto_placas||"—"} / {u.caja_placas||"—"}</td><td><span className="type-pill">{u.operacion_tipo||"Recepción"}</span></td><td><strong>{u.pallets ?? "—"}</strong></td><td><span className="ramp-pill">{ramps.find(r=>r.id===u.rampa_id)?.codigo||"—"}</span></td><td><span className={"status-pill "+s.level}>{STAGE_LABEL[u.estado]||u.estado}</span></td><td><b className={s.level}>{formatMinutes(s.globalMin)}</b></td><td><Eye size={17}/></td></tr>})}</tbody></table>{!filtered.length&&<div className="monitor-empty">No hay unidades para mostrar.</div>}</div>
+            <div className="monitor-table-wrap"><table className="monitor-table"><thead><tr><th>Hora llegada</th><th>Transportista</th><th>Unidad</th><th>Operación</th><th>Pallets</th><th>Rampa</th><th>Estatus</th><th>Tiempo</th><th>Acciones</th></tr></thead><tbody>{filtered.filter(u=>tab==="patio"?["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":tab==="proceso"?["rampa_asignada","en_operacion","documentacion"].includes(u.estado):true).map(u=>{const s=sla(u,now);return <tr key={u.id}><td>{new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</td><td>{u.linea_transporte||"—"}</td><td>{u.tracto_placas||"—"} / {u.caja_placas||"—"}</td><td><span className="type-pill">{u.operacion_tipo||"Recepción"}</span></td><td><strong>{u.pallets ?? "—"}</strong></td><td><span className="ramp-pill">{ramps.find(r=>r.id===u.rampa_id)?.codigo||"—"}</span></td><td><span className={"status-pill "+s.level}>{STAGE_LABEL[u.estado]||u.estado}</span></td><td><b className={s.level}>{formatMinutes(s.globalMin)}</b></td><td><Eye size={17}/></td></tr>})}</tbody></table>{!filtered.length&&<div className="monitor-empty">No hay unidades para mostrar.</div>}</div>
           </section>
           <aside className="monitor-sidecards">
             <SideList title="Próximas Citas" action="Ver todas" items={upcoming.map(c=>{
@@ -216,7 +216,7 @@ export default function TorreControl({warehouseId,onLogout}){
 function MiniKpi({icon,label,value,note,tone}){return <div className={"mini-kpi "+tone}><div className="mini-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{note}</small></div></div>}
 function SideList({title,action,items}){return <div className="side-list"><div className="side-list-head"><strong>{title}</strong>{action&&<span>{action}</span>}</div>{items.map((x,i)=><div className={"side-row "+(x.late?"late":"")} key={i}><b>{x.time}</b><span>{x.title}{x.late&&<em className="appointment-delay">RETRASO +{x.delay} MIN</em>}<small>{x.sub}</small></span></div>)}</div>}
 function sla(u,now){const start=new Date(u.created_at||Date.now()).getTime(),min=Math.max(0,(now-start)/60000);let level="green";if(min>120)level="red";else if(min>105)level="orange";else if(min>90)level="yellow";return {level,globalMin:min}}
-function formatMinutes(v){const n=Math.floor(v);return n<60?n+" min":Math.floor(n/60)+" h "+String(n%60).padStart(2,"0")+" min"}
+function formatMinutes(v){const n=Math.floor(v);return n<60?n+" min":Math.floor(n/60)+" h "+String(n%60).padStart(2,"0")+" min"}\nfunction averageMinutes(list,startGetter,endGetter,now){if(!list.length)return null;const values=list.map(u=>{const a=new Date(startGetter(u)).getTime();const raw=endGetter(u);const b=raw?new Date(raw).getTime():now;return Math.max(0,(b-a)/60000)}).filter(Number.isFinite);return values.length?values.reduce((a,b)=>a+b,0)/values.length:null}\nfunction formatAverage(v){return v==null?"—":formatMinutes(v)}
 
 function isToday(value){if(!value)return false;return dateKey(value)===dateKey(Date.now())}
 function dateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value))}
