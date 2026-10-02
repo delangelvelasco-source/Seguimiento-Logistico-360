@@ -66,7 +66,7 @@ export default function TorreControl({warehouseId,onLogout}){
   },[warehouseId]);
 
   const todayUnits=useMemo(()=>units.filter(u=>isToday(u.created_at)),[units]);
-  const activeUnits=useMemo(()=>units.filter(u=>!u.salida_caseta_at),[units]);
+  const activeUnits=useMemo(()=>units.filter(isActiveOperationalUnit),[units]);
   const stats=useMemo(()=>{
     const procesoStates=["rampa_asignada","en_operacion","documentacion"];
     return {
@@ -198,7 +198,7 @@ export default function TorreControl({warehouseId,onLogout}){
         <div className="monitor-lower-grid">
           <section className="units-table-card">
             <div className="table-title"><strong>{tab==="patio"?"Unidades en Patio":tab==="completadas"?"Unidades Completadas":tab==="retrasadas"?"Unidades Retrasadas":"Unidades en Proceso"}</strong><button onClick={load} disabled={loading}><RefreshCw size={15}/>{loading?"Actualizando":"Actualizar"}</button></div>
-            <div className="monitor-table-wrap"><table className="monitor-table"><thead><tr><th>Hora llegada</th><th>Transportista</th><th>Unidad</th><th>Operación</th><th>Pallets</th><th>Rampa</th><th>Estatus</th><th>Tiempo</th><th>Acciones</th></tr></thead><tbody>{filtered.filter(u=>tab==="patio"?u.estado==="espera_turno"&&["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":tab==="proceso"?["rampa_asignada","en_operacion","documentacion"].includes(u.estado):true).map(u=>{const s=sla(u,now);return <tr key={u.id}><td>{new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</td><td>{u.linea_transporte||"—"}</td><td>{u.tracto_placas||"—"} / {u.caja_placas||"—"}</td><td><span className="type-pill">{u.operacion_tipo||"Recepción"}</span></td><td><strong>{u.pallets ?? "—"}</strong></td><td><span className="ramp-pill">{ramps.find(r=>r.id===u.rampa_id)?.codigo||"—"}</span></td><td><span className={"status-pill "+s.level}>{STAGE_LABEL[u.estado]||u.estado}</span></td><td><b className={s.level}>{formatMinutes(s.globalMin)}</b></td><td><Eye size={17}/></td></tr>})}</tbody></table>{!filtered.filter(u=>tab==="patio"?u.estado==="espera_turno"&&["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":tab==="proceso"?["rampa_asignada","en_operacion","documentacion"].includes(u.estado):true).length&&<div className="monitor-empty">No hay unidades para mostrar.</div>}</div>
+            <div className="monitor-table-wrap"><table className="monitor-table"><thead><tr><th>Hora llegada</th><th>Transportista</th><th>Unidad</th><th>Operación</th><th>Pallets</th><th>Rampa</th><th>Estatus</th><th>Tiempo</th><th>Acciones</th></tr></thead><tbody>{filtered.filter(u=>tab==="patio"?u.estado==="espera_turno"&&["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":tab==="proceso"?isActiveOperationalUnit(u)&&["rampa_asignada","en_operacion","documentacion"].includes(u.estado):true).map(u=>{const s=sla(u,now);return <tr key={u.id}><td>{new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</td><td>{u.linea_transporte||"—"}</td><td>{u.tracto_placas||"—"} / {u.caja_placas||"—"}</td><td><span className="type-pill">{u.operacion_tipo||"Recepción"}</span></td><td><strong>{u.pallets ?? "—"}</strong></td><td><span className="ramp-pill">{ramps.find(r=>r.id===u.rampa_id)?.codigo||"—"}</span></td><td><span className={"status-pill "+s.level}>{STAGE_LABEL[u.estado]||u.estado}</span></td><td><b className={s.level}>{formatMinutes(s.globalMin)}</b></td><td><Eye size={17}/></td></tr>})}</tbody></table>{!filtered.filter(u=>tab==="patio"?u.estado==="espera_turno"&&["patio","cajon"].includes(u.ubicacion_tipo):tab==="completadas"?u.estado==="liberada":tab==="retrasadas"?sla(u,now).level==="red":tab==="proceso"?isActiveOperationalUnit(u)&&["rampa_asignada","en_operacion","documentacion"].includes(u.estado):true).length&&<div className="monitor-empty">No hay unidades para mostrar.</div>}</div>
           </section>
           <aside className="monitor-sidecards">
             <SideList title="Próximas Citas" action="Ver todas" items={upcoming.map(c=>{
@@ -228,6 +228,8 @@ function formatAverage(v){return v==null?"—":formatMinutes(v)}
 
 function isToday(value){if(!value)return false;return dateKey(value)===dateKey(Date.now())}
 function dateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value))}
+function isActiveOperationalUnit(u){return !u.salida_caseta_at&&u.ubicacion_tipo!=="fuera"&&!["liberada","cancelada"].includes(u.estado)}
+
 // El monitor operativo trabaja por jornada: al cambiar el día se ocultan
 // todas las unidades de jornadas anteriores, sin borrar sus registros.
 function isVisibleUnit(u){return isToday(u.created_at)}
