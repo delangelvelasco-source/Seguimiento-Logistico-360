@@ -240,4 +240,4 @@ function isActiveOperationalUnit(u){return !u.salida_caseta_at&&u.ubicacion_tipo
 
 // El monitor operativo trabaja por jornada: al cambiar el día se ocultan
 // todas las unidades de jornadas anteriores, sin borrar sus registros.
-function isVisibleUnit(u){return isToday(u.created_at)}
+function isVisibleUnit(u){return isToday(u.created_at)&&!u.salida_caseta_at}
