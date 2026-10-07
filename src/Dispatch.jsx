@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Search, Send, X, XCircle } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-const labels={operador_nombre:"Operador",linea_transporte:"Línea",tracto_placas:"Tracto",caja_placas:"Caja",pallets:"Pallets"};
+// OP360 production build 2026-10-07 04:38\nconst labels={operador_nombre:"Operador",linea_transporte:"Línea",tracto_placas:"Tracto",caja_placas:"Caja",pallets:"Pallets"};
 
 export default function Dispatch({warehouseId}){
  const [units,setUnits]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
