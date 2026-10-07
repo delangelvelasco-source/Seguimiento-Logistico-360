@@ -199,7 +199,9 @@ export default function App(){
       await saveEvidence(platePhoto,"placa");
       await saveEvidence(idPhoto,"identificacion");
       setForm({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",folio_cita:"",numero_sellos:""});
-      setPlatePhoto(null); setIdPhoto(null); setPlatePreview(null); setIdPreview(null);
+      setPlatePhoto(null); setIdPhoto(null); setPlatePreview(null); setIdPreview(null); setCitaLookup({loading:false,found:false,message:""});
+      const plateInput=document.getElementById("plate-file"); if(plateInput) plateInput.value="";
+      const idInput=document.getElementById("id-file"); if(idInput) idInput.value="";
       setNotice("Unidad registrada correctamente: "+f);
       await loadUnits();
     }catch(e){ setError(e.message||"No se pudo registrar la unidad."); }
