@@ -130,7 +130,7 @@ export default function TorreControl({warehouseId,onLogout}){
 
   return <section id="torre" className="monitor-dashboard">
     <header className="monitor-header">
-      <div className="monitor-brand"><div className="monitor-logo">360</div><div><strong>Seguimiento Logístico 360°</strong><span>TORRE DE CONTROL</span></div></div>
+      <div className="monitor-brand"><div className="monitor-logo">360</div><div><strong>OP360</strong><span>MONITOR 360</span></div></div>
       <div className="monitor-live"><i/> Actualización en tiempo real <small>{lastUpdate?"· Última sincronización "+new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(lastUpdate):"· Sincronizando…"}</small></div>
       <div className="monitor-header-right"><div className="monitor-time"><strong>{new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(new Date(now))}</strong><small>{new Intl.DateTimeFormat("es-MX",{timeZone:"America/Monterrey",weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(new Date(now))}</small></div><Bell size={22}/><div className="monitor-user"><div className="monitor-avatar">M</div><div><strong>Monitor MTYII</strong><span>Las Torres</span></div><ChevronDown size={17}/></div>{onLogout&&<button className="monitor-logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={16}/><span>Cerrar sesión</span></button>}</div>
     </header>
