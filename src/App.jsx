@@ -267,14 +267,12 @@ function Login({login,setLogin,submit,busy,error}){
 
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
- const selectPhoto=(type,e)=>{
-   const input=e.currentTarget;
-   const file=input.files&&input.files[0]?input.files[0]:null;
+ const capture=(type,e)=>{
+   const file=e.target.files?.[0]||null;
    if(!file)return;
-   const preview=URL.createObjectURL(file);
-   if(type==="plate"){setPlatePhoto(file);setPlatePreview(preview)}else{setIdPhoto(file);setIdPreview(preview)}
+   const url=URL.createObjectURL(file);
+   if(type==="plate"){setPlatePhoto(file);setPlatePreview(url)}else{setIdPhoto(file);setIdPreview(url)}
  };
- const openCamera=id=>document.getElementById(id)?.click();
  const salida=units.filter(u=>u.estado==="documentacion");
  return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/>
  <div className="grid2">
@@ -289,13 +287,13 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
     <label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
    </div>
    <div className="evidence-grid">
-    <div className="evidence-tile evidence-click" onClick={()=>openCamera("plate-file")}>
-      <input id="plate-file" className="evidence-input-real" required type="file" accept="image/*" capture="environment" onChange={e=>selectPhoto("plate",e)}/>
-      {platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Foto capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar o elegir</small></>}
+    <div className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")}>
+      <input id="plate-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("plate",e)}/>
+      <button type="button" className="evidence-action" onClick={()=>document.getElementById("plate-file")?.click()}>{platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Placa capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar la foto de placa</small></>}</button>
     </div>
-    <div className="evidence-tile evidence-click" onClick={()=>openCamera("id-file")}>
-      <input id="id-file" className="evidence-input-real" required type="file" accept="image/*" capture="environment" onChange={e=>selectPhoto("id",e)}/>
-      {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ Foto capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar o elegir</small></>}
+    <div className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")}>
+      <input id="id-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("id",e)}/>
+      <button type="button" className="evidence-action" onClick={()=>document.getElementById("id-file")?.click()}>{idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}</button>
     </div>
    </div>
    <p className="form-note">El gafete no se pide para registrar el ingreso. Las fotografías son obligatorias y quedan ligadas al folio.</p>
