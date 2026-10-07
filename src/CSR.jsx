@@ -24,9 +24,9 @@ export default function CSR({warehouseId}){
  function generarCitaPractica(){
   const stamp=new Date();
   const key=String(stamp.getTime()).slice(-6);
-  const folio="CIT-"+stamp.toISOString().slice(0,10).replaceAll("-","")+ "-"+key;
+  const folio="OP360-CIT-"+stamp.toISOString().slice(0,10).replaceAll("-","")+ "-"+key;
   const cita={folio,cliente:practice.cliente,operacion:practice.operacion,fecha:practice.fecha,hora:practice.hora,unidades:Number(practice.unidades)||1,pallets:Number(practice.pallets)||0,referencia:practice.referencia,created_at:stamp.toISOString()};
-  localStorage.setItem("seguimiento360_practice_cita",JSON.stringify(cita));
+  localStorage.setItem("op360_practice_cita",JSON.stringify(cita));
   setPracticeAppointment(cita);
   QRCode.toDataURL(JSON.stringify({tipo:"cita360",folio:cita.folio,almacen_id:warehouseId}),{width:280,margin:2,errorCorrectionLevel:"M"}).then(setQrData).catch(()=>setQrData(""));
   setPracticeMsg("Cita de práctica generada. Ahora puedes llevar este folio al simulador de Caseta.");
@@ -112,7 +112,7 @@ export default function CSR({warehouseId}){
   setMessage("Solicitud de ventana adicional enviada para autorización.");
   return true;
  }
- return <section id="csr" className="users-section"><div className="panel"><div className="csr-hero-banner"><div className="csr-hero-copy"><div className="csr-hero-brand"><span className="csr-hero-logo">360</span><div><strong>ALMACÉN 360</strong><small>CONTROL · VISIBILIDAD · EFICIENCIA</small></div></div><div className="eyebrow">CSR · PROGRAMACIÓN DE CITAS</div><p>Programa Recibos y Embarques en tiempo real y comparte el folio directamente con Caseta.</p><div className="csr-hero-tags"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 RECIBOS</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 EMBARQUES</button><span>🟢 DISPONIBLE</span><span>⚫ OCUPADO</span></div></div><button className="secondary-btn csr-hero-refresh" onClick={load}><RefreshCw size={15}/>Actualizar</button></div>
+ return <section id="csr" className="users-section"><div className="panel"><div className="csr-hero-banner"><div className="csr-hero-copy"><div className="csr-hero-brand"><span className="csr-hero-logo">360</span><div><strong>OP360</strong><small>CONTROL · VISIBILIDAD · EFICIENCIA</small></div></div><div className="eyebrow">CSR · PROGRAMACIÓN DE CITAS</div><p>Programa Recibos y Embarques en tiempo real y comparte el folio directamente con Caseta.</p><div className="csr-hero-tags"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 RECIBOS</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 EMBARQUES</button><span>🟢 DISPONIBLE</span><span>⚫ OCUPADO</span></div></div><button className="secondary-btn csr-hero-refresh" onClick={load}><RefreshCw size={15}/>Actualizar</button></div>
  <div id="csr-calendar" className="csr-operation-switch"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 Recibos</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 Embarques</button></div>
  {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}<WeeklyCalendar appointments={appointments} operation={operation} csrUserId={csrUserId} onDelete={deleteAppointment} onViewEvidence={verRegistroCaseta} onAdditionalWindow={solicitarVentanaExtra} onSlot={(slot,appointment)=>{setSelectedSlot(slot);setSelectedAppointment(appointment||null);setAppointmentForm({operador:appointment?.precarga?.operador_nombre||"",linea:appointment?.precarga?.linea_transporte||"",contacto:appointment?.precarga?.contacto||"",tracto:appointment?.precarga?.tracto_numero||"",placaTracto:appointment?.precarga?.tracto_placas||"",caja:appointment?.precarga?.caja_numero||"",placaCaja:appointment?.precarga?.caja_placas||"",referencia:appointment?.referencia||appointment?.precarga?.observaciones||"",cuentaCliente:appointment?.cuenta_cliente||"",pallets:appointment?.pallets??""})}}/>
  {selectedSlot&&<div className="csr-scheduler">
@@ -141,7 +141,7 @@ export default function CSR({warehouseId}){
     if(pe){setError("La cita se guardó, pero no se pudo actualizar la información para Caseta: "+pe.message);return}
     setMessage(selectedAppointment?`Cita actualizada · Folio ${cita?.folio||selectedAppointment.folio}. Caseta verá la información actualizada.`:`Cita programada · Folio ${cita?.folio||folio}. La información quedó disponible para Caseta al ingresar el folio.`);const citaTexto=cita?.folio||folio;navigator.clipboard?.writeText(citaTexto).catch(()=>{});setSelectedSlot("");setSelectedAppointment(null);setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:"",pallets:""});await load();
   }}>Registrar cita</button></div>
- </div><EvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/>
+ </div><EvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/></section>
 }
 
 function EvidenceModal({evidenceModal,selectedEvidence,setSelectedEvidence,setEvidenceModal}){
@@ -162,7 +162,7 @@ function AdditionalWindowMenu({initial,operation,onClose,onSubmit}){
 }
 
 function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,onAdditionalWindow,onDelete,onViewEvidence}){
- const CSR_BUILD_VERSION="2026-09-30-154";
+ const CSR_BUILD_VERSION="2026-10-07-0434";
  const now=new Date();
  const start=new Date(now);
  const offset=(now.getDay()+6)%7;
