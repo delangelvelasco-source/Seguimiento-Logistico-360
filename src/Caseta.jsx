@@ -4,6 +4,7 @@ import { supabase } from "./lib/supabase";
 import { createWorker } from "tesseract.js";
 
 export default function Caseta({ warehouseId }) {
+  // OP360 build marker: Caseta JSX syntax verified.
   const [accessType,setAccessType]=useState("unidad");
   const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",pallets:""});
   const form=accessForm;
