@@ -1,6 +1,6 @@
 {
-  "build": "20261007-op360-02",
-  "version": "2026.10.07-op360-monitor",
-  "commit": "op360-full-flow",
-  "updated": "2026-10-07T03:30:00-06:00"
+  "build": "20261007-op360-04",
+  "version": "2026.10.07-op360-caseta-fixed",
+  "commit": "caseta-syntax-final",
+  "updated": "2026-10-07T04:12:00-06:00"
 }
