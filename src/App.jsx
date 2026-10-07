@@ -288,7 +288,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    </div>
    <div className="evidence-grid">
     <label className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")}>
-      <input id="plate-file" className="evidence-input-camera" required type="file" accept="image/*" capture="environment" onChange={e=>capture("plate",e)} onInput={e=>capture("plate",e)}/>
+      <input id="plate-file" className="evidence-input-camera" type="file" accept="image/*" capture="environment" onChange={e=>capture("plate",e)} onInput={e=>capture("plate",e)}/>
       {platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Placa capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar la foto de placa</small></>}
     </label>
     <label className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")}>
