@@ -24,9 +24,9 @@ export default function CSR({warehouseId}){
  function generarCitaPractica(){
   const stamp=new Date();
   const key=String(stamp.getTime()).slice(-6);
-  const folio="CIT-"+stamp.toISOString().slice(0,10).replaceAll("-","")+ "-"+key;
+  const folio="OP360-CIT-"+stamp.toISOString().slice(0,10).replaceAll("-","")+ "-"+key;
   const cita={folio,cliente:practice.cliente,operacion:practice.operacion,fecha:practice.fecha,hora:practice.hora,unidades:Number(practice.unidades)||1,pallets:Number(practice.pallets)||0,referencia:practice.referencia,created_at:stamp.toISOString()};
-  localStorage.setItem("seguimiento360_practice_cita",JSON.stringify(cita));
+  localStorage.setItem("op360_practice_cita",JSON.stringify(cita));
   setPracticeAppointment(cita);
   QRCode.toDataURL(JSON.stringify({tipo:"cita360",folio:cita.folio,almacen_id:warehouseId}),{width:280,margin:2,errorCorrectionLevel:"M"}).then(setQrData).catch(()=>setQrData(""));
   setPracticeMsg("Cita de práctica generada. Ahora puedes llevar este folio al simulador de Caseta.");
