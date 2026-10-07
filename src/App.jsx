@@ -57,7 +57,7 @@ export default function App(){
   const [module,setModule]=useState("trafico");
   useEffect(()=>{ if(profile?.rol==="caseta") setModule("caseta"); },[profile?.rol]);
   const [login,setLogin]=useState({user:"",password:""});
-  const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",numero_sellos:""});
+  const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",folio_cita:"",numero_sellos:""});
   const [newUser,setNewUser]=useState({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
   const [platePhoto,setPlatePhoto]=useState(null);
   const [idPhoto,setIdPhoto]=useState(null);
@@ -151,7 +151,7 @@ export default function App(){
         folio:f, operador_nombre:form.operador_nombre.trim(), linea_transporte:form.linea_transporte.trim(),
         tracto_numero:form.tracto_numero.trim(), tracto_placas:form.tracto_placas.trim().toUpperCase(),
         caja_numero:form.caja_numero.trim()||null, caja_placas:form.caja_placas.trim().toUpperCase()||null,
-        contacto:form.contacto.trim(), cita_at:form.cita_at||null, numero_sellos:form.operacion_tipo==="embarque" ? Number(form.numero_sellos||0) : null, estado:"en_caseta",
+        contacto:form.contacto.trim(), cita_at:null, folio_cita:form.folio_cita.trim()||null, numero_sellos:form.operacion_tipo==="embarque" ? Number(form.numero_sellos||0) : null, estado:"en_caseta",
         operacion_tipo:form.operacion_tipo, almacen_id:warehouseId, caseta_usuario_id:profile.id
       }).select("id").single();
       if(e1) throw e1;
@@ -160,7 +160,7 @@ export default function App(){
         empresa:form.linea_transporte.trim(), telefono:form.contacto.trim(),
         tracto_numero:form.tracto_numero.trim(), tracto_placas:form.tracto_placas.trim().toUpperCase(),
         caja_numero:form.caja_numero.trim()||null, caja_placas:form.caja_placas.trim().toUpperCase()||null,
-        operacion_tipo:form.operacion_tipo, unidad_id:u.id, registrado_por:profile.id
+        operacion_tipo:form.operacion_tipo, folio_cita:form.folio_cita.trim()||null, unidad_id:u.id, registrado_por:profile.id
       }).select("id").single();
       if(ae) throw ae;
       async function saveEvidence(file,type){
@@ -173,7 +173,7 @@ export default function App(){
       }
       await saveEvidence(platePhoto,"placa");
       await saveEvidence(idPhoto,"identificacion");
-      setForm({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",numero_sellos:""});
+      setForm({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",folio_cita:"",numero_sellos:""});
       setPlatePhoto(null); setIdPhoto(null);
       setNotice("Unidad registrada correctamente: "+f);
       await loadUnits();
@@ -247,7 +247,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  <label>No. de Tracto *{f("tracto_numero",true)}</label><label>Placas del tracto *{f("tracto_placas",true)}</label>
  <label>No. de Caja *{f("caja_numero",true)}</label><label>Placas de caja *{f("caja_placas",true)}</label>
  <label>Contacto *{f("contacto",true,"tel")}</label><label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
- <label>Cita opcional<input type="datetime-local" value={form.cita_at} onChange={e=>setForm({...form,cita_at:e.target.value})}/></label>
+ <label>No. de cita (folio) opcional<input type="text" value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Folio de cita"/></label>
  <label>Número de sellos {form.operacion_tipo==="embarque"?"*":"(embarque)"}<input type="number" min="0" required={form.operacion_tipo==="embarque"} value={form.numero_sellos} onChange={e=>setForm({...form,numero_sellos:e.target.value})}/></label>
  <label>Foto de placas *<input required type="file" accept="image/*" capture="environment" onChange={e=>setPlatePhoto(e.target.files?.[0]||null)}/>{platePhoto&&<small>{platePhoto.name}</small>}</label>
  <label>Foto de ID *<input required type="file" accept="image/*" capture="environment" onChange={e=>setIdPhoto(e.target.files?.[0]||null)}/>{idPhoto&&<small>{idPhoto.name}</small>}</label>
