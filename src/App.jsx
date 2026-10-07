@@ -268,7 +268,7 @@ function Login({login,setLogin,submit,busy,error}){
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
  const capture=(type,e)=>{
-   const file=e.target.files?.[0]||null;
+   const file=e.currentTarget?.files?.[0]||null;
    if(!file)return;
    const url=URL.createObjectURL(file);
    if(type==="plate"){setPlatePhoto(file);setPlatePreview(url)}else{setIdPhoto(file);setIdPreview(url)}
@@ -287,12 +287,12 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
     <label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
    </div>
    <div className="evidence-grid">
-    <label className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")} htmlFor="plate-file">
-      <input id="plate-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("plate",e)}/>
+    <label className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")}>
+      <input id="plate-file" className="evidence-input-camera" required type="file" accept="image/*" capture="environment" onChange={e=>capture("plate",e)} onInput={e=>capture("plate",e)}/>
       {platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Placa capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar la foto de placa</small></>}
     </label>
-    <label className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")} htmlFor="id-file">
-      <input id="id-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("id",e)}/>
+    <label className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")}>
+      <input id="id-file" className="evidence-input-camera" required type="file" accept="image/*" capture="environment" onChange={e=>capture("id",e)} onInput={e=>capture("id",e)}/>
       {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}
     </label>
    </div>
