@@ -78,6 +78,12 @@ export default function App(){
     if(session) loadApp(session.user.id);
   },[session]);
 
+  useEffect(()=>{
+    if(!profile) return;
+    const timer=setInterval(()=>{ loadUnits(); loadRamps(); },10000);
+    return ()=>clearInterval(timer);
+  },[profile?.id,profile?.almacen_id,warehouses.length]);
+
   async function loadApp(uid){
     setLoading(true); setError("");
     try{
@@ -219,7 +225,7 @@ function Caseta({form,setForm,submit,units,busy}){
 
 function Traffic({units,counts,reload}){return <><Page title="Tráfico" sub="Seguimiento de unidades por etapa."/><div className="metrics">{[["en_caseta","EN CASETA"],["espera_turno","ESPERA"],["rampa_asignada","RAMPA"],["en_operacion","OPERACIÓN"],["liberada","LIBERADAS"]].map(([k,l])=><div className="metric" key={k}><span>{l}</span><b>{counts[k]||0}</b></div>)}</div><div className="panel"><PanelHead title="Flujo de unidades" action={<button className="secondary" onClick={reload}>Actualizar</button>}/><UnitTable units={units}/></div></>}
 
-function Ramps({ramps,units,onUpdate,reload}){return <><Page title="Rampas" sub="Disponibilidad y asignación."/><div className="ramp-grid">{ramps.map(r=>{const u=units.find(x=>x.rampa_id===r.id&&!["liberada","cancelada"].includes(x.estado));return <div className={"ramp "+(r.estado==="operativa"?"ready":"down")} key={r.id}><div><b>{r.codigo}</b><span>{r.nombre}</span></div><strong>{u?u.folio:"LIBRE"}</strong><small>{r.estado}</small>{u&&<button className="secondary" onClick={()=>onUpdate(u.id,{estado:"en_operacion"},"Unidad enviada a operación.")}>Iniciar operación</button>}</div>})}</div></>}
+function Ramps({ramps,units,onUpdate,reload}){const waiting=units.filter(u=>u.estado==="espera_turno"&&!u.rampa_id);return <><Page title="Rampas" sub="Disponibilidad y asignación."/><div className="panel assign-panel"><h3>Unidades esperando rampa</h3>{waiting.length===0?<Empty text="No hay unidades esperando asignación."/>:waiting.slice(0,10).map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{ramps.filter(r=>r.estado==="operativa"&&r.activa).slice(0,8).map(r=><button className="secondary" key={r.id} onClick={()=>onUpdate(u.id,{rampa_id:r.id,estado:"rampa_asignada"},"Rampa "+r.codigo+" asignada a "+u.folio+".")}>{r.codigo}</button>)}</div></div>)}</div><div className="ramp-grid">{ramps.map(r=>{const u=units.find(x=>x.rampa_id===r.id&&!["liberada","cancelada"].includes(x.estado));return <div className={"ramp "+(r.estado==="operativa"?"ready":"down")} key={r.id}><div><b>{r.codigo}</b><span>{r.nombre}</span></div><strong>{u?u.folio:"LIBRE"}</strong><small>{r.estado}</small>{u&&<button className="secondary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar operación</button>}</div>})}</div></>}
 
 function Dispatch({units,onUpdate}){const pending=units.filter(u=>["en_caseta","validando","espera_turno"].includes(u.estado));return <><Page title="Dispatch" sub="Control de llegada, cita y transporte."/><div className="panel"><PanelHead title={"Pendientes: "+pending.length}/>{pending.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{estado:"espera_turno"},"Unidad confirmada por Dispatch.")}>Confirmar llegada</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"Unidad marcada con incidencia.")}>Incidencia</button></div></div>)}</div></>}
 
