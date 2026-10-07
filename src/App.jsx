@@ -1,275 +1,239 @@
-import { useEffect, useMemo, useState } from "react";
-import Rampas from "./Rampas";
-import Caseta from "./Caseta";
-import Dispatch from "./Dispatch";
-import CSR from "./CSR";
-import Operacion from "./Operacion";
-import Guardia from "./Guardia";
-import TorreControl from "./TorreControl";
-import { Activity, ArrowRight, Box, CheckCircle2, ClipboardList, ClipboardCheck, Clock3, Factory, LayoutDashboard, LogIn, MapPin, Menu, ShieldCheck, Truck, Users, X, UserPlus, Save, UserCheck, UserX, RefreshCw, Wrench, LogOut } from "lucide-react";
-import { supabase } from "./lib/supabase";
+import React, { useEffect, useMemo, useState } from "react";
+import { supabase, supabaseConfigured } from "./lib/supabase";
 
-const stages = [["caseta","Caseta","Ingreso y validación"],["trafico","Tráfico","Flujo de unidades y patio"],["dispatch","Dispatch","Cita y transporte"],["rampas","Rampas","Disponibilidad y asignación"],["operacion","Operación","Rampa y proceso"],["csr","CSR","Validación documental"],["guardia","Guardia","Salida y liberación"]];
-
-const roleAccess = {
-  torre: ["admin_global","admin_almacen","team_lead","supervisor","operacion","monitor_almacen"],
-  trafico: ["admin_global","admin_almacen","caseta","dispatch","supervisor","team_lead"],
-  caseta: ["admin_global","admin_almacen","caseta","supervisor"],
-  dispatch: ["admin_global","admin_almacen","dispatch","supervisor","team_lead"],
-  csr: ["admin_global","admin_almacen","csr","team_lead","supervisor"],
-  operacion: ["admin_global","admin_almacen","operacion","supervisor","team_lead"],
-  documentacion: ["admin_global","admin_almacen","documentacion","supervisor","team_lead"],
-  guardia: ["admin_global","admin_almacen","guardia","supervisor","team_lead"],
-  rampas: ["admin_global","admin_almacen"],
-  usuarios: ["admin_global"]
-};
-
-const roleOptions = [
-  ["admin_global","Admin global"],
-  ["admin_almacen","Admin almacén"],
-  ["team_lead","Team Lead"],
-  ["csr","CSR"],
-  ["aduanas","Aduanas"],
-  ["transportista","Transportista"],
-  ["cliente","Cliente"],
-  ["caseta","Caseta"],
-  ["dispatch","Dispatch"],
-  ["operacion","Operación"],
-  ["documentacion","Documentación"],
-  ["supervisor","Supervisor"],
-  ["guardia","Guardia"],
-  ["admin","Admin"],
-  ["monitor_almacen","Monitor Almacén"]
+const MODULES = [
+  ["caseta","Caseta","Ingreso y registro"],
+  ["trafico","Tráfico","Flujo de unidades"],
+  ["rampas","Rampas","Disponibilidad"],
+  ["dispatch","Dispatch","Citas y transporte"],
+  ["operacion","Operación","Proceso en rampa"],
+  ["csr","CSR","Validación documental"],
+  ["monitor","Monitor 360","Vista en tiempo real"],
+  ["admin","Administración","Usuarios y almacenes"]
 ];
 
-function App() {
-  // La aplicación no fuerza recargas desde React.
-  const [mobileOpen,setMobileOpen]=useState(false);
-  const [focusSection,setFocusSection]=useState("");
+const ROLES = ["admin_global","admin_almacen","team_lead","csr","caseta","dispatch","operacion","supervisor","guardia","documentacion","aduanas","transportista","cliente"];
+
+const roleModules = {
+  admin_global: MODULES.map(x=>x[0]),
+  admin_almacen: ["caseta","trafico","rampas","dispatch","operacion","csr","monitor","admin"],
+  team_lead: ["trafico","rampas","dispatch","operacion","csr","monitor"],
+  supervisor: ["trafico","rampas","dispatch","operacion","csr","monitor"],
+  caseta: ["caseta"],
+  dispatch: ["trafico","dispatch","monitor"],
+  operacion: ["trafico","rampas","operacion","monitor"],
+  csr: ["csr","dispatch","monitor"],
+  guardia: ["monitor"],
+  documentacion: ["csr","monitor"],
+  aduanas: ["csr","monitor"],
+  transportista: ["monitor"],
+  cliente: ["monitor"]
+};
+
+const stateLabels = {
+  en_caseta:"En caseta", validando:"Validando", espera_turno:"Espera de turno",
+  rampa_asignada:"Rampa asignada", en_operacion:"En operación", documentacion:"Documentación",
+  liberada:"Liberada", incidencia:"Incidencia", cancelada:"Cancelada"
+};
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function folio(){ const d=today().replaceAll("-","").slice(2); return "T-"+d+"-"+Math.floor(10000+Math.random()*90000); }
+function clsState(s){ return "state state-"+String(s||"").replaceAll("_","-"); }
+
+export default function App(){
   const [session,setSession]=useState(null);
-  const [email,setEmail]=useState("");
-  const [loginUsername,setLoginUsername]=useState("");
-  const [password,setPassword]=useState("");
-  const [newPassword,setNewPassword]=useState("");
-  const [authLoading,setAuthLoading]=useState(true);
-  const [loginLoading,setLoginLoading]=useState(false);
-  const [passwordLoading,setPasswordLoading]=useState(false);
-  const [authError,setAuthError]=useState("");
-  const [warehouses,setWarehouses]=useState([]);
   const [profile,setProfile]=useState(null);
-  const [loading,setLoading]=useState(false);
-  const [dbError,setDbError]=useState("");
+  const [warehouses,setWarehouses]=useState([]);
+  const [units,setUnits]=useState([]);
+  const [ramps,setRamps]=useState([]);
   const [users,setUsers]=useState([]);
-  const [usersLoading,setUsersLoading]=useState(false);
-  const [usersError,setUsersError]=useState("");
-  const [invite,setInvite]=useState({email:"",nombre:"",rol:"admin_almacen",almacen_id:""});
-  const [inviteLoading,setInviteLoading]=useState(false);
-  const [inviteMessage,setInviteMessage]=useState("");
-  const [createUser,setCreateUser]=useState({username:"",password:"",nombre:"",rol:"guardia",almacen_id:""});
-  useEffect(()=>{
-    const sync=()=>{
-      const id=window.location.hash.replace("#","");
-      setFocusSection(stages.some(([stage])=>stage===id)?id:"");
-    };
-    sync(); window.addEventListener("hashchange",sync);
-    return()=>window.removeEventListener("hashchange",sync);
-  },[]);
-  const [createUserLoading,setCreateUserLoading]=useState(false);
-  const [createUserMessage,setCreateUserMessage]=useState("");
-  const [passwordDrafts,setPasswordDrafts]=useState({});
-  const [recoveryMode,setRecoveryMode]=useState(false);
-  const [recoveryEmail,setRecoveryEmail]=useState("");
-  const [recoveryMessage,setRecoveryMessage]=useState("");
-  const [sessionLocked,setSessionLocked]=useState(false);
-  const [idleWarning,setIdleWarning]=useState(false);
+  const [loading,setLoading]=useState(true);
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState("");
+  const [notice,setNotice]=useState("");
+  const [module,setModule]=useState("trafico");
+  const [login,setLogin]=useState({user:"",password:""});
+  const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
+  const [newUser,setNewUser]=useState({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
 
-  const isInviteFlow=typeof window!=="undefined" && /(^|[#?&])type=invite([&#]|$)/.test(window.location.hash+window.location.search);
+  const allowed = roleModules[profile?.rol] || [];
+  const can = key => allowed.includes(key);
 
   useEffect(()=>{
-    if(!supabase){setAuthLoading(false);return}
-    let active=true;
-    supabase.auth.getSession().then(({data})=>{if(active){setSession(data.session);setAuthLoading(false)}});
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((event,newSession)=>{if(active){setSession(newSession);if(event==="PASSWORD_RECOVERY")setRecoveryMode(true)}});
-    return()=>{active=false;subscription.unsubscribe()};
-  },[]);
-
-  useEffect(()=>{
-    if(!session||!supabase||["monitor_almacen","monitor_general"].includes(profile?.rol))return;
-    let warningTimer=null;
-    let lockTimer=null;
-    let lastActivity=Date.now();
-    const IDLE_WARNING_MS=13*60*1000;
-    const IDLE_LOCK_MS=15*60*1000;
-    const resetIdle=()=>{
-      if(sessionLocked)return;
-      lastActivity=Date.now();
-      setIdleWarning(false);
-      window.clearTimeout(warningTimer);
-      window.clearTimeout(lockTimer);
-      warningTimer=window.setTimeout(()=>{
-        if(Date.now()-lastActivity>=IDLE_WARNING_MS)setIdleWarning(true);
-      },IDLE_WARNING_MS);
-      lockTimer=window.setTimeout(()=>{
-        if(Date.now()-lastActivity>=IDLE_LOCK_MS){
-          setIdleWarning(false);
-          setSessionLocked(true);
-        }
-      },IDLE_LOCK_MS);
-    };
-    const events=["pointerdown","keydown","touchstart","mousemove","scroll"];
-    events.forEach(event=>window.addEventListener(event,resetIdle,{passive:true}));
-    resetIdle();
-    return()=>{
-      window.clearTimeout(warningTimer);
-      window.clearTimeout(lockTimer);
-      events.forEach(event=>window.removeEventListener(event,resetIdle));
-    };
-  },[session,sessionLocked,profile?.rol]);
-
-  useEffect(()=>{
-    if(!session||!supabase)return;
-    let active=true;
-    setLoading(true);setDbError("");
-    Promise.all([
-      supabase.from("usuarios").select("id,nombre,rol,activo,almacen_id").eq("id",session.user.id).maybeSingle(),
-      supabase.from("almacenes").select("id,codigo,nombre,activa").eq("activa",true).order("codigo")
-    ]).then(([p,w])=>{
-      if(!active)return;
-      if(p.error)setDbError(p.error.message); else setProfile(p.data);
-      if(w.error)setDbError(w.error.message); else setWarehouses(w.data||[]);
-      setLoading(false);
+    let alive=true;
+    if(!supabaseConfigured){ setLoading(false); return; }
+    supabase.auth.getSession().then(({data})=>{
+      if(!alive) return;
+      setSession(data.session||null);
+      if(!data.session) setLoading(false);
+    }).catch(()=>setLoading(false));
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>{
+      setSession(s||null);
+      if(!s){ setProfile(null); setLoading(false); }
     });
-    return()=>{active=false};
+    return ()=>{ alive=false; subscription.unsubscribe(); };
+  },[]);
+
+  useEffect(()=>{
+    if(session) loadApp(session.user.id);
   },[session]);
 
-  useEffect(()=>{
-    if(profile?.rol==="admin_global" && profile.activo) loadUsers();
-  },[profile?.rol,profile?.activo]);
+  async function loadApp(uid){
+    setLoading(true); setError("");
+    try{
+      const [{data:p,error:pe},{data:w,error:we}]=await Promise.all([
+        supabase.from("usuarios").select("id,nombre,rol,activo,almacen_id,username").eq("id",uid).maybeSingle(),
+        supabase.from("almacenes").select("id,codigo,nombre,activa").eq("activa",true).order("codigo")
+      ]);
+      if(pe) throw pe;
+      if(!p || !p.activo) throw new Error("El usuario no tiene un perfil activo en OP360.");
+      setProfile(p); setWarehouses(w||[]);
+      const warehouseId=p.almacen_id || w?.[0]?.id || null;
+      await Promise.all([loadUnits(warehouseId),loadRamps(warehouseId),p.rol==="admin_global"?loadUsers():Promise.resolve()]);
+    }catch(e){ setError(e.message||"No se pudo cargar OP360."); }
+    finally{ setLoading(false); }
+  }
+
+  async function loadUnits(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
+    if(!warehouseId) return;
+    const {data,error:e}=await supabase.from("unidades")
+      .select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,contacto,cita_at,estado,rampa_id,almacen_id,operacion_tipo,created_at,updated_at")
+      .eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(100);
+    if(!e) setUnits(data||[]);
+  }
+
+  async function loadRamps(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
+    if(!warehouseId) return;
+    const {data}=await supabase.from("rampas").select("id,codigo,nombre,activa,estado,motivo").eq("almacen_id",warehouseId).order("codigo");
+    setRamps(data||[]);
+  }
 
   async function loadUsers(){
-    setUsersLoading(true);setUsersError("");
-    const {data,error}=await supabase.rpc("admin_listar_usuarios");
-    if(error)setUsersError(error.message); else setUsers(data||[]);
-    setUsersLoading(false);
+    const {data}=await supabase.from("usuarios").select("id,nombre,rol,activo,almacen_id,username,created_at").order("created_at",{ascending:false});
+    setUsers(data||[]);
   }
 
-  async function login(e){
-    e.preventDefault();setLoginLoading(true);setAuthError("");
-    const value=loginUsername.trim().toLowerCase();
-    const email=value.includes("@") ? value : value+"@login.op360.local";
-    const {error}=await supabase.auth.signInWithPassword({email,password});
-    if(error)setAuthError(error.message==="Invalid login credentials" ? "Usuario/correo o contraseña incorrectos." : error.message);
-    setLoginLoading(false);
+  async function loginSubmit(e){
+    e.preventDefault(); setBusy(true); setError("");
+    const value=login.user.trim().toLowerCase();
+    const candidates=value.includes("@")?[value]:[value+"@login.op360.local",value+"@login.seguimiento360.local"];
+    let last="";
+    for(const email of candidates){
+      const {error:e}=await supabase.auth.signInWithPassword({email,password:login.password});
+      if(!e){ setBusy(false); return; }
+      last=e.message;
+    }
+    setError(last||"No se pudo iniciar sesión."); setBusy(false);
   }
 
-  async function requestPasswordReset(e){
-    e.preventDefault();setLoginLoading(true);setAuthError("");setRecoveryMessage("");
-    const email=recoveryEmail.trim().toLowerCase();
-    if(!email.includes("@")){setAuthError("Escribe el correo electrónico de recuperación.");setLoginLoading(false);return}
-    const redirectTo=window.location.origin+window.location.pathname;
-    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo});
-    if(error)setAuthError(error.message);
-    else setRecoveryMessage("Si el correo corresponde a una cuenta, recibirás un enlace para restablecer la contraseña.");
-    setLoginLoading(false);
+  async function logout(){ await supabase.auth.signOut(); setModule("trafico"); }
+
+  async function registerUnit(e){
+    e.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try{
+      const warehouseId=profile?.almacen_id||warehouses[0]?.id;
+      if(!warehouseId) throw new Error("No hay almacén asignado.");
+      const f=folio();
+      const {data:u,error:e1}=await supabase.from("unidades").insert({
+        folio:f, operador_nombre:form.operador_nombre.trim(), linea_transporte:form.linea_transporte.trim(),
+        tracto_placas:form.tracto_placas.trim().toUpperCase(), caja_placas:form.caja_placas.trim().toUpperCase()||null,
+        contacto:form.contacto.trim()||null, cita_at:form.cita_at||null, estado:"en_caseta",
+        operacion_tipo:form.operacion_tipo, almacen_id:warehouseId, caseta_usuario_id:profile.id
+      }).select("id").single();
+      if(e1) throw e1;
+      await supabase.from("accesos_caseta").insert({
+        folio:f, almacen_id:warehouseId, tipo_acceso:"unidad", nombre:form.operador_nombre.trim(),
+        empresa:form.linea_transporte.trim(), telefono:form.contacto.trim()||null,
+        tracto_placas:form.tracto_placas.trim().toUpperCase(), caja_placas:form.caja_placas.trim().toUpperCase()||null,
+        operacion_tipo:form.operacion_tipo, unidad_id:u.id, registrado_por:profile.id
+      });
+      setForm({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
+      setNotice("Unidad registrada correctamente: "+f);
+      await loadUnits();
+    }catch(e){ setError(e.message||"No se pudo registrar la unidad."); }
+    finally{ setBusy(false); }
   }
 
-  async function finishRecovery(e){
-    e.preventDefault();setPasswordLoading(true);setAuthError("");
-    if(newPassword.length<8){setAuthError("La contraseña debe tener al menos 8 caracteres.");setPasswordLoading(false);return}
-    const {error}=await supabase.auth.updateUser({password:newPassword});
-    if(error){setAuthError(error.message);setPasswordLoading(false);return}
-    setRecoveryMode(false);setNewPassword("");setPassword("");setRecoveryMessage("");
-    window.history.replaceState({},document.title,window.location.pathname);
-    await supabase.auth.signOut();
-    setSession(null);
-    setPasswordLoading(false);
+  async function updateUnit(id,patch,message){
+    setBusy(true); setError(""); setNotice("");
+    const {error:e}=await supabase.from("unidades").update({...patch,updated_at:new Date().toISOString()}).eq("id",id);
+    if(e) setError(e.message); else { setNotice(message||"Actualizado."); await loadUnits(); }
+    setBusy(false);
   }
 
-  async function finishInvite(e){
-    e.preventDefault();setPasswordLoading(true);setAuthError("");
-    if(newPassword.length<8){setAuthError("La contraseña debe tener al menos 8 caracteres.");setPasswordLoading(false);return}
-    const {error}=await supabase.auth.updateUser({password:newPassword});
-    if(error){setAuthError(error.message);setPasswordLoading(false);return}
-    window.history.replaceState({},document.title,window.location.pathname+window.location.search);
-    setPassword("");
-    setNewPassword("");
-    setPasswordLoading(false);
+  async function createUser(e){
+    e.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try{
+      const {data,error:e1}=await supabase.functions.invoke("admin-crear-usuario",{
+        body:{username:newUser.username,nombre:newUser.nombre,rol:newUser.rol,almacen_id:newUser.almacen_id||null,password:newUser.password}
+      });
+      if(e1) throw e1;
+      if(data?.error) throw new Error(data.error);
+      setNotice("Usuario creado: "+newUser.username);
+      setNewUser({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
+      await loadUsers();
+    }catch(e){ setError(e.message||"No se pudo crear el usuario."); }
+    finally{ setBusy(false); }
   }
 
-  async function logout(){setSessionLocked(false);setIdleWarning(false);await supabase?.auth.signOut();setWarehouses([]);setProfile(null);setUsers([])}
+  const counts=useMemo(()=>Object.fromEntries(Object.keys(stateLabels).map(k=>[k,units.filter(u=>u.estado===k).length])),[units]);
+  const currentWarehouse=warehouses.find(w=>w.id===(profile?.almacen_id||warehouses[0]?.id));
 
-  async function inviteUser(e){
-    e.preventDefault();setInviteLoading(true);setInviteMessage("");setUsersError("");
-    const {data,error}=await supabase.functions.invoke("admin-invitar-usuario",{body:invite});
-    if(error){setUsersError(error.message);setInviteLoading(false);return}
-    if(data?.error){setUsersError(data.error);setInviteLoading(false);return}
-    setInviteMessage("Invitación enviada. El usuario recibirá un correo para activar su acceso.");
-    setInvite({email:"",nombre:"",rol:"admin_almacen",almacen_id:""});
-    await loadUsers();
-    setInviteLoading(false);
-  }
+  if(loading) return <div className="boot"><div className="brand-dot">OP</div><h1>OP360</h1><p>Cargando operación…</p></div>;
+  if(!supabaseConfigured) return <div className="boot"><div className="brand-dot">OP</div><h1>OP360</h1><p>Supabase no está configurado.</p></div>;
+  if(!session) return <Login login={login} setLogin={setLogin} submit={loginSubmit} busy={busy} error={error}/>;
 
-  async function updateUser(u){
-    const {error}=await supabase.rpc("admin_actualizar_usuario",{
-      p_user_id:u.id,p_nombre:u.nombre,p_rol:u.rol,p_activo:u.activo,p_almacen_id:u.almacen_id||null,p_username:u.username||null
-    });
-    if(error){setUsersError(error.message);return}
-    setUsers(prev=>prev.map(x=>x.id===u.id?{...x}:x));
-  }
-
-  async function changeUserPassword(userId){
-    const password=passwordDrafts[userId]||"";
-    if(password.length<8){setUsersError("La contraseña debe tener al menos 8 caracteres.");return}
-    setUsersError("");
-    const {data,error}=await supabase.functions.invoke("admin-cambiar-password",{body:{user_id:userId,password}});
-    if(error){setUsersError(error.message);return}
-    if(data?.error){setUsersError(data.error);return}
-    setCreateUserMessage("Contraseña guardada correctamente.");
-    setPasswordDrafts(prev=>({...prev,[userId]:""}));
-  }
-
-  async function createInternalUser(e){
-    e.preventDefault();setCreateUserLoading(true);setCreateUserMessage("");setUsersError("");
-    const {data,error}=await supabase.functions.invoke("admin-crear-usuario",{body:createUser});
-    if(error){setUsersError(error.message);setCreateUserLoading(false);return}
-    if(data?.error){setUsersError(data.error);setCreateUserLoading(false);return}
-    setCreateUserMessage("Usuario creado correctamente. Ya puede entrar con su usuario y contraseña.");
-    setCreateUser({username:"",password:"",nombre:"",rol:"guardia",almacen_id:""});
-    await loadUsers();
-    setCreateUserLoading(false);
-  }
-
-  const roleLabel=useMemo(()=>Object.fromEntries(roleOptions),[]);
-  const effectiveWarehouseId=profile?.almacen_id || (["admin_global","dispatch"].includes(profile?.rol) ? warehouses[0]?.id : null);
-  const canAccess=(module)=>Boolean(profile?.rol && roleAccess[module]?.includes(profile.rol));
-
-  if(authLoading)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark">360</div><h1>OP360</h1><p>{isInviteFlow?"Validando invitación…":"Iniciando sesión segura…"}</p></div></div>;
-
-  if(isInviteFlow)return <div className="auth-screen"><form className="auth-card" onSubmit={finishInvite}><div className="brand-mark">360</div><p className="eyebrow">ACTIVACIÓN DE CUENTA</p><h1>Define tu contraseña</h1><p className="auth-copy">{session?"Tu invitación fue aceptada. Crea una contraseña de al menos 8 caracteres para entrar al sistema.":"Abre el enlace de invitación desde el mismo dispositivo y espera a que Supabase valide tu acceso."}</p>{session?<><label>Nueva contraseña<input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="••••••••" minLength={8} required/></label>{authError&&<div className="notice error"><strong>No se pudo activar la cuenta</strong><span>{authError}</span></div>}<button className="login-btn" disabled={passwordLoading}>{passwordLoading?"Guardando…":"Activar cuenta"} <CheckCircle2 size={17}/></button></>:<div className="notice error"><strong>La invitación no creó una sesión</strong><span>Si llegaste aquí desde un correo anterior, solicita una nueva invitación.</span></div>}</form></div>;
-
-  if(recoveryMode && session)return <div className="auth-screen"><form className="auth-card" onSubmit={finishRecovery}><div className="brand-mark">360</div><p className="eyebrow">RECUPERACIÓN DE ACCESO</p><h1>Define una nueva contraseña</h1><p className="auth-copy">El enlace de recuperación fue validado. Crea una contraseña de al menos 8 caracteres.</p><label>Nueva contraseña<input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="••••••••" minLength={8} required/></label>{authError&&<div className="notice error"><strong>No se pudo cambiar la contraseña</strong><span>{authError}</span></div>}<button className="login-btn" disabled={passwordLoading}>{passwordLoading?"Guardando…":"Guardar nueva contraseña"} <CheckCircle2 size={17}/></button></form></div>;
-
-  if(!session && recoveryMode)return <div className="auth-screen"><form className="auth-card" onSubmit={requestPasswordReset}><div className="brand-mark">360</div><p className="eyebrow">RECUPERAR ACCESO</p><h1>Restablecer contraseña</h1><p className="auth-copy">Escribe el correo asociado a tu cuenta. Te enviaremos un enlace para crear una nueva contraseña.</p><label>Correo electrónico<input type="email" value={recoveryEmail} onChange={e=>setRecoveryEmail(e.target.value)} placeholder="tu@correo.com" autoCapitalize="none" autoCorrect="off" required/></label>{authError&&<div className="notice error"><strong>No se pudo solicitar el cambio</strong><span>{authError}</span></div>}{recoveryMessage&&<div className="notice success"><strong>{recoveryMessage}</strong></div>}<button className="login-btn" disabled={loginLoading}>{loginLoading?"Enviando…":"Enviar enlace"} <CheckCircle2 size={17}/></button><button type="button" className="secondary-btn" onClick={()=>{setRecoveryMode(false);setAuthError("");setRecoveryMessage("")}}>Volver al inicio</button></form></div>;
-
-  if(!session)return <div className="auth-screen"><form className="auth-card" onSubmit={login}><div className="brand-mark">360</div><p className="eyebrow">TORRE DE CONTROL</p><h1>Seguimiento Logístico 360°</h1><p className="auth-copy">Acceso al sistema operativo de logística.</p><label>Usuario o correo<input value={loginUsername} onChange={e=>setLoginUsername(e.target.value.toLowerCase())} placeholder="ej. guardia01 o correo@dominio.com" autoCapitalize="none" autoCorrect="off" required/></label><label>Contraseña<input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required/></label>{authError&&<div className="notice error"><strong>No se pudo iniciar sesión</strong><span>{authError}</span></div>}<button className="login-btn" disabled={loginLoading}>{loginLoading?"Iniciando…":"Iniciar sesión"} <LogIn size={17}/></button><button type="button" className="secondary-btn" onClick={()=>{setRecoveryMode(true);setAuthError("");setRecoveryEmail(loginUsername.includes("@")?loginUsername:"")}}>¿Olvidaste tu contraseña?</button><small className="auth-note">Los usuarios internos pueden entrar con usuario; el administrador original también puede entrar con su correo.</small></form></div>;
-
-  if(profile?.rol==="monitor_almacen") return <div className="monitor-screen"><TorreControl warehouseId={effectiveWarehouseId} onLogout={logout}/></div>;
-
-  return <><div className="app-shell"><aside className={mobileOpen?"sidebar open":"sidebar"}><div className="brand"><div className="brand-mark">360</div><div><strong>OP360</strong><span>Operación y Visibilidad</span></div></div><nav><a className="nav-item active" href="#dashboard" onClick={()=>setMobileOpen(false)}><LayoutDashboard size={18}/>Dashboard</a>{canAccess("torre")&&<a className="nav-item" href="#torre" onClick={()=>setMobileOpen(false)}><Activity size={18}/>Torre de Control</a>}{stages.map(([id,label])=>canAccess(id)&&<a className="nav-item" href={"#"+id} key={id} onClick={()=>setMobileOpen(false)}><Activity size={18}/>{label}</a>)}<a className="nav-item" href="#trafico" onClick={()=>setMobileOpen(false)}><MapPin size={18}/>Tráfico</a>{canAccess("rampas")&&<a className="nav-item" href="#rampas" onClick={()=>setMobileOpen(false)}><Wrench size={18}/>Rampas</a>}{canAccess("usuarios")&&<a className="nav-item" href="#usuarios" onClick={()=>setMobileOpen(false)}><Users size={18}/>Usuarios</a>}</nav><div className="sidebar-footer"><div className="secure"><ShieldCheck size={16}/>RLS / Supabase</div><small>{session.user.email}</small><small>{profile?.rol ? roleLabel[profile.rol] : "Cargando rol…"}</small><button className="logout" onClick={logout}>Cerrar sesión</button></div></aside>{mobileOpen&&<button className="backdrop" onClick={()=>setMobileOpen(false)} aria-label="Cerrar menú"/>}<main className="main" data-focus={focusSection||undefined}>{profile?.rol==="admin_global"&&<button className="admin-logout-fab" onClick={logout} aria-label="Cerrar sesión del administrador"><LogOut size={17}/><span>Cerrar sesión</span></button>}
-      {focusSection&&<style>{`.main[data-focus] > *:not(header):not(#${focusSection}){display:none !important;} .main[data-focus] > #${focusSection}{display:block !important;} .main[data-focus] > header{position:sticky;top:0;z-index:50;}`}</style>}
-<header className="topbar"><button className="menu-btn" onClick={()=>setMobileOpen(!mobileOpen)} aria-label="Menú">{mobileOpen?<X size={22}/>:<Menu size={22}/>}</button><div><div className="eyebrow">TORRE DE CONTROL</div><h1>Seguimiento Logístico 360°</h1></div><div className="top-actions"><span className="status online"><span className="dot"/>Backend conectado</span><button type="button" className="topbar-logout" onClick={logout} aria-label="Cerrar sesión"><LogOut size={15}/><span>Cerrar sesión</span></button></div></header><section id="dashboard" className="hero360"><div className="hero360-copy"><div className="hero360-brand"><div className="hero360-logo">360</div><div><strong>OP<br/><b>360</b></strong><span>CONTROL · VISIBILIDAD · EFICIENCIA</span></div></div><p className="hero-copy">Citas, Caseta, Rampas, Embarques y Recibos en una sola plataforma.</p><div className="hero360-pills"><span>📅 CITAS</span><span>🚛 CASETA</span><span>🏭 RAMPAS</span><span>📊 MONITOREO</span></div></div><div className="hero360-dashboard"><div className="hero360-top"><span><i/> Monitoreo en tiempo real</span><b>OP360</b></div><div className="hero360-cards"><div><strong>RAMPA 01</strong><em className="green">Disponible</em><strong>RAMPA 02</strong><em className="gray">Ocupada</em><strong>RAMPA 03</strong><em className="green">Disponible</em></div><div className="hero360-calendar"><b>📅 Citas de Transporte</b><div className="hero360-days"><span>Lun<br/><strong>28</strong></span><span>Mar<br/><strong>29</strong></span><span className="selected">Mié<br/><strong>30</strong></span><span>Jue<br/><strong>01</strong></span></div><div className="hero360-slots"><i>08:00 <b>Disponible</b></i><i>08:30 <b>Disponible</b></i><i className="occupied">09:00 <b>Ocupada</b></i><i>09:30 <b>Disponible</b></i></div></div><div className="hero360-phone"><b>Registrar Ingreso</b><span>Transportista</span><span>Nombre del operador</span><button>Registrar ingreso →</button></div></div></div></section>{profile?.rol==="monitor_almacen" ? <TorreControl warehouseId={effectiveWarehouseId} onLogout={logout}/> : <>{canAccess("torre")&&effectiveWarehouseId&&<TorreControl warehouseId={effectiveWarehouseId}/>}</>} <section className="metrics"><Metric icon={<Truck/>} label="Unidades activas" value="—"/><Metric icon={<Clock3/>} label="Dentro de SLA" value="—"/><Metric icon={<Box/>} label="En patio" value="—"/><Metric icon={<CheckCircle2/>} label="Liberadas hoy" value="—"/></section><section className="panel-grid"><div className="panel"><div className="panel-title"><div><ClipboardList size={19}/><strong>Áreas del flujo</strong></div><span className="tag">Piloto</span></div><div className="stage-list">{stages.map(([id,label,desc],i)=><div className="stage" key={id}><div className="stage-number">{i+1}</div><div><strong>{label}</strong><span>{desc}</span></div><ArrowRight size={17}/></div>)}</div></div><div className="panel"><div className="panel-title"><div><Factory size={19}/><strong>Almacenes activos</strong></div><span className="tag">{warehouses.length||"—"}</span></div>{dbError&&<div className="notice error"><strong>Consulta bloqueada</strong><span>{dbError}</span></div>}{loading?<div className="empty">Consultando Supabase…</div>:warehouses.length?<div className="warehouse-list">{warehouses.map(w=><div className="warehouse" key={w.id}><span className="warehouse-code">{w.codigo}</span><div><strong>{w.nombre}</strong><span>Operativo</span></div><CheckCircle2 size={18}/></div>)}</div>:!dbError?<div className="empty">No hay almacenes visibles para este usuario.</div>:null}</div></section>{profile?.rol==="admin_global"&&<section id="usuarios" className="users-section"><div className="panel"><div className="panel-title"><div><Users size={19}/><strong>Administración de usuarios</strong></div><button className="secondary-btn" onClick={loadUsers} disabled={usersLoading}><RefreshCw size={15}/>Actualizar</button></div><p className="section-copy">El administrador crea directamente el usuario y la contraseña. No se requiere correo electrónico.</p><form className="invite-form" onSubmit={createInternalUser}>
-<div><label>Usuario<input value={createUser.username} onChange={e=>setCreateUser({...createUser,username:e.target.value.toLowerCase()})} placeholder="ej. guardia01" pattern="[a-z0-9._-]{3,40}" required/></label></div>
-<div><label>Contraseña<input type="password" value={createUser.password} onChange={e=>setCreateUser({...createUser,password:e.target.value})} placeholder="Mínimo 8 caracteres" minLength={8} required/></label></div>
-<div><label>Nombre<input value={createUser.nombre} onChange={e=>setCreateUser({...createUser,nombre:e.target.value})} placeholder="Nombre del usuario" required/></label></div>
-<div><label>Rol<select value={createUser.rol} onChange={e=>setCreateUser({...createUser,rol:e.target.value,almacen_id:["admin_global","transportista","cliente","aduanas"].includes(e.target.value)?"":createUser.almacen_id})}>{roleOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label></div>
-<div><label>Almacén<select value={createUser.almacen_id} onChange={e=>setCreateUser({...createUser,almacen_id:e.target.value})} disabled={["admin_global","transportista","cliente","aduanas"].includes(createUser.rol)}><option value="">Sin asignar</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></label></div>
-<button className="login-btn invite-btn" disabled={createUserLoading}><UserPlus size={16}/>{createUserLoading?"Creando…":"Crear usuario"}</button></form>{inviteMessage&&<div className="notice success"><strong>{inviteMessage}</strong></div>}{usersError&&<div className="notice error"><strong>Error</strong><span>{usersError}</span></div>}{usersLoading?<div className="empty">Cargando usuarios…</div>:<div className="users-table-wrap"><table className="users-table"><thead><tr><th>Nombre</th><th>Usuario</th><th>Contraseña</th><th>Rol</th><th>Almacén</th><th>Estado</th><th></th></tr></thead><tbody>{users.map(u=><tr key={u.id}><td><strong>{u.nombre||"Sin nombre"}</strong></td><td><input value={u.username||""} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,username:e.target.value.toLowerCase()}:x))} placeholder="usuario"/></td><td className="user-password-cell"><input type="password" value={passwordDrafts[u.id]||""} onChange={e=>setPasswordDrafts(prev=>({...prev,[u.id]:e.target.value}))} placeholder="Nueva contraseña" minLength={8}/><button type="button" className="table-save-btn" onClick={()=>changeUserPassword(u.id)} disabled={(passwordDrafts[u.id]||"").length<8}>Guardar</button></td><td><select value={u.rol} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,rol:e.target.value}:x))}>{roleOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></td><td><select value={u.almacen_id||""} onChange={e=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,almacen_id:e.target.value||null}:x))} disabled={["admin_global","transportista","cliente","aduanas"].includes(u.rol)}><option value="">Sin asignar</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></td><td><button className={u.activo?"state-btn active":"state-btn inactive"} onClick={()=>setUsers(prev=>prev.map(x=>x.id===u.id?{...x,activo:!x.activo}:x))}>{u.activo?<><UserCheck size={14}/>Activo</>:<><UserX size={14}/>Inactivo</>}</button></td><td><button className="save-btn" onClick={()=>updateUser(u)}><Save size={14}/>Guardar</button></td></tr>)}</tbody></table></div>}</div></section>}{canAccess("caseta")&&(effectiveWarehouseId?<Caseta warehouseId={effectiveWarehouseId}/>:<section id="caseta" className="users-section"><div className="panel"><div className="panel-title"><div><LogIn size={19}/><strong>Caseta · Registro de ingreso</strong></div></div><div className="notice error"><strong>Caseta no puede abrir todavía</strong><span>Tu sesión tiene permiso de Caseta, pero no hay un almacén activo disponible para esta sesión. Revisa la asignación del almacén o la consulta de almacenes en Supabase.</span></div></div></section>)}
-<section id="trafico" className="users-section"><div className="panel"><div className="panel-title"><div><MapPin size={19}/><strong>Tráfico · Seguimiento de unidades</strong></div><span className="tag">Tiempo real</span></div><div className="traffic-grid"><div className="traffic-card"><span>🚛 EN CASETA</span><strong>3 unidades</strong><small>Esperando validación</small></div><div className="traffic-card"><span>📋 DISPATCH</span><strong>4 unidades</strong><small>Citas y documentación</small></div><div className="traffic-card"><span>🏭 EN RAMPA</span><strong>2 unidades</strong><small>Operación activa</small></div><div className="traffic-card"><span>🚪 LIBERADAS</span><strong>3 unidades</strong><small>Listas para salida</small></div></div><div className="traffic-list"><div><b>T-261007-00021</b><span>Bremer · Tracto 4821 · Caja 9032</span><em>EN CASETA</em></div><div><b>T-261007-00019</b><span>Recibo · Rampa 10 · 32 min</span><em>EN OPERACIÓN</em></div><div><b>T-261007-00017</b><span>Transportista · Documentación completa</span><em>LISTA PARA GUARDIA</em></div></div></div></section>{canAccess("rampas")&&effectiveWarehouseId&&<Rampas warehouseId={effectiveWarehouseId} canEdit={true}/>}
-{canAccess("dispatch")&&effectiveWarehouseId&&<Dispatch warehouseId={effectiveWarehouseId}/>}
-{canAccess("csr")&&effectiveWarehouseId&&<CSR warehouseId={effectiveWarehouseId}/>}
-{canAccess("operacion")&&effectiveWarehouseId&&<Operacion warehouseId={effectiveWarehouseId}/>}
-
-{canAccess("guardia")&&effectiveWarehouseId&&<Guardia warehouseId={effectiveWarehouseId}/>}<section className="next"><div><p className="eyebrow">SIGUIENTE ETAPA</p><h3>Construir los módulos operativos sobre esta base.</h3><p>Agenda CSR, Caseta, Dispatch, Patio, Guardia y Torre de Control.</p></div><div className="architecture"><span>GitHub</span><b>→</b><span>Frontend</span><b>→</b><span>Supabase</span><b>→</b><span>Producción</span></div></section><footer>OP360 · Operación y Visibilidad</footer></main></div>{(idleWarning||sessionLocked)&&<div className="session-lock-overlay"><div className="session-lock-card"><div className="session-lock-icon"><ShieldCheck size={24}/></div><p className="eyebrow">{sessionLocked?"SESIÓN BLOQUEADA":"SEGURIDAD DE SESIÓN"}</p><h2>{sessionLocked?"Sesión bloqueada por inactividad":"Tu sesión está por bloquearse"}</h2><p>{sessionLocked?"Por seguridad, el acceso fue bloqueado después de 15 minutos sin actividad. Inicia sesión nuevamente para continuar.":"Llevas 13 minutos sin actividad. Si necesitas continuar, confirma que sigues aquí."}</p>{sessionLocked?<button className="login-btn" onClick={logout}>Volver a iniciar sesión <LogIn size={17}/></button>:<button className="login-btn" onClick={()=>{setIdleWarning(false);window.dispatchEvent(new Event("pointerdown"))}}>Continuar sesión <CheckCircle2 size={17}/></button>}</div></div>}</>;
+  return <div className="app">
+    <aside className="sidebar">
+      <div className="brand"><div className="brand-mark">OP</div><div><b>OP360</b><span>Operación y visibilidad</span></div></div>
+      <div className="userbox"><b>{profile?.nombre||"Usuario"}</b><span>{profile?.rol||"sin rol"}</span></div>
+      <nav>{MODULES.filter(m=>can(m[0])).map(m=><button key={m[0]} className={module===m[0]?"nav active":"nav"} onClick={()=>setModule(m[0])}><span>{icon(m[0])}</span><div><b>{m[1]}</b><small>{m[2]}</small></div></button>)}</nav>
+      <button className="logout" onClick={logout}>Cerrar sesión</button>
+    </aside>
+    <main>
+      <header className="topbar"><div><small>OP360 / {MODULES.find(m=>m[0]===module)?.[1]}</small><h2>{currentWarehouse?currentWarehouse.codigo+" · "+currentWarehouse.nombre:"Operación general"}</h2></div><div className="live"><i/> En línea</div></header>
+      {error&&<div className="alert error">{error}<button onClick={()=>setError("")}>×</button></div>}
+      {notice&&<div className="alert ok">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
+      <section className="content">
+        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy}/>}
+        {module==="trafico"&&<Traffic units={units} counts={counts} reload={()=>loadUnits()}/>}
+        {module==="rampas"&&<Ramps ramps={ramps} units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} reload={()=>loadRamps()}/>}
+        {module==="dispatch"&&<Dispatch units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
+        {module==="operacion"&&<Operation units={units} ramps={ramps} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
+        {module==="csr"&&<CSR units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
+        {module==="monitor"&&<Monitor units={units} counts={counts} warehouse={currentWarehouse}/>}
+        {module==="admin"&&<Admin users={users} warehouses={warehouses} form={newUser} setForm={setNewUser} submit={createUser} busy={busy}/>}
+      </section>
+    </main>
+  </div>;
 }
-function Metric({icon,label,value}){return <div className="metric"><div className="metric-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong></div></div>}
-export default App;
+
+function Login({login,setLogin,submit,busy,error}){
+ return <div className="login-page"><div className="login-card"><div className="brand-mark big">OP</div><h1>OP360</h1><p>Operación y visibilidad logística</p><form onSubmit={submit}><label>Usuario o correo<input autoFocus value={login.user} onChange={e=>setLogin({...login,user:e.target.value})} placeholder="admin@op360.lat"/></label><label>Contraseña<input type="password" value={login.password} onChange={e=>setLogin({...login,password:e.target.value})} placeholder="••••••••"/></label>{error&&<div className="form-error">{error}</div>}<button className="primary full" disabled={busy}>{busy?"Entrando…":"Entrar a OP360"}</button></form></div></div>;
+}
+
+function Caseta({form,setForm,submit,units,busy}){
+ const f=(k)=><input required={["operador_nombre","linea_transporte","tracto_placas"].includes(k)} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
+ return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Registrar unidad</h3><div className="formgrid"><label>Operador{f("operador_nombre")}</label><label>Línea de transporte{f("linea_transporte")}</label><label>Placas tracto{f("tracto_placas")}</label><label>Placas caja{f("caja_placas")}</label><label>Contacto{f("contacto")}</label><label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label><label>Cita (opcional)<input type="datetime-local" value={form.cita_at} onChange={e=>setForm({...form,cita_at:e.target.value})}/></label></div><button className="primary" disabled={busy}>{busy?"Guardando…":"Registrar ingreso"}</button></form><div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div></div></>;
+}
+
+function Traffic({units,counts,reload}){return <><Page title="Tráfico" sub="Seguimiento de unidades por etapa."/><div className="metrics">{[["en_caseta","EN CASETA"],["espera_turno","ESPERA"],["rampa_asignada","RAMPA"],["en_operacion","OPERACIÓN"],["liberada","LIBERADAS"]].map(([k,l])=><div className="metric" key={k}><span>{l}</span><b>{counts[k]||0}</b></div>)}</div><div className="panel"><PanelHead title="Flujo de unidades" action={<button className="secondary" onClick={reload}>Actualizar</button>}/><UnitTable units={units}/></div></>}
+
+function Ramps({ramps,units,onUpdate,reload}){return <><Page title="Rampas" sub="Disponibilidad y asignación."/><div className="ramp-grid">{ramps.map(r=>{const u=units.find(x=>x.rampa_id===r.id&&!["liberada","cancelada"].includes(x.estado));return <div className={"ramp "+(r.estado==="operativa"?"ready":"down")} key={r.id}><div><b>{r.codigo}</b><span>{r.nombre}</span></div><strong>{u?u.folio:"LIBRE"}</strong><small>{r.estado}</small>{u&&<button className="secondary" onClick={()=>onUpdate(u.id,{estado:"en_operacion"},"Unidad enviada a operación.")}>Iniciar operación</button>}</div>})}</div></>}
+
+function Dispatch({units,onUpdate}){const pending=units.filter(u=>["en_caseta","validando","espera_turno"].includes(u.estado));return <><Page title="Dispatch" sub="Control de llegada, cita y transporte."/><div className="panel"><PanelHead title={"Pendientes: "+pending.length}/>{pending.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{estado:"espera_turno"},"Unidad confirmada por Dispatch.")}>Confirmar llegada</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"Unidad marcada con incidencia.")}>Incidencia</button></div></div>)}</div></>}
+
+function Operation({units,ramps,onUpdate}){const active=units.filter(u=>["rampa_asignada","en_operacion"].includes(u.estado));return <><Page title="Operación" sub="Control de rampa y proceso."/><div className="panel">{active.length===0?<Empty text="No hay unidades en operación."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{u.estado==="rampa_asignada"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar</button>}{u.estado==="en_operacion"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"documentacion",operacion_fin_at:new Date().toISOString()},"Operación terminada; pasó a documentación.")}>Terminar operación</button>}</div></div>)}</div></>}
+
+function CSR({units,onUpdate}){const list=units.filter(u=>["documentacion","espera_turno"].includes(u.estado));return <><Page title="CSR" sub="Citas y validación documental."/><div className="panel">{list.length===0?<Empty text="No hay unidades pendientes de CSR."/>:list.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{cita_confirmada:true,csr_confirmacion_at:new Date().toISOString(),estado:"rampa_asignada"},"CSR confirmó la unidad.")}>Confirmar y enviar a rampa</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"CSR marcó incidencia.")}>Revisión</button></div></div>)}</div></>}
+
+function Monitor({units,counts,warehouse}){return <><Page title="Monitor 360" sub={warehouse?warehouse.nombre:"Vista general"}/><div className="monitor-head"><div><b>{warehouse?.codigo||"OP360"}</b><span>Actualización al abrir cada vista</span></div><div className="live"><i/> OPERACIÓN ACTIVA</div></div><div className="monitor-grid">{Object.entries(stateLabels).map(([k,l])=><div className="monitor-box" key={k}><small>{l}</small><strong>{counts[k]||0}</strong></div>)}</div><div className="panel"><h3>Unidades activas</h3><UnitTable units={units.filter(u=>!["liberada","cancelada"].includes(u.estado))}/></div></>}
+
+function Admin({users,warehouses,form,setForm,submit,busy}){return <><Page title="Administración" sub="Usuarios, roles y almacenes."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Crear usuario</h3><div className="formgrid"><label>Usuario<input required pattern="[a-zA-Z0-9._-]{3,40}" value={form.username} onChange={e=>setForm({...form,username:e.target.value})}/></label><label>Nombre<input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></label><label>Rol<select value={form.rol} onChange={e=>setForm({...form,rol:e.target.value})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></label><label>Almacén<select value={form.almacen_id} onChange={e=>setForm({...form,almacen_id:e.target.value})}><option value="">Sin almacén</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></label><label>Contraseña<input required minLength="8" type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label></div><button className="primary" disabled={busy}>{busy?"Creando…":"Crear usuario"}</button></form><div className="panel"><h3>Usuarios</h3><div className="user-list">{users.map(u=><div key={u.id}><div><b>{u.nombre}</b><span>{u.username||"sin usuario"} · {u.rol}</span></div><em className={u.activo?"pill on":"pill"}>{u.activo?"Activo":"Inactivo"}</em></div>)}</div></div></div></>}
+
+function UnitTable({units}){return <div className="table-wrap">{units.length===0?<Empty text="No hay unidades registradas."/>:<table><thead><tr><th>Folio</th><th>Operador</th><th>Transporte</th><th>Tracto</th><th>Estado</th></tr></thead><tbody>{units.map(u=><tr key={u.id}><td><b>{u.folio}</b></td><td>{u.operador_nombre||"—"}</td><td>{u.linea_transporte||"—"}</td><td>{u.tracto_placas||"—"}</td><td><span className={clsState(u.estado)}>{stateLabels[u.estado]||u.estado}</span></td></tr>)}</tbody></table>}</div>}
+function UnitMain({u}){return <div><b>{u.folio}</b><span>{u.operador_nombre} · {u.linea_transporte}</span><small>{u.tracto_placas} {u.caja_placas?"· "+u.caja_placas:""}</small></div>}
+function Page({title,sub}){return <div className="page-title"><div><h1>{title}</h1><p>{sub}</p></div><span className="live"><i/> Tiempo real</span></div>}
+function PanelHead({title,action}){return <div className="panel-head"><h3>{title}</h3>{action}</div>}
+function Empty({text}){return <div className="empty">{text}</div>}
+function icon(k){return ({caseta:"▣",trafico:"↔",rampas:"▥",dispatch:"◫",operacion:"⚙",csr:"✓",monitor:"▦",admin:"⚙"})[k]||"•";}
