@@ -1,6 +1,6 @@
 {
-  "build": "20261007-op360-stable-01",
-  "version": "2026.10.07-op360-stable",
-  "commit": "stable-client-loading",
-  "updated": "2026-10-07T06:00:00-06:00"
+  "build": "20261007-op360-rebuild-01",
+  "version": "2026.10.07-op360-rebuild",
+  "commit": "clean-operational-core",
+  "updated": "2026-10-07T12:14:31.181Z"
 }
