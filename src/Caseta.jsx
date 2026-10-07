@@ -497,7 +497,7 @@ export default function Caseta({ warehouseId }) {
       const etiqueta=etiquetas[accessType]||"Acceso";
       setError("");
       setMessage(`✓ ${etiqueta} registrado correctamente. Folio ${folioAccesoNuevo}. Acceso abierto.`);
-      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",,pallets:""});
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",pallets:""});
       setCapturedPhoto("");setCapturedId("");
       setLoading(false);
       await load();
