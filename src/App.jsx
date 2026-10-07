@@ -287,14 +287,14 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
     <label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
    </div>
    <div className="evidence-grid">
-    <div className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")}>
+    <label className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")} htmlFor="plate-file">
       <input id="plate-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("plate",e)}/>
-      <button type="button" className="evidence-action" onClick={()=>document.getElementById("plate-file")?.click()}>{platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Placa capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar la foto de placa</small></>}</button>
-    </div>
-    <div className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")}>
+      {platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Placa capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar la foto de placa</small></>}
+    </label>
+    <label className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")} htmlFor="id-file">
       <input id="id-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("id",e)}/>
-      <button type="button" className="evidence-action" onClick={()=>document.getElementById("id-file")?.click()}>{idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}</button>
-    </div>
+      {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}
+    </label>
    </div>
    <p className="form-note">El gafete no se pide para registrar el ingreso. Las fotografías son obligatorias y quedan ligadas al folio.</p>
    <button className="primary" disabled={busy}>{busy?"Guardando y enviando evidencia…":"Registrar y enviar a Dispatch"}</button>
