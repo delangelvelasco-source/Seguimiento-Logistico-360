@@ -217,3 +217,4 @@ function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,
   </div>
  </div>
 }
+// OP360 CSR syntax stabilization
