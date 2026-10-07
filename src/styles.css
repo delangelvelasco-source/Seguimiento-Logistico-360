@@ -1239,3 +1239,124 @@
 @media(max-width:700px){.monitor-arrival-alert{padding:11px}.monitor-arrival-alert-body>strong{font-size:12px}}
 
 .monitor-arrival-alert-top{position:sticky;top:8px;z-index:20}
+
+
+/* ===== DISPATCH · PALETA PROFESIONAL ALMACÉN 360 ===== */
+#dispatch{
+  color:#172744;
+}
+#dispatch .panel{
+  background:#eef1f6;
+  border:1px solid #d9dee8;
+  box-shadow:0 10px 28px rgba(20,39,68,.06);
+}
+#dispatch .panel-title strong{
+  color:#142744;
+}
+#dispatch .panel-title svg{
+  color:#173b73;
+}
+#dispatch .section-copy{
+  color:#68778d;
+}
+#dispatch .dispatch-toolbar{
+  background:#fff;
+  border:1px solid #d7deea;
+  color:#68778d;
+  box-shadow:0 2px 8px rgba(20,39,68,.04);
+}
+#dispatch .dispatch-toolbar input{
+  color:#172744;
+}
+#dispatch .dispatch-toolbar input::placeholder{
+  color:#8a96a8;
+}
+#dispatch .dispatch-card{
+  background:#fff;
+  border:1px solid #d9dee8;
+  border-left:5px solid #c58a16;
+  border-radius:16px;
+  box-shadow:0 8px 22px rgba(20,39,68,.06);
+}
+#dispatch .dispatch-head strong{
+  color:#142744;
+  font-size:17px;
+}
+#dispatch .dispatch-head span{
+  color:#6d7c91;
+}
+#dispatch .dispatch-head .tag{
+  color:#a16d08;
+  border-color:#d8b76c;
+  background:#fffaf0;
+  font-weight:800;
+}
+#dispatch .dispatch-data span{
+  background:#fff;
+  border:0;
+  color:#172744;
+  padding:9px 0;
+}
+#dispatch .dispatch-data b{
+  color:#748198;
+}
+#dispatch .secondary-btn{
+  background:#e9edf5;
+  border:1px solid #d1d9e7;
+  color:#263958;
+  font-weight:700;
+  border-radius:10px;
+}
+#dispatch .secondary-btn:hover{
+  background:#dfe7f3;
+  border-color:#9eb4d3;
+}
+#dispatch .login-btn.compact{
+  background:linear-gradient(135deg,#176fd1,#246fd0);
+  color:#fff;
+  border-radius:10px;
+  font-weight:800;
+  box-shadow:0 5px 12px rgba(23,111,209,.18);
+}
+#dispatch .login-btn.compact:hover{
+  background:linear-gradient(135deg,#1261bd,#1d63c0);
+}
+#dispatch .notice{
+  background:#fff;
+  border-color:#d9dee8;
+  color:#172744;
+}
+#dispatch .notice.success{
+  background:#effaf4;
+  border-color:#a9ddbf;
+}
+#dispatch .notice.error{
+  background:#fff4f4;
+  border-color:#efb8b8;
+}
+#dispatch .empty{
+  color:#68778d;
+}
+@media(max-width:700px){
+  #dispatch .panel{
+    padding:14px;
+  }
+  #dispatch .dispatch-card{
+    padding:14px;
+    border-radius:15px;
+  }
+  #dispatch .dispatch-data span{
+    background:#f7f9fc;
+    border:1px solid #e1e6ee;
+    border-radius:9px;
+    padding:9px;
+  }
+  #dispatch .button-row{
+    gap:8px;
+  }
+  #dispatch .button-row .secondary-btn,
+  #dispatch .button-row .login-btn.compact{
+    min-height:42px;
+    justify-content:center;
+  }
+}
