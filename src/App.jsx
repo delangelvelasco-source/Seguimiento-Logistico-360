@@ -243,7 +243,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Registrar unidad</h3><div className="formgrid">
  <label>Operador *{f("operador_nombre",true)}</label><label>Línea de transporte *{f("linea_transporte",true)}</label>
  <label>No. de Tracto *{f("tracto_numero",true)}</label><label>Placas del tracto *{f("tracto_placas",true)}</label>
- <label>No. de Caja{f("caja_numero")}</label><label>Placas de caja *{f("caja_placas",true)}</label>
+ <label>No. de Caja *{f("caja_numero",true)}</label><label>Placas de caja *{f("caja_placas",true)}</label>
  <label>Contacto *{f("contacto",true,"tel")}</label><label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
  <label>Cita opcional<input type="datetime-local" value={form.cita_at} onChange={e=>setForm({...form,cita_at:e.target.value})}/></label>
  <label>Foto de placas *<input required type="file" accept="image/*" capture="environment" onChange={e=>setPlatePhoto(e.target.files?.[0]||null)}/>{platePhoto&&<small>{platePhoto.name}</small>}</label>
