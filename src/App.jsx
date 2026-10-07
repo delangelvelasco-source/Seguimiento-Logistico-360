@@ -268,10 +268,16 @@ function Login({login,setLogin,submit,busy,error}){
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
  const capture=(type,e)=>{
-   const file=e.currentTarget?.files?.[0]||null;
+   const input=e.currentTarget;
+   const file=input?.files?.[0]||null;
    if(!file)return;
-   const url=URL.createObjectURL(file);
-   if(type==="plate"){setPlatePhoto(file);setPlatePreview(url)}else{setIdPhoto(file);setIdPreview(url)}
+   const reader=new FileReader();
+   reader.onload=()=>{
+     const preview=String(reader.result||"");
+     if(type==="plate"){setPlatePhoto(file);setPlatePreview(preview);}
+     else{setIdPhoto(file);setIdPreview(preview);}
+   };
+   reader.readAsDataURL(file);
  };
  const salida=units.filter(u=>u.estado==="documentacion");
  return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/>
@@ -288,15 +294,15 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    </div>
    <div className="evidence-grid">
     <label className={"evidence-tile evidence-click "+(platePreview?"has-photo":"")}>
-      <input id="plate-file" className="evidence-input-camera" type="file" accept="image/*" capture="environment" onChange={e=>capture("plate",e)} onInput={e=>capture("plate",e)}/>
+      <input id="plate-file" className="evidence-input-camera" type="file" accept="image/*" capture="environment" onChange={e=>capture("plate",e)} required/>
       {platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Placa capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar la foto de placa</small></>}
     </label>
     <label className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")}>
-      <input id="id-file" className="evidence-input-camera" required type="file" accept="image/*" capture="environment" onChange={e=>capture("id",e)} onInput={e=>capture("id",e)}/>
+      <input id="id-file" className="evidence-input-camera" required type="file" accept="image/*" capture="environment" onChange={e=>capture("id",e)} required/>
       {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}
     </label>
    </div>
-   <p className="form-note">El gafete no se pide para registrar el ingreso. Las fotografías son obligatorias y quedan ligadas al folio.</p>
+   <p className="form-note">El gafete no se pide para registrar el ingreso. Las dos fotografías son obligatorias y se previsualizan antes de registrar.</p>
    <button className="primary" disabled={busy}>{busy?"Guardando y enviando evidencia…":"Registrar y enviar a Dispatch"}</button>
   </form>
   <div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div>
