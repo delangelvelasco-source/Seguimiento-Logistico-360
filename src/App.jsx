@@ -205,7 +205,7 @@ export default function App(){
       async function saveEvidence(file,evidenceType){
         const safeFile=await compressEvidence(file);
         const ext=(safeFile.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
-        const path=warehouseId+"/"+u.id+"/"+Date.now()+"-"+type+"."+ext;
+        const path=warehouseId+"/"+u.id+"/"+Date.now()+"-"+evidenceType+"."+ext;
         const {error:up}=await supabase.storage.from("evidencias-caseta").upload(path,safeFile,{upsert:false,contentType:safeFile.type||"image/jpeg"});
         if(up) throw new Error("No se pudo guardar la foto de "+evidenceType+": "+up.message);
         const {error:ie}=await supabase.from("evidencias_caseta").insert({acceso_id:access.id,almacen_id:warehouseId,unidad_id:u.id,tipo:evidenceType,storage_path:path,creado_por:profile.id});
