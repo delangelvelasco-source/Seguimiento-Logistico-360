@@ -23,7 +23,7 @@ export default function Dispatch({warehouseId}){
   return()=>{clearInterval(timer);supabase.removeChannel(channel)};
 },[warehouseId]);
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas||""].join(" ").toLowerCase().includes(query.toLowerCase()));
- function enviarWhatsApp(u){ const texto=`🚛 *ALMACÉN 360 · DISPATCH*\n\n*Folio:* ${u.folio||"—"}\n*Operador:* ${u.operador_nombre||"—"}\n*Línea:* ${u.linea_transporte||"—"}\n*Tracto:* ${u.tracto_placas||"—"}\n*Caja:* ${u.caja_placas||"—"}\n*Operación:* ${u.operacion_tipo||"—"}\n*Estatus:* ${u.estado||"—"}\n\n📍 Unidad registrada en Caseta.`; window.location.href=`https://wa.me/?text=${encodeURIComponent(texto)}`; }
+ function enviarWhatsApp(u){ const texto=`🚛 *OP360 · DISPATCH*\n\n*Folio:* ${u.folio||"—"}\n*Operador:* ${u.operador_nombre||"—"}\n*Línea:* ${u.linea_transporte||"—"}\n*Tracto:* ${u.tracto_placas||"—"}\n*Caja:* ${u.caja_placas||"—"}\n*Operación:* ${u.operacion_tipo||"—"}\n*Estatus:* ${u.estado||"—"}\n\n📍 Unidad registrada en Caseta.`; window.location.href=`https://wa.me/?text=${encodeURIComponent(texto)}`; }
  async function verPruebaLlegada(u){
   if(!u?.id)return;
   setEvidenceLoading(true);setError("");
