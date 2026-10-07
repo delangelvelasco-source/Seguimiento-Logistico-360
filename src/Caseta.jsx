@@ -230,7 +230,13 @@ export default function Caseta({ warehouseId }) {
         }
         resultado={ok:true,folio:actualizado.folio,estado:actualizado.estado,salida_at:actualizado.salida_at};
       }
-      const {error:Error}=setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
+      const {error:Error}=await supabase.rpc("liberar__caseta",{p_acceso_id:acceso.id});
+      if(Error){
+        // La salida ya quedó registrada; solo informamos el problema del control interno del .
+        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado. El  requiere liberación manual.`);
+      }else{
+        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
+      }
       await load();
     }catch(err){
       setError("No se pudo registrar la salida: "+(err?.message||"error desconocido"));
@@ -467,17 +473,6 @@ export default function Caseta({ warehouseId }) {
     }catch(err){
       setError("No se pudo consultar la cita: "+(err?.message||"error desconocido"));
     }finally{setCitaLoading(false);}
-  }
-
-  async function validar(){
-    const numero=String(form.||"").trim().toUpperCase();
-    if(!numero)throw new Error("Captura o escanea el número de  asignado.");
-    // La validación se hace en servidor para mantener el inventario/número del 
-    // aislado del resto de módulos y evitar que RLS del catálogo bloquee a Caseta.
-    const {data,error}=await supabase.rpc("validar__caseta",{p_:numero});
-    if(error)throw new Error(String(error.message||"No se pudo validar el .").replace(/^GAFETE_[A-Z_]+:\s*/i,""));
-    if(!data?.ok)throw new Error("No se pudo validar el .");
-    return {numero:String(data.||numero).toUpperCase()};
   }
 
   async function guardarEvidencias(accesoId, unidadId, userId){
