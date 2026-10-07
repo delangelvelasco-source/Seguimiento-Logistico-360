@@ -315,11 +315,21 @@ function Dispatch({units,onUpdate}){
  const [evidence,setEvidence]=useState(null); const [loadingEvidence,setLoadingEvidence]=useState(false);
  async function verEvidencia(u){
   setLoadingEvidence(true); setEvidence({folio:u.folio,items:[]});
-  const {data,error}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("unidad_id",u.id).order("created_at",{ascending:true});
-  if(error){setEvidence({folio:u.folio,error:error.message,items:[]});setLoadingEvidence(false);return;}
-  const items=[];
-  for(const item of data||[]){const {data:urlData,error:urlError}=await supabase.storage.from("evidencias-caseta").createSignedUrl(item.storage_path,900); if(!urlError&&urlData?.signedUrl) items.push({...item,url:urlData.signedUrl});}
-  setEvidence({folio:u.folio,items}); setLoadingEvidence(false);
+  try{
+    const {data,error}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("unidad_id",u.id).order("created_at",{ascending:true});
+    if(error) throw error;
+    if(!data?.length){setEvidence({folio:u.folio,items:[]});return;}
+    const withTimeout=(promise,ms=8000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tiempo de espera agotado al cargar la evidencia.")),ms))]);
+    const results=await Promise.all(data.map(async item=>{
+      try{
+        const {data:urlData,error:urlError}=await withTimeout(supabase.storage.from("evidencias-caseta").createSignedUrl(item.storage_path,900));
+        return !urlError&&urlData?.signedUrl?{...item,url:urlData.signedUrl}:null;
+      }catch{return null;}
+    }));
+    const items=results.filter(Boolean);
+    setEvidence({folio:u.folio,items,error:items.length?"":"No fue posible obtener las fotografías. Verifica el acceso al almacenamiento."});
+  }catch(e){setEvidence({folio:u.folio,error:e.message||"No se pudo cargar la evidencia.",items:[]});}
+  finally{setLoadingEvidence(false);}
  }
  return <><Page title="Dispatch" sub="Control de llegada, cita y transporte."/><div className="panel"><PanelHead title={"Pendientes: "+pending.length}/>{pending.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="secondary" onClick={()=>verEvidencia(u)}>📷 Ver evidencia</button><button className="primary" onClick={()=>onUpdate(u.id,{estado:"espera_turno"},"Unidad confirmada por Dispatch.")}>Confirmar llegada</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"Unidad marcada con incidencia.")}>Incidencia</button></div></div>)}</div>{evidence&&<div className="modal-backdrop" onClick={()=>setEvidence(null)}><div className="evidence-modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Evidencia · {evidence.folio}</h3><button className="secondary" onClick={()=>setEvidence(null)}>Cerrar</button></div>{loadingEvidence?<Empty text="Cargando fotografías…"/>:evidence.error?<div className="form-error">{evidence.error}</div>:evidence.items.length===0?<Empty text="No hay fotografías de evidencia para esta unidad."/>:<div className="evidence-grid">{evidence.items.map(x=><div className="evidence-card" key={x.id}><b>{x.tipo==="placa"?"Placas":"ID / identificación"}</b><img src={x.url} alt={x.tipo}/><small>{new Date(x.created_at).toLocaleString("es-MX")}</small></div>)}</div>}</div></div>}</>}
 
