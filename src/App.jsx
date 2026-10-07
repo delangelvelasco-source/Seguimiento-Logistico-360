@@ -293,7 +293,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
     </label>
     <label className={"evidence-tile evidence-click "+(idPreview?"has-photo":"")} htmlFor="id-file">
       <input id="id-file" className="evidence-input-real" required type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={e=>capture("id",e)}/>
-      {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}
+      {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ ID capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar la foto de ID / INE</small></>}
     </label>
    </div>
    <p className="form-note">El gafete no se pide para registrar el ingreso. Las fotografías son obligatorias y quedan ligadas al folio.</p>
