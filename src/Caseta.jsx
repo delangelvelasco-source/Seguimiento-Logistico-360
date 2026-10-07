@@ -5,7 +5,7 @@ import { createWorker } from "tesseract.js";
 
 export default function Caseta({ warehouseId }) {
   const [accessType,setAccessType]=useState("unidad");
-  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",pallets:""});
+  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",,pallets:""});
   const form=accessForm;
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
@@ -139,7 +139,6 @@ export default function Caseta({ warehouseId }) {
     };
 
     // Broadcast desde PostgreSQL: entrega inmediata a todos los navegadores
-    // conectados al mismo almacén. El número de gafete nunca viaja por aquí.
     let channel;
     const conectarTiempoReal=async()=>{
       try{
@@ -208,7 +207,6 @@ export default function Caseta({ warehouseId }) {
         resultado=rpcResultado;
       }else{
         // Respaldo: si el RPC falla por sesión/permisos, Caseta puede cerrar
-        // directamente el acceso autenticado. El gafete sigue aislado en su tabla interna.
         const {data:actualizado,error:updateError}=await supabase
           .from("accesos_caseta")
           .update({salida_at:new Date().toISOString(),estado:"salio",updated_at:new Date().toISOString()})
@@ -399,7 +397,6 @@ export default function Caseta({ warehouseId }) {
           try{
             const parsed=JSON.parse(value);
             if(mode==="cita" && parsed?.tipo==="cita360")value=parsed.folio||"";
-            if(mode==="gafete")value=parsed?.tipo==="gafete360"?(parsed.numero||parsed.gafete||""):(parsed?.numero||parsed?.gafete||value);
           }catch{}
           if(mode==="cita"){
             if(!value){setScannerError("El QR no contiene un folio de cita válido.");return;}
@@ -408,7 +405,6 @@ export default function Caseta({ warehouseId }) {
             setScanner(null);setScannerOpen(false);
             buscarCita(value);
           }else{
-            if(mode!=="cita"){setScannerError("Este escáner es solo para citas.");return;}
           }
         },()=>{});
       }catch(err){setScannerError("No se pudo abrir la cámara. Revisa el permiso de cámara y vuelve a intentar.");}
@@ -498,37 +494,17 @@ export default function Caseta({ warehouseId }) {
     e.preventDefault();setLoading(true);setError("");setMessage("");
     const user=(await supabase.auth.getUser()).data.user;
     const folioAcceso=form.folio_cita.trim() || null;
-    const requiereGafete=["unidad","visitante","proveedor"].includes(accessType);
-    const gafeteManual=String(form.gafete_numero||"").trim();
-    let gafete=null;
-    try{
-      // Para visitantes/proveedores el gafete es control interno: si el guardia
-      // no captura uno, Caseta asigna automáticamente el primero disponible.
-      if(requiereGafete && (accessType==="unidad" || gafeteManual)){
-        gafete=await validarGafete();
-      }
-    }catch(err){
-      const raw=String(err?.message||"No se pudo validar el gafete.");
-      const mensaje=raw.replace(/^GAFETE_[A-Z_]+:\s*/i,"").trim();
-      setError(mensaje||"No se pudo validar el gafete.");
-      setLoading(false);
-      return;
-    }
-
     if(accessType!=="unidad"){
       const {data:folioData,error:folioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:accessType});
       if(folioError){setError(folioError.message||"No se pudo generar el folio.");setLoading(false);return;}
       const folioAccesoNuevo=folioData||folioAcceso;
       const {data:accesoNuevo,error}=await supabase.from("accesos_caseta").insert({folio:folioAccesoNuevo,almacen_id:warehouseId,tipo_acceso:accessType,nombre:form.nombre.trim(),empresa:form.empresa.trim()||null,persona_visita:form.persona_visita.trim()||null,motivo:form.motivo.trim()||null,area_destino:form.area_destino.trim()||null,telefono:form.telefono.trim()||null,entrada_at:new Date().toISOString(),estado:"dentro",observaciones:form.referencia.trim()||null,registrado_por:user?.id||null}).select("id").single();
       if(error){setError(error.message);setLoading(false);return}
-      if(requiereGafete){
-          setMessage(`${accessType==="visitante"?"Visitante":"Proveedor"} registrado con gafete interno ${asignacion?.gafete_numero||"asignado"}.`);
-      }
       const etiquetas={visitante:"Visitante",proveedor:"Proveedor",otro:"Otro acceso",personal_interno:"Personal interno",eventual:"Eventual"};
       const etiqueta=etiquetas[accessType]||"Acceso";
       setError("");
       setMessage(`✓ ${etiqueta} registrado correctamente. Folio ${folioAccesoNuevo}. Acceso abierto.`);
-      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:"",pallets:""});
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",,pallets:""});
       setCapturedPhoto("");setCapturedId("");
       setLoading(false);
       await load();
@@ -555,22 +531,9 @@ export default function Caseta({ warehouseId }) {
           setMessage(ev.error?aviso+" La evidencia no pudo guardarse: "+ev.error:aviso+" Evidencia actualizada.");
         }else setMessage(aviso);
       }else setMessage(aviso);
-      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",});
       setCapturedPhoto("");setCapturedId("");
       await load();setLoading(false);return;
-    }
-    if(gafete){
-      const {data:accesoUnidad,error:accesoUnidadError}=await supabase.from("accesos_caseta").select("id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
-      if(accesoUnidadError||!accesoUnidad){setError("El ingreso se registró, pero no se pudo localizar el acceso para asignar el gafete.");setLoading(false);return;}
-      const {error:gafeteError}=await supabase.rpc("asignar_gafete_caseta",{p_acceso_id:accesoUnidad.id,p_gafete_numero:gafete.numero,p_tipo_acceso:"unidad"});
-      if(gafeteError){
-        const {data:accesoConError}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
-        const evidenciaConError=accesoConError?await guardarEvidencias(accesoConError.id,accesoConError.unidad_id,user?.id):{guardadas:0,error:"No se localizó el acceso para guardar evidencia."};
-        setError("El ingreso se registró, pero no se pudo asignar el gafete: "+(gafeteError.message||"error desconocido")+(evidenciaConError.error?" · "+evidenciaConError.error:""));
-        setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
-        setCapturedPhoto("");setCapturedId("");
-        await load();setLoading(false);return;
-      }
     }
     const {data:accesoNuevo}=await supabase.from("accesos_caseta").select("id,unidad_id").eq("folio",resultado.folio).eq("almacen_id",warehouseId).maybeSingle();
     const evidencia=accesoNuevo?await guardarEvidencias(accesoNuevo.id,accesoNuevo.unidad_id,user?.id):{guardadas:0,error:"No se localizó el acceso para guardar evidencia."};
@@ -579,7 +542,7 @@ export default function Caseta({ warehouseId }) {
       : evidencia.guardadas
         ? "Ingreso registrado. Evidencia de placa e identificación guardada para CSR."
         : "Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
-    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",gafete_numero:""});
+    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",});
     setCapturedPhoto("");setCapturedId("");
     await load();setLoading(false);
   }
@@ -656,7 +619,6 @@ export default function Caseta({ warehouseId }) {
             <div className="exact-two"><label>Número de tracto<div className="exact-input"><Truck size={18}/><input value={form.tracto_numero} onChange={e=>setForm({...form,tracto_numero:e.target.value})} placeholder="Número económico"/></div></label><label>Placa tracto<div className="exact-input"><Truck size={18}/><input required value={form.tracto_placas} onChange={e=>setForm({...form,tracto_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div><div className="exact-two"><label>Número de caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_numero} onChange={e=>setForm({...form,caja_numero:e.target.value})} placeholder="Número económico"/></div></label><label>Placa caja <span>(opcional)</span><div className="exact-input"><Truck size={18}/><input value={form.caja_placas} onChange={e=>setForm({...form,caja_placas:e.target.value.toUpperCase()})} placeholder="ABC-123-X"/></div></label></div>
             <div className="exact-two"><label>Tipo de operación<div className="exact-input"><ClipboardList size={18}/><select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></div></label><label>Referencia <span>(opcional)</span><div className="exact-input"><ClipboardList size={18}/><input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})} placeholder="Referencia del cliente"/></div></label></div>
           </>:<>
-            <div className="exact-two"><label>Nombre completo<div className="exact-input"><User size={18}/><input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre y apellidos"/></div></label><label>Gafete asignado <span>(control interno · opcional)</span><div className="exact-input"><IdCard size={18}/><input value={form.gafete_numero} onChange={e=>setForm({...form,gafete_numero:e.target.value.toUpperCase()})} placeholder="Automático o Ej. 0001"/><button type="button" className="cita-scan-btn" onClick={()=>abrirScanner("gafete")} title="Escanear QR del gafete"><ScanLine size={17}/></button></div></label></div>
             <label>Empresa <span>(opcional)</span><div className="exact-input"><Building2 size={18}/><input value={form.empresa} onChange={e=>setForm({...form,empresa:e.target.value})} placeholder="Empresa / procedencia"/></div></label>
             {accessType==="visitante"&&<label>Persona a quien visita<div className="exact-input"><User size={18}/><input required value={form.persona_visita} onChange={e=>setForm({...form,persona_visita:e.target.value})} placeholder="Nombre del anfitrión"/></div></label>}
             <div className="exact-two"><label>Motivo<div className="exact-input"><ClipboardList size={18}/><input required value={form.motivo} onChange={e=>setForm({...form,motivo:e.target.value})} placeholder={accessType==="proveedor"?"Servicio / entrega":"Visita / reunión"}/></div></label><label>Área de destino<div className="exact-input"><Building2 size={18}/><input required value={form.area_destino} onChange={e=>setForm({...form,area_destino:e.target.value})} placeholder="Área / almacén"/></div></label></div>
@@ -713,6 +675,6 @@ export default function Caseta({ warehouseId }) {
     </div>
 
     <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
-    {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>{scannerMode==="gafete"?"Escanear QR de gafete":"Escanear QR de cita"}</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>{scannerMode==="gafete"?"Apunta la cámara al QR del gafete. Más adelante el sistema podrá generar estos QR desde Administración.":"Apunta la cámara al QR generado por CSR."}</small></div></div>}
+    {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>Escanear QR de cita</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>{scannerMode==="gafete"?"Apunta la cámara al QR del gafete. Más adelante el sistema podrá generar estos QR desde Administración.":"Apunta la cámara al QR generado por CSR."}</small></div></div>}
   </section>
 }
