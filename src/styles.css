@@ -1523,3 +1523,6 @@
     grid-column:1 / -1;
   }
 }
+
+/* OP360 traffic dashboard */
+.traffic-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:15px 0}.traffic-card{background:#0d1624;border:1px solid #26374e;border-radius:12px;padding:15px}.traffic-card span{display:block;color:#8b9ab0;font-size:11px;font-weight:800}.traffic-card strong{display:block;color:#e0e8f5;font-size:23px;margin:7px 0}.traffic-card small{color:#718198}.traffic-list{display:grid;gap:8px}.traffic-list>div{display:grid;grid-template-columns:1fr 2fr auto;gap:12px;align-items:center;padding:13px 0;border-top:1px solid #1b2a3e}.traffic-list b{color:#dbe5f4}.traffic-list span{color:#8a99ad;font-size:12px}.traffic-list em{font-style:normal;font-size:10px;font-weight:900;color:#e5c76f;background:#211d0c;border:1px solid #665629;padding:5px 8px;border-radius:12px}@media(max-width:800px){.traffic-grid{grid-template-columns:1fr 1fr}.traffic-list>div{grid-template-columns:1fr;gap:5px}}
