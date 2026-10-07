@@ -17,6 +17,9 @@
 /* Hide native file picker chrome while keeping the whole evidence card clickable */
 .evidence-input-camera{appearance:none!important;-webkit-appearance:none!important;font-size:0!important;line-height:0!important;color:transparent!important;background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;padding:0!important;margin:0!important}.evidence-input-camera::file-selector-button{display:none!important;width:0!important;height:0!important;padding:0!important;border:0!important;font-size:0!important}.evidence-input-camera::-webkit-file-upload-button{display:none!important;width:0!important;height:0!important;padding:0!important;border:0!important;font-size:0!important}.evidence-input-camera::-webkit-input-placeholder{color:transparent!important}
 
-/* Caseta camera inputs: keep native picker hidden and let the card trigger it. */
-.evidence-input-hidden{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;border:0!important;padding:0!important;margin:0!important}
-.evidence-tile{touch-action:manipulation!important}
+
+/* Native camera inputs for Caseta: reliable on Android/iOS. */
+.evidence-input-camera{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:.01!important;z-index:20!important;cursor:pointer!important;display:block!important;appearance:none!important;-webkit-appearance:none!important;font-size:0!important;color:transparent!important;border:0!important;background:transparent!important}
+.evidence-tile{position:relative!important;overflow:hidden!important;cursor:pointer!important;touch-action:manipulation!important}
+.evidence-photo{position:relative!important;z-index:2!important;pointer-events:none!important}
+.evidence-confirm{z-index:3!important;pointer-events:none!important}
