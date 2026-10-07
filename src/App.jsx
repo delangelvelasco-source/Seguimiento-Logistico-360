@@ -63,6 +63,8 @@ export default function App(){
   const [idPhoto,setIdPhoto]=useState(null);
   const [citaLookup,setCitaLookup]=useState({loading:false,found:false,message:""});
   const [exitSeal,setExitSeal]=useState(null);
+  const [platePreview,setPlatePreview]=useState(null);
+  const [idPreview,setIdPreview]=useState(null);
 
   const allowed = roleModules[profile?.rol] || [];
   const can = key => allowed.includes(key);
@@ -245,7 +247,7 @@ export default function App(){
       {error&&<div className="alert error">{error}<button onClick={()=>setError("")}>×</button></div>}
       {notice&&<div className="alert ok">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
       <section className="content">
-        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy} platePhoto={platePhoto} setPlatePhoto={setPlatePhoto} idPhoto={idPhoto} setIdPhoto={setIdPhoto} citaLookup={citaLookup} buscarCita={buscarCita} profile={profile} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
+        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy} platePhoto={platePhoto} setPlatePhoto={setPlatePhoto} idPhoto={idPhoto} setIdPhoto={setIdPhoto} citaLookup={citaLookup} buscarCita={buscarCita} profile={profile} onUpdate={(id,p,m)=>updateUnit(id,p,m)} platePreview={platePreview} setPlatePreview={setPlatePreview} idPreview={idPreview} setIdPreview={setIdPreview}/>}
         {module==="trafico"&&<Traffic units={units} counts={counts} reload={()=>loadUnits()}/>}
         {module==="rampas"&&<Ramps ramps={ramps} units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} reload={()=>loadRamps()}/>}
         {module==="dispatch"&&<Dispatch units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
@@ -263,7 +265,7 @@ function Login({login,setLogin,submit,busy,error}){
  return <div className="login-page"><div className="login-card"><div className="brand-mark big">OP</div><h1>OP360</h1><p>Operación y visibilidad logística</p><form onSubmit={submit}><label>Usuario o correo<input autoFocus value={login.user} onChange={e=>setLogin({...login,user:e.target.value})} placeholder="admin@op360.lat"/></label><label>Contraseña<input type="password" value={login.password} onChange={e=>setLogin({...login,password:e.target.value})} placeholder="••••••••"/></label>{error&&<div className="form-error">{error}</div>}<button className="primary full" disabled={busy}>{busy?"Entrando…":"Entrar a OP360"}</button></form></div></div>;
 }
 
-function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate}){
+function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
  return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Registrar unidad</h3><div className="formgrid">
  <label>No. de cita (folio) opcional<div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>{setForm({...form,folio_cita:e.target.value});setCitaLookup({loading:false,found:false,message:""});}} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
@@ -271,8 +273,8 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  <label>No. de Tracto *{f("tracto_numero",true)}</label><label>Placas del tracto *{f("tracto_placas",true)}</label>
  <label>No. de Caja *{f("caja_numero",true)}</label><label>Placas de caja *{f("caja_placas",true)}</label>
  <label>Contacto *{f("contacto",true,"tel")}</label><label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
- <label>Foto de placas *<input required type="file" accept="image/*" capture="environment" onChange={e=>setPlatePhoto(e.target.files?.[0]||null)}/>{platePhoto&&<small>{platePhoto.name}</small>}</label>
- <label>Foto de ID *<input required type="file" accept="image/*" capture="environment" onChange={e=>setIdPhoto(e.target.files?.[0]||null)}/>{idPhoto&&<small>{idPhoto.name}</small>}</label>
+ <label>Foto de placas *<input required type="file" accept="image/*" capture="environment" onChange={e=>{const f=e.target.files?.[0]||null;setPlatePhoto(f);setPlatePreview(f?URL.createObjectURL(f):null)}}/>{platePhoto&&<><small>{platePhoto.name}</small>{platePreview&&<img className="evidence-preview" src={platePreview} alt="Vista previa de placas"/></>}</label>
+ <label>Foto de ID *<input required type="file" accept="image/*" capture="environment" onChange={e=>{const f=e.target.files?.[0]||null;setIdPhoto(f);setIdPreview(f?URL.createObjectURL(f):null)}}/>{idPhoto&&<><small>{idPhoto.name}</small>{idPreview&&<img className="evidence-preview" src={idPreview} alt="Vista previa de ID"/></>}</label>
  </div><p className="form-note">No se solicita gafete. Las dos fotografías quedan ligadas al folio.</p><button className="primary" disabled={busy}>{busy?"Guardando y subiendo evidencia…":"Registrar ingreso"}</button></form><div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div></div><div className="panel exit-panel"><h3>Salida de unidades</h3><p className="section-copy">Caseta también controla la salida de los guardias.</p>{units.filter(u=>u.estado==="documentacion").length===0?<Empty text="No hay unidades pendientes de salida."/>:units.filter(u=>u.estado==="documentacion").slice(0,20).map(u=><div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" disabled={busy} onClick={()=>{if(u.operacion_tipo==="embarque"){setExitSeal(u);}else{onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".");}}}>Dar salida</button></div></div></div>)}</div></>;}
 function Traffic({units,counts,reload}){return <><Page title="Tráfico" sub="Seguimiento de unidades por etapa."/><div className="metrics">{[["en_caseta","EN CASETA"],["espera_turno","ESPERA"],["rampa_asignada","RAMPA"],["en_operacion","OPERACIÓN"],["liberada","LIBERADAS"]].map(([k,l])=><div className="metric" key={k}><span>{l}</span><b>{counts[k]||0}</b></div>)}</div><div className="panel"><PanelHead title="Flujo de unidades" action={<button className="secondary" onClick={reload}>Actualizar</button>}/><UnitTable units={units}/></div></>}
 
