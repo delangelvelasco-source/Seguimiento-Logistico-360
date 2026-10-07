@@ -56,8 +56,10 @@ export default function App(){
   const [module,setModule]=useState("trafico");
   useEffect(()=>{ if(profile?.rol==="caseta") setModule("caseta"); },[profile?.rol]);
   const [login,setLogin]=useState({user:"",password:""});
-  const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
+  const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
   const [newUser,setNewUser]=useState({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
+  const [platePhoto,setPlatePhoto]=useState(null);
+  const [idPhoto,setIdPhoto]=useState(null);
 
   const allowed = roleModules[profile?.rol] || [];
   const can = key => allowed.includes(key);
@@ -142,21 +144,36 @@ export default function App(){
     try{
       const warehouseId=profile?.almacen_id||warehouses[0]?.id;
       if(!warehouseId) throw new Error("No hay almacén asignado.");
+      if(!platePhoto || !idPhoto) throw new Error("Debes tomar la foto de placas y la foto de ID.");
       const f=folio();
       const {data:u,error:e1}=await supabase.from("unidades").insert({
         folio:f, operador_nombre:form.operador_nombre.trim(), linea_transporte:form.linea_transporte.trim(),
-        tracto_placas:form.tracto_placas.trim().toUpperCase(), caja_placas:form.caja_placas.trim().toUpperCase()||null,
-        contacto:form.contacto.trim()||null, cita_at:form.cita_at||null, estado:"en_caseta",
+        tracto_numero:form.tracto_numero.trim(), tracto_placas:form.tracto_placas.trim().toUpperCase(),
+        caja_numero:form.caja_numero.trim()||null, caja_placas:form.caja_placas.trim().toUpperCase()||null,
+        contacto:form.contacto.trim(), cita_at:form.cita_at||null, estado:"en_caseta",
         operacion_tipo:form.operacion_tipo, almacen_id:warehouseId, caseta_usuario_id:profile.id
       }).select("id").single();
       if(e1) throw e1;
-      await supabase.from("accesos_caseta").insert({
+      const {data:access,error:ae}=await supabase.from("accesos_caseta").insert({
         folio:f, almacen_id:warehouseId, tipo_acceso:"unidad", nombre:form.operador_nombre.trim(),
-        empresa:form.linea_transporte.trim(), telefono:form.contacto.trim()||null,
-        tracto_placas:form.tracto_placas.trim().toUpperCase(), caja_placas:form.caja_placas.trim().toUpperCase()||null,
+        empresa:form.linea_transporte.trim(), telefono:form.contacto.trim(),
+        tracto_numero:form.tracto_numero.trim(), tracto_placas:form.tracto_placas.trim().toUpperCase(),
+        caja_numero:form.caja_numero.trim()||null, caja_placas:form.caja_placas.trim().toUpperCase()||null,
         operacion_tipo:form.operacion_tipo, unidad_id:u.id, registrado_por:profile.id
-      });
-      setForm({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
+      }).select("id").single();
+      if(ae) throw ae;
+      async function saveEvidence(file,type){
+        const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+        const path=warehouseId+"/"+u.id+"/"+Date.now()+"-"+type+"."+ext;
+        const {error:up}=await supabase.storage.from("evidencias-caseta").upload(path,file,{upsert:false,contentType:file.type||"image/jpeg"});
+        if(up) throw up;
+        const {error:ie}=await supabase.from("evidencias_caseta").insert({acceso_id:access.id,almacen_id:warehouseId,unidad_id:u.id,tipo,storage_path:path,creado_por:profile.id});
+        if(ie) throw ie;
+      }
+      await saveEvidence(platePhoto,"placa");
+      await saveEvidence(idPhoto,"identificacion");
+      setForm({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
+      setPlatePhoto(null); setIdPhoto(null);
       setNotice("Unidad registrada correctamente: "+f);
       await loadUnits();
     }catch(e){ setError(e.message||"No se pudo registrar la unidad."); }
@@ -204,7 +221,7 @@ export default function App(){
       {error&&<div className="alert error">{error}<button onClick={()=>setError("")}>×</button></div>}
       {notice&&<div className="alert ok">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
       <section className="content">
-        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy}/>}
+        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy} platePhoto={platePhoto} setPlatePhoto={setPlatePhoto} idPhoto={idPhoto} setIdPhoto={setIdPhoto}/>}
         {module==="trafico"&&<Traffic units={units} counts={counts} reload={()=>loadUnits()}/>}
         {module==="rampas"&&<Ramps ramps={ramps} units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} reload={()=>loadRamps()}/>}
         {module==="dispatch"&&<Dispatch units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
@@ -221,11 +238,17 @@ function Login({login,setLogin,submit,busy,error}){
  return <div className="login-page"><div className="login-card"><div className="brand-mark big">OP</div><h1>OP360</h1><p>Operación y visibilidad logística</p><form onSubmit={submit}><label>Usuario o correo<input autoFocus value={login.user} onChange={e=>setLogin({...login,user:e.target.value})} placeholder="admin@op360.lat"/></label><label>Contraseña<input type="password" value={login.password} onChange={e=>setLogin({...login,password:e.target.value})} placeholder="••••••••"/></label>{error&&<div className="form-error">{error}</div>}<button className="primary full" disabled={busy}>{busy?"Entrando…":"Entrar a OP360"}</button></form></div></div>;
 }
 
-function Caseta({form,setForm,submit,units,busy}){
- const f=(k)=><input required={["operador_nombre","linea_transporte","tracto_placas"].includes(k)} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
- return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Registrar unidad</h3><div className="formgrid"><label>Operador{f("operador_nombre")}</label><label>Línea de transporte{f("linea_transporte")}</label><label>Placas tracto{f("tracto_placas")}</label><label>Placas caja{f("caja_placas")}</label><label>Contacto{f("contacto")}</label><label>Tipo de operación<select value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label><label>Cita (opcional)<input type="datetime-local" value={form.cita_at} onChange={e=>setForm({...form,cita_at:e.target.value})}/></label></div><button className="primary" disabled={busy}>{busy?"Guardando…":"Registrar ingreso"}</button></form><div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div></div></>;
-}
-
+function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto}){
+ const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
+ return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Registrar unidad</h3><div className="formgrid">
+ <label>Operador *{f("operador_nombre",true)}</label><label>Línea de transporte *{f("linea_transporte",true)}</label>
+ <label>No. de Tracto *{f("tracto_numero",true)}</label><label>Placas del tracto *{f("tracto_placas",true)}</label>
+ <label>No. de Caja{f("caja_numero")}</label><label>Placas de caja *{f("caja_placas",true)}</label>
+ <label>Contacto *{f("contacto",true,"tel")}</label><label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
+ <label>Cita opcional<input type="datetime-local" value={form.cita_at} onChange={e=>setForm({...form,cita_at:e.target.value})}/></label>
+ <label>Foto de placas *<input required type="file" accept="image/*" capture="environment" onChange={e=>setPlatePhoto(e.target.files?.[0]||null)}/>{platePhoto&&<small>{platePhoto.name}</small>}</label>
+ <label>Foto de ID *<input required type="file" accept="image/*" capture="environment" onChange={e=>setIdPhoto(e.target.files?.[0]||null)}/>{idPhoto&&<small>{idPhoto.name}</small>}</label>
+ </div><p className="form-note">No se solicita gafete. Las dos fotografías quedan ligadas al folio.</p><button className="primary" disabled={busy}>{busy?"Guardando y subiendo evidencia…":"Registrar ingreso"}</button></form><div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div></div></>;}
 function Traffic({units,counts,reload}){return <><Page title="Tráfico" sub="Seguimiento de unidades por etapa."/><div className="metrics">{[["en_caseta","EN CASETA"],["espera_turno","ESPERA"],["rampa_asignada","RAMPA"],["en_operacion","OPERACIÓN"],["liberada","LIBERADAS"]].map(([k,l])=><div className="metric" key={k}><span>{l}</span><b>{counts[k]||0}</b></div>)}</div><div className="panel"><PanelHead title="Flujo de unidades" action={<button className="secondary" onClick={reload}>Actualizar</button>}/><UnitTable units={units}/></div></>}
 
 function Ramps({ramps,units,onUpdate,reload}){const waiting=units.filter(u=>u.estado==="espera_turno"&&!u.rampa_id);return <><Page title="Rampas" sub="Disponibilidad y asignación."/><div className="panel assign-panel"><h3>Unidades esperando rampa</h3>{waiting.length===0?<Empty text="No hay unidades esperando asignación."/>:waiting.slice(0,10).map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{ramps.filter(r=>r.estado==="operativa"&&r.activa).slice(0,8).map(r=><button className="secondary" key={r.id} onClick={()=>onUpdate(u.id,{rampa_id:r.id,estado:"rampa_asignada"},"Rampa "+r.codigo+" asignada a "+u.folio+".")}>{r.codigo}</button>)}</div></div>)}</div><div className="ramp-grid">{ramps.map(r=>{const u=units.find(x=>x.rampa_id===r.id&&!["liberada","cancelada"].includes(x.estado));return <div className={"ramp "+(r.estado==="operativa"?"ready":"down")} key={r.id}><div><b>{r.codigo}</b><span>{r.nombre}</span></div><strong>{u?u.folio:"LIBRE"}</strong><small>{r.estado}</small>{u&&<button className="secondary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar operación</button>}</div>})}</div></>}
