@@ -61,6 +61,7 @@ export default function App(){
   const [newUser,setNewUser]=useState({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
   const [platePhoto,setPlatePhoto]=useState(null);
   const [idPhoto,setIdPhoto]=useState(null);
+  const [citaLookup,setCitaLookup]=useState({loading:false,found:false,message:""});
 
   const allowed = roleModules[profile?.rol] || [];
   const can = key => allowed.includes(key);
@@ -139,6 +140,27 @@ export default function App(){
   }
 
   async function logout(){ await supabase.auth.signOut(); setModule("trafico"); }
+
+  async function buscarCita(){
+    const folioCita=form.folio_cita.trim();
+    if(!folioCita){ setCitaLookup({loading:false,found:false,message:""}); return; }
+    setCitaLookup({loading:true,found:false,message:"Buscando cita…"});
+    const {data:cita,error:ce}=await supabase.from("citas").select("id,folio,tipo_operacion,referencia,pallets,unidades_solicitadas").eq("folio",folioCita).maybeSingle();
+    if(ce){ setCitaLookup({loading:false,found:false,message:"No se pudo consultar la cita."}); return; }
+    if(!cita){ setCitaLookup({loading:false,found:false,message:"No encontré ese folio de cita."}); return; }
+    const {data:pre}=await supabase.from("cita_datos_precarga").select("operador_nombre,linea_transporte,contacto,tipo_unidad,tracto_numero,tracto_placas,caja_numero,caja_placas").eq("cita_id",cita.id).maybeSingle();
+    setForm(prev=>({...prev,
+      operador_nombre:pre?.operador_nombre||prev.operador_nombre,
+      linea_transporte:pre?.linea_transporte||prev.linea_transporte,
+      tracto_numero:pre?.tracto_numero||prev.tracto_numero,
+      tracto_placas:pre?.tracto_placas||prev.tracto_placas,
+      caja_numero:pre?.caja_numero||prev.caja_numero,
+      caja_placas:pre?.caja_placas||prev.caja_placas,
+      contacto:pre?.contacto||prev.contacto,
+      operacion_tipo:cita.tipo_operacion||prev.operacion_tipo
+    }));
+    setCitaLookup({loading:false,found:true,message:"Cita encontrada. Datos precargados desde CSR."});
+  }
 
   async function registerUnit(e){
     e.preventDefault(); setBusy(true); setError(""); setNotice("");
@@ -247,7 +269,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  <label>No. de Tracto *{f("tracto_numero",true)}</label><label>Placas del tracto *{f("tracto_placas",true)}</label>
  <label>No. de Caja *{f("caja_numero",true)}</label><label>Placas de caja *{f("caja_placas",true)}</label>
  <label>Contacto *{f("contacto",true,"tel")}</label><label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
- <label>No. de cita (folio) opcional<input type="text" value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} placeholder="Folio de cita"/></label>
+ <label>No. de cita (folio) opcional<div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>{setForm({...form,folio_cita:e.target.value});setCitaLookup({loading:false,found:false,message:""});}} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
  <label>Número de sellos {form.operacion_tipo==="embarque"?"*":"(embarque)"}<input type="number" min="0" required={form.operacion_tipo==="embarque"} value={form.numero_sellos} onChange={e=>setForm({...form,numero_sellos:e.target.value})}/></label>
  <label>Foto de placas *<input required type="file" accept="image/*" capture="environment" onChange={e=>setPlatePhoto(e.target.files?.[0]||null)}/>{platePhoto&&<small>{platePhoto.name}</small>}</label>
  <label>Foto de ID *<input required type="file" accept="image/*" capture="environment" onChange={e=>setIdPhoto(e.target.files?.[0]||null)}/>{idPhoto&&<small>{idPhoto.name}</small>}</label>
