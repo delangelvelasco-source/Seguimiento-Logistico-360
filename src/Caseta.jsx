@@ -525,7 +525,7 @@ export default function Caseta({ warehouseId }) {
           setMessage(ev.error?aviso+" La evidencia no pudo guardarse: "+ev.error:aviso+" Evidencia actualizada.");
         }else setMessage(aviso);
       }else setMessage(aviso);
-      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",});
+      setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
       setCapturedPhoto("");setCapturedId("");
       await load();setLoading(false);return;
     }
@@ -536,7 +536,7 @@ export default function Caseta({ warehouseId }) {
       : evidencia.guardadas
         ? "Ingreso registrado. Evidencia de placa e identificación guardada para CSR."
         : "Ingreso registrado. El acceso quedó visible para Caseta y Dispatch.");
-    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",});
+    setAccessForm({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:""});
     setCapturedPhoto("");setCapturedId("");
     await load();setLoading(false);
   }
