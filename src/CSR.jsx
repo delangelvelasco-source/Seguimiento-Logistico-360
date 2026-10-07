@@ -162,7 +162,7 @@ function AdditionalWindowMenu({initial,operation,onClose,onSubmit}){
 }
 
 function WeeklyCalendar({appointments=[],operation="recibo",csrUserId="",onSlot,onAdditionalWindow,onDelete,onViewEvidence}){
- const CSR_BUILD_VERSION="2026-09-30-154";
+ const CSR_BUILD_VERSION="2026-10-07-0434";
  const now=new Date();
  const start=new Date(now);
  const offset=(now.getDay()+6)%7;
