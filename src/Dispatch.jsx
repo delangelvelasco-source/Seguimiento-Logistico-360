@@ -1,92 +1,88 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Search, Send, X, XCircle } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Send, X, XCircle } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-const labels={operador_nombre:"Operador",linea_transporte:"Línea",tracto_placas:"Tracto",caja_placas:"Caja",pallets:"Pallets"};
+const fields={operador_nombre:"Operador",linea_transporte:"Línea",tracto_placas:"Tracto",caja_placas:"Caja",pallets:"Pallets"};
 
 export default function Dispatch({warehouseId}){
- const [units,setUnits]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
- const [query,setQuery]=useState(""),[editing,setEditing]=useState(null),[draft,setDraft]=useState({}),[reason,setReason]=useState(""),[evidenceModal,setEvidenceModal]=useState(null),[selectedEvidence,setSelectedEvidence]=useState(null),[evidenceLoading,setEvidenceLoading]=useState(false);
+ const [units,setUnits]=useState([]);
+ const [loading,setLoading]=useState(false);
+ const [error,setError]=useState("");
+ const [message,setMessage]=useState("");
+ const [query,setQuery]=useState("");
+ const [editing,setEditing]=useState(null);
+ const [draft,setDraft]=useState({});
+ const [reason,setReason]=useState("");
+ const [evidence,setEvidence]=useState(null);
+
  async function load(){
-  if(!warehouseId)return; setLoading(true);setError("");
-  const {data,error}=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,pallets").eq("almacen_id",warehouseId).in("estado",["en_caseta","validando"]).order("created_at",{ascending:false}).limit(50);
-  if(error)setError(error.message); else setUnits(data||[]); setLoading(false);
- }
- useEffect(()=>{
-  load();
   if(!warehouseId)return;
-  const channel=supabase.channel("dispatch-live-"+warehouseId)
-    .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},()=>load())
-    .on("postgres_changes",{event:"*",schema:"public",table:"accesos_caseta",filter:"almacen_id=eq."+warehouseId},()=>load())
-    .subscribe();
-  const timer=setInterval(load,15000);
-  return()=>{clearInterval(timer);supabase.removeChannel(channel)};
-},[warehouseId]);
- const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas||""].join(" ").toLowerCase().includes(query.toLowerCase()));
- function enviarWhatsApp(u){ const texto=`🚛 *ALMACÉN 360 · DISPATCH*\n\n*Folio:* ${u.folio||"—"}\n*Operador:* ${u.operador_nombre||"—"}\n*Línea:* ${u.linea_transporte||"—"}\n*Tracto:* ${u.tracto_placas||"—"}\n*Caja:* ${u.caja_placas||"—"}\n*Operación:* ${u.operacion_tipo||"—"}\n*Estatus:* ${u.estado||"—"}\n\n📍 Unidad registrada en Caseta.`; window.location.href=`https://wa.me/?text=${encodeURIComponent(texto)}`; }
- async function verPruebaLlegada(u){
-  if(!u?.id)return;
-  setEvidenceLoading(true);setError("");
-  try{
-    const {data:acceso,error:ae}=await supabase.from("accesos_caseta")
-      .select("id,folio,nombre,empresa,tracto_placas,caja_placas,entrada_at,salida_at,estado,operacion_tipo")
-      .eq("unidad_id",u.id).eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(1).maybeSingle();
-    if(ae)throw ae;
-    if(!acceso){setError("No se encontró la prueba de llegada de esta unidad.");return;}
-    let {data:evidencias,error:ee}=await supabase.from("evidencias_caseta")
-      .select("id,tipo,storage_path,created_at").eq("acceso_id",acceso.id).order("created_at",{ascending:false});
-    if(ee)throw ee;
-    // Las evidencias pueden haber sido tomadas por Guardia/Caseta y quedar
-    // relacionadas al acceso o directamente a la unidad. Dispatch debe poder
-    // ver ambas rutas para no perder las fotografías.
-    if((evidencias||[]).length===0 && u.id){
-      const fallback=await supabase.from("evidencias_caseta")
-        .select("id,tipo,storage_path,created_at").eq("unidad_id",u.id).order("created_at",{ascending:false});
-      if(fallback.error)throw fallback.error;
-      evidencias=fallback.data||[];
-    }
-    const paths=(evidencias||[]).map(e=>e.storage_path).filter(Boolean);
-    let photos=[];
-    if(paths.length){
-      const {data:urls,error:ue}=await supabase.storage.from("evidencias-caseta").createSignedUrls(paths,3600);
-      if(ue)throw ue;
-      photos=(urls||[]).map((x,i)=>({...evidencias[i],signedUrl:x?.signedUrl||""}));
-    }
-    setSelectedEvidence(null);setEvidenceModal({unidad:u,acceso,photos});
-  }catch(err){setError("No se pudo consultar la prueba de llegada: "+(err?.message||"error desconocido"));}
-  finally{setEvidenceLoading(false);}
+  setLoading(true);setError("");
+  const r=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,pallets").eq("almacen_id",warehouseId).in("estado",["en_caseta","validando"]).order("created_at",{ascending:false}).limit(50);
+  if(r.error)setError(r.error.message);else setUnits(r.data||[]);
+  setLoading(false);
  }
- async function saveCorrections(unit){
-  setError(""); const user=(await supabase.auth.getUser()).data.user;
-  const changes={};
-  for(const k of Object.keys(labels)) if((draft[k]||"")!==(unit[k]||"")) changes[k]=draft[k]?.trim().toUpperCase()||null;
-  if(!Object.keys(changes).length){setEditing(null);return}
-  for(const k of Object.keys(changes)){const {error:e}=await supabase.from("unidades_cambios_auditoria").insert({unidad_id:unit.id,campo:k,valor_anterior:unit[k]||null,valor_nuevo:changes[k]||null,motivo:reason.trim()||"Corrección/validación en Dispatch",cambiado_por:user?.id||null});if(e){setError(e.message);return}}
-  const {error}=await supabase.from("unidades").update({...changes,estado_identificacion:"requiere_dispatch",updated_at:new Date().toISOString()}).eq("id",unit.id);
-  if(error){setError(error.message);return}
-  setMessage("Corrección guardada y auditada.");setEditing(null);setReason("");await load();
- }
- async function decision(unit,kind){
-  setError("");setMessage(""); const user=(await supabase.auth.getUser()).data.user; const now=new Date().toISOString();
-  const patch=kind==="cita"?{cita_confirmada:true,sin_cita:false}:{cita_confirmada:false,sin_cita:true};
+ useEffect(()=>{load();if(!warehouseId)return;const ch=supabase.channel("dispatch-"+warehouseId).on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},load).subscribe();const t=setInterval(load,15000);return()=>{clearInterval(t);supabase.removeChannel(ch)}},[warehouseId]);
+
+ const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].join(" ").toLowerCase().includes(query.toLowerCase()));
+
+ async function decision(u,type){
+  const user=(await supabase.auth.getUser()).data.user;const now=new Date().toISOString();
+  const patch=type==="cita"?{cita_confirmada:true,sin_cita:false}:{cita_confirmada:false,sin_cita:true};
   patch.estado="validando";patch.dispatch_registro_at=now;patch.dispatch_usuario_id=user?.id||null;
-  const {error}=await supabase.from("unidades").update(patch).eq("id",unit.id);
-  if(error){setError(error.message);return}
-  const {error:merr}=await supabase.from("movimientos").insert({unidad_id:unit.id,usuario_id:user?.id,tipo:kind==="cita"?"dispatch_cita_confirmada":"dispatch_sin_cita",estado_anterior:unit.estado,estado_nuevo:"validando",notas:kind==="cita"?"Cita confirmada por Dispatch":"Atención sin cita registrada",ocurrido_at:now});
-  if(merr){setError(merr.message);return}
-  setMessage(kind==="cita"?"Cita confirmada. Lista para CSR.":"Sin cita registrado. Lista para CSR.");await load();
+  const r=await supabase.from("unidades").update(patch).eq("id",u.id);
+  if(r.error){setError(r.error.message);return}
+  setMessage(type==="cita"?"Cita confirmada. Lista para CSR.":"Sin cita registrado. Lista para CSR.");await load();
  }
- async function sendOperation(unit){
-  setError(""); const user=(await supabase.auth.getUser()).data.user; const now=new Date().toISOString();
-  const {error}=await supabase.from("unidades").update({estado:"validando",dispatch_registro_at:unit.dispatch_registro_at||now,dispatch_usuario_id:user?.id||null}).eq("id",unit.id);
-  if(error){setError(error.message);return}
-  await supabase.from("movimientos").insert({unidad_id:unit.id,usuario_id:user?.id,tipo:"dispatch_a_operacion",estado_anterior:unit.estado,estado_nuevo:"validando",notas:"Enviada a la siguiente etapa",ocurrido_at:now});
-  setMessage("Unidad enviada a la siguiente etapa.");await load();
+
+ async function sendOperation(u){
+  const user=(await supabase.auth.getUser()).data.user;const now=new Date().toISOString();
+  const r=await supabase.from("unidades").update({estado:"validando",dispatch_registro_at:u.dispatch_registro_at||now,dispatch_usuario_id:user?.id||null}).eq("id",u.id);
+  if(r.error){setError(r.error.message);return}
+  setMessage("Unidad enviada a Operación.");await load();
  }
- return <section id="dispatch" className="users-section"><div className="panel"><div className="panel-title"><div><ClipboardCheck size={19}/><strong>Dispatch · Validación de llegada</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div><p className="section-copy">Dispatch decide cita/sin cita y actúa como segundo filtro. Cada corrección queda auditada.</p>{error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar folio, operador, línea o placa"/></div>{loading?<div className="empty">Cargando unidades…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.ubicacion_tipo}</span></div><span className="tag">{u.estado}</span></div>{editing===u.id?<div className="dispatch-edit">{Object.keys(labels).map(k=><label key={k}>{labels[k]}<input value={draft[k]||""} onChange={e=>setDraft({...draft,[k]:e.target.value})}/></label>)}<label className="full">Motivo de corrección<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Ej. documento, transportista o placa"/></label><div className="button-row"><button className="secondary-btn" onClick={()=>setEditing(null)}><XCircle size={15}/>Cancelar</button><button className="login-btn compact" onClick={()=>saveCorrections(u)}><CheckCircle2 size={15}/>Guardar corrección</button></div></div>:<><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Pallets</b>{u.pallets ?? "—"}</span></div><div className="button-row"><button className="login-btn compact" onClick={()=>verPruebaLlegada(u)} disabled={evidenceLoading}><Eye size={15}/>📷 Ver evidencia</button><button className="secondary-btn" onClick={()=>{setEditing(u.id);setDraft({...u});setReason("")}}><Edit3 size={15}/>Corregir / validar</button><button className="secondary-btn" onClick={()=>decision(u,"cita")}><CheckCircle2 size={15}/>Confirmar cita</button><button className="secondary-btn" onClick={()=>decision(u,"sin_cita")}><XCircle size={15}/>Sin cita</button><button className="secondary-btn" onClick={()=>enviarWhatsApp(u)}><MessageCircle size={15}/>💬 WhatsApp grupo</button><button className="login-btn compact" onClick={()=>sendOperation(u)}><Send size={15}/>Enviar a Operación</button></div></>}</div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}</div> <DispatchEvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/> </section>
+
+ async function save(){
+  if(!editing)return;
+  const changes={};
+  Object.keys(fields).forEach(k=>{if((draft[k]||"")!==(editing[k]||""))changes[k]=draft[k]?.trim().toUpperCase()||null});
+  if(!Object.keys(changes).length){setEditing(null);return}
+  const r=await supabase.from("unidades").update({...changes,estado_identificacion:"requiere_dispatch",updated_at:new Date().toISOString()}).eq("id",editing.id);
+  if(r.error){setError(r.error.message);return}
+  setMessage("Corrección guardada"+(reason.trim()?" y auditada.":"."));setEditing(null);setReason("");await load();
+ }
+
+ function whatsapp(u){
+  const text="🚛 OP360 · DISPATCH\n\nFolio: "+(u.folio||"—")+"\nOperador: "+(u.operador_nombre||"—")+"\nLínea: "+(u.linea_transporte||"—")+"\nTracto: "+(u.tracto_placas||"—")+"\nCaja: "+(u.caja_placas||"—")+"\nEstatus: "+(u.estado||"—");
+  window.location.href="https://wa.me/?text="+encodeURIComponent(text);
+ }
+
+ async function verEvidencia(u){
+  setError("");
+  const a=await supabase.from("accesos_caseta").select("id,folio,nombre,empresa,tracto_placas,caja_placas,entrada_at").eq("unidad_id",u.id).eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(1).maybeSingle();
+  if(a.error){setError(a.error.message);return}
+  if(!a.data){setError("No se encontró el registro de llegada.");return}
+  const e=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("acceso_id",a.data.id).order("created_at",{ascending:false});
+  if(e.error){setError(e.error.message);return}
+  const paths=(e.data||[]).map(x=>x.storage_path).filter(Boolean);
+  let photos=[];
+  if(paths.length){const p=await supabase.storage.from("evidencias-caseta").createSignedUrls(paths,3600);if(p.error){setError(p.error.message);return}photos=(p.data||[]).map((x,i)=>({...e.data[i],signedUrl:x.signedUrl||""}))}
+  setEvidence({unit:u,access:a.data,photos});
+ }
+
+ return <section id="dispatch" className="users-section"><div className="panel">
+  <div className="panel-title"><div><ClipboardCheck size={19}/><strong>Dispatch · Validación de llegada</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div>
+  <p className="section-copy">Dispatch valida la llegada y decide cita o atención sin cita.</p>
+  {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}
+  {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
+  <div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar folio, operador, línea o placa"/></div>
+  {loading?<div className="empty">Cargando unidades…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}>
+   <div className="dispatch-head"><div><strong>{u.folio||"Sin folio"}</strong><span>{u.operacion_tipo||"Operación"} · {u.ubicacion_tipo||"—"}</span></div><span className="tag">{u.estado}</span></div>
+   {editing?.id===u.id?<div className="dispatch-edit">{Object.keys(fields).map(k=><label key={k}>{fields[k]}<input value={draft[k]??""} onChange={e=>setDraft({...draft,[k]:e.target.value})}/></label>)}<label className="full">Motivo<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Motivo de corrección"/></label><div className="button-row"><button className="secondary-btn" onClick={()=>setEditing(null)}><XCircle size={15}/>Cancelar</button><button className="login-btn compact" onClick={save}><CheckCircle2 size={15}/>Guardar</button></div></div>:<><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre||"—"}</span><span><b>Línea</b>{u.linea_transporte||"—"}</span><span><b>Tracto</b>{u.tracto_placas||"—"}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Pallets</b>{u.pallets??"—"}</span></div><div className="button-row"><button className="login-btn compact" onClick={()=>verEvidencia(u)}><Eye size={15}/>📷 Evidencia</button><button className="secondary-btn" onClick={()=>{setEditing(u);setDraft({...u});setReason("")}}><Edit3 size={15}/>Corregir</button><button className="secondary-btn" onClick={()=>decision(u,"cita")}><CheckCircle2 size={15}/>Confirmar cita</button><button className="secondary-btn" onClick={()=>decision(u,"sin_cita")}><XCircle size={15}/>Sin cita</button><button className="secondary-btn" onClick={()=>whatsapp(u)}><MessageCircle size={15}/>WhatsApp</button><button className="login-btn compact" onClick={()=>sendOperation(u)}><Send size={15}/>Enviar a Operación</button></div></>}
+  </div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}
+ </div>{evidence&&<EvidenceModal data={evidence} close={()=>setEvidence(null)}/>}</section>;
 }
 
-function DispatchEvidenceModal({evidenceModal,selectedEvidence,setSelectedEvidence,setEvidenceModal}){
- if(!evidenceModal)return null;
- return <div className="csr-evidence-modal" role="dialog" aria-modal="true"><div className="csr-evidence-card"><div className="csr-evidence-head"><div><strong>Prueba de llegada</strong><span>{evidenceModal.acceso?.folio||evidenceModal.unidad?.folio||"Unidad"}</span></div><button type="button" className="csr-evidence-close" onClick={()=>setEvidenceModal(null)} aria-label="Cerrar"><X size={20}/></button></div><div className="csr-evidence-summary"><div><b>Operador</b><span>{evidenceModal.acceso?.nombre||evidenceModal.unidad?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{evidenceModal.acceso?.empresa||evidenceModal.unidad?.linea_transporte||"—"}</span></div><div><b>Placa tracto</b><span>{evidenceModal.acceso?.tracto_placas||evidenceModal.unidad?.tracto_placas||"—"}</span></div><div><b>Placa caja</b><span>{evidenceModal.acceso?.caja_placas||evidenceModal.unidad?.caja_placas||"—"}</span></div></div><div className="csr-evidence-actions">{["placa","identificacion"].map(tipo=>{const photo=evidenceModal.photos?.find(p=>p.tipo===tipo);return <button type="button" className={"csr-evidence-choice"+(selectedEvidence===tipo?" active":"")} onClick={()=>setSelectedEvidence(tipo)} key={tipo}><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{photo?.signedUrl?"Ver evidencia fotográfica":"Sin fotografía"}</small></div><Eye size={16}/></button>})}</div>{selectedEvidence&&<div className="csr-evidence-viewer"><div className="csr-evidence-photo-title">{selectedEvidence==="placa"?"Evidencia de placa":"Evidencia de ID / INE"}</div>{(()=>{const photo=evidenceModal.photos?.find(p=>p.tipo===selectedEvidence);return photo?.signedUrl?<img src={photo.signedUrl} alt={selectedEvidence==="placa"?"Evidencia de placa":"Evidencia de identificación"}/>:<div className="csr-evidence-empty">No hay fotografía guardada.</div>})()}</div>}</div></div>;
+function EvidenceModal({data,close}){
+ return <div className="csr-evidence-modal" role="dialog" aria-modal="true"><div className="csr-evidence-card"><div className="csr-evidence-head"><div><strong>Prueba de llegada</strong><span>{data.access?.folio||data.unit?.folio||"Unidad"}</span></div><button type="button" className="csr-evidence-close" onClick={close}><X size={20}/></button></div><div className="csr-evidence-summary"><div><b>Operador</b><span>{data.access?.nombre||data.unit?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{data.access?.empresa||data.unit?.linea_transporte||"—"}</span></div><div><b>Tracto</b><span>{data.access?.tracto_placas||"—"}</span></div><div><b>Caja</b><span>{data.access?.caja_placas||"—"}</span></div></div><div className="csr-evidence-actions">{["placa","identificacion"].map(tipo=>{const p=data.photos?.find(x=>x.tipo===tipo);return <div className="csr-evidence-choice" key={tipo}><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{p?.signedUrl?"Fotografía disponible":"Sin fotografía"}</small></div></div>})}</div></div></div>;
 }
