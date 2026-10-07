@@ -202,14 +202,14 @@ export default function App(){
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.82));
         return blob?new File([blob],(file.name||"evidencia").replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"}):file;
       }
-      async function saveEvidence(file,type){
+      async function saveEvidence(file,evidenceType){
         const safeFile=await compressEvidence(file);
         const ext=(safeFile.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
         const path=warehouseId+"/"+u.id+"/"+Date.now()+"-"+type+"."+ext;
         const {error:up}=await supabase.storage.from("evidencias-caseta").upload(path,safeFile,{upsert:false,contentType:safeFile.type||"image/jpeg"});
-        if(up) throw new Error("No se pudo guardar la foto de "+type+": "+up.message);
-        const {error:ie}=await supabase.from("evidencias_caseta").insert({acceso_id:access.id,almacen_id:warehouseId,unidad_id:u.id,tipo,storage_path:path,creado_por:profile.id});
-        if(ie) throw new Error("La foto de "+type+" se guardó, pero no se pudo registrar la evidencia: "+ie.message);
+        if(up) throw new Error("No se pudo guardar la foto de "+evidenceType+": "+up.message);
+        const {error:ie}=await supabase.from("evidencias_caseta").insert({acceso_id:access.id,almacen_id:warehouseId,unidad_id:u.id,tipo:evidenceType,storage_path:path,creado_por:profile.id});
+        if(ie) throw new Error("La foto de "+evidenceType+" se guardó, pero no se pudo registrar la evidencia: "+ie.message);
       }
       await saveEvidence(platePhoto,"placa");
       await saveEvidence(idPhoto,"identificacion");
