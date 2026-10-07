@@ -244,7 +244,7 @@ export default function App(){
       {error&&<div className="alert error">{error}<button onClick={()=>setError("")}>×</button></div>}
       {notice&&<div className="alert ok">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
       <section className="content">
-        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy} platePhoto={platePhoto} setPlatePhoto={setPlatePhoto} idPhoto={idPhoto} setIdPhoto={setIdPhoto}/>}
+        {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy} platePhoto={platePhoto} setPlatePhoto={setPlatePhoto} idPhoto={idPhoto} setIdPhoto={setIdPhoto} citaLookup={citaLookup} buscarCita={buscarCita}/>}
         {module==="trafico"&&<Traffic units={units} counts={counts} reload={()=>loadUnits()}/>}
         {module==="rampas"&&<Ramps ramps={ramps} units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} reload={()=>loadRamps()}/>}
         {module==="dispatch"&&<Dispatch units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
@@ -262,7 +262,7 @@ function Login({login,setLogin,submit,busy,error}){
  return <div className="login-page"><div className="login-card"><div className="brand-mark big">OP</div><h1>OP360</h1><p>Operación y visibilidad logística</p><form onSubmit={submit}><label>Usuario o correo<input autoFocus value={login.user} onChange={e=>setLogin({...login,user:e.target.value})} placeholder="admin@op360.lat"/></label><label>Contraseña<input type="password" value={login.password} onChange={e=>setLogin({...login,password:e.target.value})} placeholder="••••••••"/></label>{error&&<div className="form-error">{error}</div>}<button className="primary full" disabled={busy}>{busy?"Entrando…":"Entrar a OP360"}</button></form></div></div>;
 }
 
-function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto}){
+function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita}){
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
  return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Registrar unidad</h3><div className="formgrid">
  <label>No. de cita (folio) opcional<div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>{setForm({...form,folio_cita:e.target.value});setCitaLookup({loading:false,found:false,message:""});}} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
