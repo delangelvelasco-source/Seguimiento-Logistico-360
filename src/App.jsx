@@ -267,15 +267,21 @@ function Login({login,setLogin,submit,busy,error}){
 
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
- const choosePlate=e=>{const file=e.target.files?.[0]||null;setPlatePhoto(file);if(file){const reader=new FileReader();reader.onload=()=>setPlatePreview(reader.result);reader.readAsDataURL(file)}else setPlatePreview(null)};
- const chooseId=e=>{const file=e.target.files?.[0]||null;setIdPhoto(file);if(file){const reader=new FileReader();reader.onload=()=>setIdPreview(reader.result);reader.readAsDataURL(file)}else setIdPreview(null)};
+ const selectPhoto=(type,e)=>{
+   const input=e.currentTarget;
+   const file=input.files&&input.files[0]?input.files[0]:null;
+   if(!file)return;
+   const preview=URL.createObjectURL(file);
+   if(type==="plate"){setPlatePhoto(file);setPlatePreview(preview)}else{setIdPhoto(file);setIdPreview(preview)}
+ };
+ const openCamera=id=>document.getElementById(id)?.click();
  const salida=units.filter(u=>u.estado==="documentacion");
  return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/>
  <div className="grid2">
   <form className="panel" onSubmit={submit}>
    <h3>Registrar unidad</h3>
    <div className="formgrid">
-    <label>No. de cita (folio) opcional><div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>{setForm({...form,folio_cita:e.target.value});}} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
+    <label>No. de cita (folio) opcional><div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
     <label>Operador *{f("operador_nombre",true)}</label><label>Línea de transporte *{f("linea_transporte",true)}</label>
     <label>No. de Tracto *{f("tracto_numero",true)}</label><label>Placas del tracto *{f("tracto_placas",true)}</label>
     <label>No. de Caja *{f("caja_numero",true)}</label><label>Placas de caja *{f("caja_placas",true)}</label>
@@ -283,14 +289,14 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
     <label>Tipo de operación *<select required value={form.operacion_tipo} onChange={e=>setForm({...form,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
    </div>
    <div className="evidence-grid">
-    <label className="evidence-tile">
-     <input className="evidence-input" required type="file" accept="image/*" capture="environment" onChange={choosePlate}/>
-     {platePreview?<img className="evidence-photo" src={platePreview} alt="Vista previa de placa"/>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar o elegir</small></>}
-    </label>
-    <label className="evidence-tile">
-     <input className="evidence-input" required type="file" accept="image/*" capture="environment" onChange={chooseId}/>
-     {idPreview?<img className="evidence-photo" src={idPreview} alt="Vista previa de ID / INE"/>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar o elegir</small></>}
-    </label>
+    <div className="evidence-tile evidence-click" onClick={()=>openCamera("plate-file")}>
+      <input id="plate-file" className="evidence-input-real" required type="file" accept="image/*" capture="environment" onChange={e=>selectPhoto("plate",e)}/>
+      {platePreview?<><img className="evidence-photo" src={platePreview} alt="Foto de placa"/><span className="evidence-confirm">✓ Foto capturada · tocar para cambiar</span></>:<><span className="evidence-icon">📷</span><strong>Foto de placa</strong><small>Toca para tomar o elegir</small></>}
+    </div>
+    <div className="evidence-tile evidence-click" onClick={()=>openCamera("id-file")}>
+      <input id="id-file" className="evidence-input-real" required type="file" accept="image/*" capture="environment" onChange={e=>selectPhoto("id",e)}/>
+      {idPreview?<><img className="evidence-photo" src={idPreview} alt="Foto de ID / INE"/><span className="evidence-confirm">✓ Foto capturada · tocar para cambiar</span></>:<><span className="evidence-icon">🪪</span><strong>Foto de ID / INE</strong><small>Toca para tomar o elegir</small></>}
+    </div>
    </div>
    <p className="form-note">El gafete no se pide para registrar el ingreso. Las fotografías son obligatorias y quedan ligadas al folio.</p>
    <button className="primary" disabled={busy}>{busy?"Guardando y enviando evidencia…":"Registrar y enviar a Dispatch"}</button>
