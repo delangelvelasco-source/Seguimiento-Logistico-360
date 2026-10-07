@@ -54,6 +54,7 @@ export default function App(){
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
   const [module,setModule]=useState("trafico");
+  useEffect(()=>{ if(profile?.rol==="caseta") setModule("caseta"); },[profile?.rol]);
   const [login,setLogin]=useState({user:"",password:""});
   const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_placas:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:""});
   const [newUser,setNewUser]=useState({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
