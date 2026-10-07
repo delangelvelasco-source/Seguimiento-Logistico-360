@@ -141,7 +141,8 @@ export default function CSR({warehouseId}){
     if(pe){setError("La cita se guardó, pero no se pudo actualizar la información para Caseta: "+pe.message);return}
     setMessage(selectedAppointment?`Cita actualizada · Folio ${cita?.folio||selectedAppointment.folio}. Caseta verá la información actualizada.`:`Cita programada · Folio ${cita?.folio||folio}. La información quedó disponible para Caseta al ingresar el folio.`);const citaTexto=cita?.folio||folio;navigator.clipboard?.writeText(citaTexto).catch(()=>{});setSelectedSlot("");setSelectedAppointment(null);setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:"",pallets:""});await load();
   }}>Registrar cita</button></div>
- </div><EvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/>
+ </div></section>
+  <EvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/>
 }
 
 function EvidenceModal({evidenceModal,selectedEvidence,setSelectedEvidence,setEvidenceModal}){
