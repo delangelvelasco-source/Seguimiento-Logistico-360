@@ -5,7 +5,7 @@ import { createWorker } from "tesseract.js";
 
 export default function Caseta({ warehouseId }) {
   const [accessType,setAccessType]=useState("unidad");
-  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",,pallets:""});
+  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",persona_visita:"",motivo:"",area_destino:"",telefono:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",folio_cita:"",operacion_tipo:"recibo",referencia:"",pallets:""});
   const form=accessForm;
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
@@ -573,7 +573,7 @@ export default function Caseta({ warehouseId }) {
 
   return <section id="caseta" className="caseta-page caseta-exact">
     <div className="caseta-hero">
-      <div className="caseta-brand-block"><div className="caseta-brand-icon"><Truck size={28}/></div><div><strong>Seguimiento<br/><span>Logístico 360°</span></strong></div></div>
+      <div className="caseta-brand-block"><div className="caseta-brand-icon"><Truck size={28}/></div><div><strong>OP360</strong></div></div>
       <div className="caseta-hero-divider"/>
       <div className="caseta-hero-title"><div className="eyebrow">CONTROL DE ACCESO</div><h2>Caseta</h2><p>Registro de unidades, visitantes y proveedores</p></div>
       <div className="caseta-hero-status"><div className="caseta-active"><span className="dot"/> Caseta activa</div><strong>MTY-II | Las Torres</strong></div>
@@ -667,7 +667,7 @@ export default function Caseta({ warehouseId }) {
       </div>}
     </div>
 
-    <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">Seguimiento<br/><strong>Logístico 360°</strong></div></div>
-    {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>Escanear QR de cita</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>{scannerMode==="gafete"?"Apunta la cámara al QR del gafete. Más adelante el sistema podrá generar estos QR desde Administración.":"Apunta la cámara al QR generado por CSR."}</small></div></div>}
+    <div className="caseta-bottom-nav"><div className="bottom-nav-active"><Building2 size={22}/><span>Caseta</span></div><div><Truck size={22}/><span>Dispatch</span></div><div><ClipboardList size={22}/><span>Operación</span></div><div><User size={22}/><span>CSR</span></div><div><BarChart3 size={22}/><span>Reportes</span></div><div className="bottom-brand">OP360</div></div>
+    {scannerOpen&&<div className="qr-scanner-overlay"><div className="qr-scanner-card"><div className="qr-scanner-head"><strong>Escanear QR de cita</strong><button type="button" onClick={cerrarScanner}><X size={20}/></button></div><div id="caseta-qr-reader" className="qr-reader"></div>{scannerError&&<div className="notice error"><strong>Escáner</strong><span>{scannerError}</span></div>}<small>{"Apunta la cámara al QR generado por CSR."}</small></div></div>}
   </section>
 }
