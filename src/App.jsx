@@ -188,13 +188,28 @@ export default function App(){
         operacion_tipo:form.operacion_tipo, folio_cita:form.folio_cita.trim()||null, unidad_id:u.id, registrado_por:profile.id
       }).select("id").single();
       if(ae) throw ae;
+      async function compressEvidence(file){
+        if(!file) return file;
+        if(!file.type.startsWith("image/") || file.size<1800000) return file;
+        const bitmap=await createImageBitmap(file);
+        const max=1600;
+        const scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+        canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.82));
+        return blob?new File([blob],(file.name||"evidencia").replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"}):file;
+      }
       async function saveEvidence(file,type){
-        const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+        const safeFile=await compressEvidence(file);
+        const ext=(safeFile.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
         const path=warehouseId+"/"+u.id+"/"+Date.now()+"-"+type+"."+ext;
-        const {error:up}=await supabase.storage.from("evidencias-caseta").upload(path,file,{upsert:false,contentType:file.type||"image/jpeg"});
-        if(up) throw up;
+        const {error:up}=await supabase.storage.from("evidencias-caseta").upload(path,safeFile,{upsert:false,contentType:safeFile.type||"image/jpeg"});
+        if(up) throw new Error("No se pudo guardar la foto de "+type+": "+up.message);
         const {error:ie}=await supabase.from("evidencias_caseta").insert({acceso_id:access.id,almacen_id:warehouseId,unidad_id:u.id,tipo,storage_path:path,creado_por:profile.id});
-        if(ie) throw ie;
+        if(ie) throw new Error("La foto de "+type+" se guardó, pero no se pudo registrar la evidencia: "+ie.message);
       }
       await saveEvidence(platePhoto,"placa");
       await saveEvidence(idPhoto,"identificacion");
@@ -339,7 +354,7 @@ function Dispatch({units,onUpdate}){
   }catch(e){setEvidence({folio:u.folio,error:e.message||"No se pudo cargar la evidencia.",items:[]});}
   finally{setLoadingEvidence(false);}
  }
- return <><Page title="Dispatch" sub="Control de llegada, cita y transporte."/><div className="panel"><PanelHead title={"Pendientes: "+pending.length}/>{pending.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="secondary" onClick={()=>verEvidencia(u)}>📷 Ver evidencia</button><button className="primary" onClick={()=>onUpdate(u.id,{estado:"espera_turno"},"Unidad confirmada por Dispatch.")}>Confirmar llegada</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"Unidad marcada con incidencia.")}>Incidencia</button></div></div>)}</div>{evidence&&<div className="modal-backdrop" onClick={()=>setEvidence(null)}><div className="evidence-modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Evidencia · {evidence.folio}</h3><button className="secondary" onClick={()=>setEvidence(null)}>Cerrar</button></div>{loadingEvidence?<Empty text="Cargando fotografías…"/>:evidence.error?<div className="form-error">{evidence.error}</div>:evidence.items.length===0?<Empty text="No hay fotografías de evidencia para esta unidad."/>:<div className="evidence-grid">{evidence.items.map(x=><div className="evidence-card" key={x.id}><b>{x.tipo==="placa"?"Placas":"ID / identificación"}</b><img src={x.url} alt={x.tipo}/><small>{new Date(x.created_at).toLocaleString("es-MX")}</small></div>)}</div>}</div></div>}</>}
+ return <><Page title="Dispatch" sub="Control de llegada, cita y transporte."/><div className="panel"><PanelHead title={"Pendientes: "+pending.length}/>{pending.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="secondary" onClick={()=>verEvidencia(u)}>📷 Ver evidencia</button><button className="secondary" onClick={()=>{const msg=["OP360 · Seguimiento de unidad","Folio: "+u.folio,"Operador: "+(u.operador_nombre||"—"),"Transporte: "+(u.linea_transporte||"—"),"Tracto: "+(u.tracto_placas||"—"),"Caja: "+(u.caja_placas||"—"),"Operación: "+(u.operacion_tipo==="embarque"?"Embarque":"Recibo"),"Estado: "+(stateLabels[u.estado]||u.estado)].join("\n");window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank","noopener,noreferrer")}}>💬 WhatsApp</button><button className="primary" onClick={()=>onUpdate(u.id,{estado:"espera_turno"},"Unidad confirmada por Dispatch.")}>Confirmar llegada</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"Unidad marcada con incidencia.")}>Incidencia</button></div></div>)}</div>{evidence&&<div className="modal-backdrop" onClick={()=>setEvidence(null)}><div className="evidence-modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Evidencia · {evidence.folio}</h3><button className="secondary" onClick={()=>setEvidence(null)}>Cerrar</button></div>{loadingEvidence?<Empty text="Cargando fotografías…"/>:evidence.error?<div className="form-error">{evidence.error}</div>:evidence.items.length===0?<Empty text="No hay fotografías de evidencia para esta unidad."/>:<div className="evidence-grid">{evidence.items.map(x=><div className="evidence-card" key={x.id}><b>{x.tipo==="placa"?"Placas":"ID / identificación"}</b><img src={x.url} alt={x.tipo}/><small>{new Date(x.created_at).toLocaleString("es-MX")}</small></div>)}</div>}</div></div>}</>}
 
 function Operation({units,ramps,onUpdate}){const active=units.filter(u=>["rampa_asignada","en_operacion"].includes(u.estado));return <><Page title="Operación" sub="Control de rampa y proceso."/><div className="panel">{active.length===0?<Empty text="No hay unidades en operación."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{u.estado==="rampa_asignada"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar</button>}{u.estado==="en_operacion"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"documentacion",operacion_fin_at:new Date().toISOString()},"Operación terminada; pasó a documentación.")}>Terminar operación</button>}</div></div>)}</div></>}
 
