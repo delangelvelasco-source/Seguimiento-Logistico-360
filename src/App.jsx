@@ -316,7 +316,7 @@ function App() {
   }
 
   const roleLabel=useMemo(()=>Object.fromEntries(roleOptions),[]);
-  const effectiveWarehouseId=profile?.almacen_id || (profile?.rol==="admin_global" ? warehouses[0]?.id : null);
+  const effectiveWarehouseId=profile?.almacen_id || (["admin_global","dispatch"].includes(profile?.rol) ? warehouses[0]?.id : null);
   const canAccess=(module)=>Boolean(profile?.rol && roleAccess[module]?.includes(profile.rol));
 
   if(authLoading)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark">360</div><h1>Seguimiento Logístico 360°</h1><p>{isInviteFlow?"Validando invitación…":"Iniciando sesión segura…"}</p></div></div>;
