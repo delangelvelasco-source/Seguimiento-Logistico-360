@@ -12,23 +12,25 @@ const MODULES = [
   ["admin","Administración","Usuarios y almacenes"]
 ];
 
-const ROLES = ["admin_global","admin_almacen","team_lead","csr","caseta","dispatch","operacion","supervisor","guardia","documentacion","aduanas","transportista","cliente"];
-
-const roleModules = {
-  admin_global: MODULES.map(x=>x[0]),
-  admin_almacen: ["caseta","trafico","rampas","dispatch","operacion","csr","monitor","admin"],
-  team_lead: ["trafico","rampas","dispatch","operacion","csr","monitor"],
-  supervisor: ["trafico","rampas","dispatch","operacion","csr","monitor"],
-  caseta: ["caseta"],
-  dispatch: ["trafico","dispatch","monitor"],
-  operacion: ["trafico","rampas","operacion","monitor"],
-  csr: ["csr","dispatch","monitor"],
-  guardia: ["monitor"],
-  documentacion: ["csr","monitor"],
-  aduanas: ["csr","monitor"],
-  transportista: ["monitor"],
-  cliente: ["monitor"]
+const ROLE_PROFILES = {
+  admin_global:{label:"Administrador global",description:"Control total de OP360, usuarios, almacenes y operación.",modules:MODULES.map(x=>x[0])},
+  admin_almacen:{label:"Administrador de almacén",description:"Administra la operación y configuración de su almacén.",modules:["caseta","trafico","rampas","dispatch","operacion","csr","monitor","admin"]},
+  team_lead:{label:"Líder de equipo",description:"Supervisa el flujo operativo y el cumplimiento de las etapas.",modules:["trafico","rampas","dispatch","operacion","csr","monitor"]},
+  supervisor:{label:"Supervisor",description:"Supervisa unidades, rampas, operación y desempeño.",modules:["trafico","rampas","dispatch","operacion","csr","monitor"]},
+  caseta:{label:"Caseta",description:"Registra ingresos y genera el folio de la unidad.",modules:["caseta"]},
+  dispatch:{label:"Tráfico / Dispatch",description:"Controla llegada, citas, transporte y avance hacia rampa.",modules:["trafico","dispatch","monitor"]},
+  operacion:{label:"Operación",description:"Gestiona rampas, inicio y término de la operación.",modules:["trafico","rampas","operacion","monitor"]},
+  csr:{label:"CSR",description:"Valida citas, documentación y envía unidades a operación.",modules:["csr","dispatch","monitor"]},
+  guardia:{label:"Guardia",description:"Consulta el estado operativo para control de acceso y salida.",modules:["monitor"]},
+  documentacion:{label:"Documentación",description:"Revisa documentación y seguimiento de unidades.",modules:["csr","monitor"]},
+  aduanas:{label:"Aduanas",description:"Consulta y valida información documental y de operación.",modules:["csr","monitor"]},
+  transportista:{label:"Transportista",description:"Consulta el avance de sus unidades.",modules:["monitor"]},
+  cliente:{label:"Cliente",description:"Consulta el seguimiento de sus unidades y operación.",modules:["monitor"]},
+  monitor_almacen:{label:"Monitor de almacén",description:"Visualiza en tiempo real la operación de un almacén.",modules:["monitor"]}
 };
+
+const ROLES = Object.keys(ROLE_PROFILES).filter(r=>r!=="monitor_almacen");
+const roleModules = Object.fromEntries(Object.entries(ROLE_PROFILES).map(([r,p])=>[r,p.modules]));
 
 const stateLabels = {
   en_caseta:"En caseta", validando:"Validando", espera_turno:"Espera de turno",
@@ -192,7 +194,7 @@ export default function App(){
   return <div className="app">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">OP</div><div><b>OP360</b><span>Operación y visibilidad</span></div></div>
-      <div className="userbox"><b>{profile?.nombre||"Usuario"}</b><span>{profile?.rol||"sin rol"}</span></div>
+      <div className="userbox"><b>{profile?.nombre||"Usuario"}</b><span>{ROLE_PROFILES[profile?.rol]?.label||profile?.rol||"sin rol"}</span></div>
       <nav>{MODULES.filter(m=>can(m[0])).map(m=><button key={m[0]} className={module===m[0]?"nav active":"nav"} onClick={()=>setModule(m[0])}><span>{icon(m[0])}</span><div><b>{m[1]}</b><small>{m[2]}</small></div></button>)}</nav>
       <button className="logout" onClick={logout}>Cerrar sesión</button>
     </aside>
@@ -235,7 +237,7 @@ function CSR({units,onUpdate}){const list=units.filter(u=>["documentacion","espe
 
 function Monitor({units,counts,warehouse}){return <><Page title="Monitor 360" sub={warehouse?warehouse.nombre:"Vista general"}/><div className="monitor-head"><div><b>{warehouse?.codigo||"OP360"}</b><span>Actualización al abrir cada vista</span></div><div className="live"><i/> OPERACIÓN ACTIVA</div></div><div className="monitor-grid">{Object.entries(stateLabels).map(([k,l])=><div className="monitor-box" key={k}><small>{l}</small><strong>{counts[k]||0}</strong></div>)}</div><div className="panel"><h3>Unidades activas</h3><UnitTable units={units.filter(u=>!["liberada","cancelada"].includes(u.estado))}/></div></>}
 
-function Admin({users,warehouses,form,setForm,submit,busy}){return <><Page title="Administración" sub="Usuarios, roles y almacenes."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Crear usuario</h3><div className="formgrid"><label>Usuario<input required pattern="[a-zA-Z0-9._-]{3,40}" value={form.username} onChange={e=>setForm({...form,username:e.target.value})}/></label><label>Nombre<input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></label><label>Rol<select value={form.rol} onChange={e=>setForm({...form,rol:e.target.value})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></label><label>Almacén<select value={form.almacen_id} onChange={e=>setForm({...form,almacen_id:e.target.value})}><option value="">Sin almacén</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></label><label>Contraseña<input required minLength="8" type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label></div><button className="primary" disabled={busy}>{busy?"Creando…":"Crear usuario"}</button></form><div className="panel"><h3>Usuarios</h3><div className="user-list">{users.map(u=><div key={u.id}><div><b>{u.nombre}</b><span>{u.username||"sin usuario"} · {u.rol}</span></div><em className={u.activo?"pill on":"pill"}>{u.activo?"Activo":"Inactivo"}</em></div>)}</div></div></div></>}
+function Admin({users,warehouses,form,setForm,submit,busy}){return <><Page title="Administración" sub="Usuarios, roles y almacenes."/><div className="grid2"><form className="panel" onSubmit={submit}><h3>Crear usuario</h3><div className="formgrid"><label>Usuario<input required pattern="[a-zA-Z0-9._-]{3,40}" value={form.username} onChange={e=>setForm({...form,username:e.target.value})}/></label><label>Nombre<input required value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></label><label>Rol<select value={form.rol} onChange={e=>setForm({...form,rol:e.target.value})}>{ROLES.map(r=><option key={r} value={r}>{ROLE_PROFILES[r]?.label||r}</option>)}</select></label><label>Almacén<select value={form.almacen_id} onChange={e=>setForm({...form,almacen_id:e.target.value})}><option value="">Sin almacén</option>{warehouses.map(w=><option key={w.id} value={w.id}>{w.codigo} · {w.nombre}</option>)}</select></label><label>Contraseña<input required minLength="8" type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label></div><button className="primary" disabled={busy}>{busy?"Creando…":"Crear usuario"}</button></form><div className="panel"><h3>Usuarios y perfiles</h3><div className="user-list">{users.map(u=><div key={u.id}><div><b>{u.nombre}</b><span>{u.username||"sin usuario"} · {ROLE_PROFILES[u.rol]?.label||u.rol}</span></div><em className={u.activo?"pill on":"pill"}>{u.activo?"Activo":"Inactivo"}</em></div>)}</div></div></div></>}
 
 function UnitTable({units}){return <div className="table-wrap">{units.length===0?<Empty text="No hay unidades registradas."/>:<table><thead><tr><th>Folio</th><th>Operador</th><th>Transporte</th><th>Tracto</th><th>Estado</th></tr></thead><tbody>{units.map(u=><tr key={u.id}><td><b>{u.folio}</b></td><td>{u.operador_nombre||"—"}</td><td>{u.linea_transporte||"—"}</td><td>{u.tracto_placas||"—"}</td><td><span className={clsState(u.estado)}>{stateLabels[u.estado]||u.estado}</span></td></tr>)}</tbody></table>}</div>}
 function UnitMain({u}){return <div><b>{u.folio}</b><span>{u.operador_nombre} · {u.linea_transporte}</span><small>{u.tracto_placas} {u.caja_placas?"· "+u.caja_placas:""}</small></div>}
