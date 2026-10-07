@@ -228,13 +228,6 @@ export default function Caseta({ warehouseId }) {
         }
         resultado={ok:true,folio:actualizado.folio,estado:actualizado.estado,salida_at:actualizado.salida_at};
       }
-      const {error:gafeteError}=await supabase.rpc("liberar_gafete_caseta",{p_acceso_id:acceso.id});
-      if(gafeteError){
-        // La salida ya quedó registrada; solo informamos el problema del control interno del gafete.
-        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado. El gafete requiere liberación manual.`);
-      }else{
-        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
-      }
       await load();
     }catch(err){
       setError("No se pudo registrar la salida: "+(err?.message||"error desconocido"));
