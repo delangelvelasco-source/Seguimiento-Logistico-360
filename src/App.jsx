@@ -366,8 +366,58 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  </div></>;
 }
 
-function Traffic({units,counts,reload}){return <><Page title="Tráfico" sub="Seguimiento de unidades por etapa."/><div className="metrics">{[["en_caseta","EN CASETA"],["espera_turno","ESPERA"],["rampa_asignada","RAMPA"],["en_operacion","OPERACIÓN"],["liberada","LIBERADAS"]].map(([k,l])=><div className="metric" key={k}><span>{l}</span><b>{counts[k]||0}</b></div>)}</div><div className="panel"><PanelHead title="Flujo de unidades" action={<button className="secondary" onClick={reload}>Actualizar</button>}/><UnitTable units={units}/></div></>}
-
+function Traffic({units,counts,reload}){
+ const [stage,setStage]=useState("todos");
+ const [search,setSearch]=useState("");
+ const stages=[
+  ["en_caseta","1","CASeta","Ingreso"],
+  ["validando","2","VALIDACIÓN","Dispatch"],
+  ["espera_turno","3","ESPERA","Turno"],
+  ["rampa_asignada","4","RAMPA","Asignada"],
+  ["en_operacion","5","OPERACIÓN","En proceso"],
+  ["documentacion","6","SALIDA","Documentación"],
+  ["liberada","✓","LIBERADAS","Finalizadas"]
+ ];
+ const active=units.filter(u=>!["incidencia","cancelada"].includes(u.estado));
+ const incidents=units.filter(u=>u.estado==="incidencia");
+ const filtered=active.filter(u=>{
+  const q=search.trim().toLowerCase();
+  const matchesStage=stage==="todos"||u.estado===stage;
+  const hay=q===""||[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].some(v=>String(v||"").toLowerCase().includes(q));
+  return matchesStage&&hay;
+ });
+ return <><Page title="Tráfico" sub="Centro de control del flujo de unidades. Cada etapa indica qué debe suceder después."/>
+ <div className="traffic-command">
+  <div className="traffic-command-main"><span className="traffic-kicker">CONTROL EN TIEMPO REAL</span><strong>{active.length} unidades activas</strong><small>Selecciona una etapa para ver únicamente las unidades que requieren atención.</small></div>
+  <div className="traffic-command-actions"><button className="secondary" onClick={reload}>↻ Actualizar</button></div>
+ </div>
+ <div className="traffic-flow">
+  <button className={"flow-stage "+(stage==="todos"?"selected":"")} onClick={()=>setStage("todos")}><span className="flow-num">ALL</span><b>TODAS</b><small>{active.length} unidades</small></button>
+  {stages.map(([key,num,label,sub],i)=><React.Fragment key={key}>
+   {i>0&&<span className="flow-arrow">→</span>}
+   <button className={"flow-stage "+(stage===key?"selected":"")} onClick={()=>setStage(key)}>
+    <span className="flow-num">{num}</span><b>{label}</b><small>{counts[key]||0} · {sub}</small>
+   </button>
+  </React.Fragment>)}
+ </div>
+ {incidents.length>0&&<div className="traffic-alert"><div><b>⚠️ {incidents.length} unidad{incidents.length>1?"es":""} con incidencia</b><span>No interrumpe el flujo principal; requiere revisión.</span></div><button className="secondary" onClick={()=>setStage("incidencia")}>Ver incidencias</button></div>}
+ <div className="traffic-toolbar">
+  <div className="traffic-search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar folio, operador, transporte o placas…"/>{search&&<button onClick={()=>setSearch("")}>×</button>}</div>
+  <div className="traffic-filter-label">{stage==="todos"?"Todas las unidades":(stateLabels[stage]||stage)} · {filtered.length}</div>
+ </div>
+ <div className="panel traffic-list"><PanelHead title="Unidades en flujo"/>
+  {filtered.length===0?<Empty text="No hay unidades en esta etapa."/>:<div className="traffic-cards">{filtered.map(u=>{
+    const next=stages.findIndex(x=>x[0]===u.estado);
+    const nextLabel=next>=0&&next<stages.length-1?stages[next+1][2]:"";
+    return <div className="traffic-card" key={u.id}>
+      <div className="traffic-card-top"><div><strong>{u.folio||"Sin folio"}</strong><span>{u.operador_nombre||"Sin operador"} · {u.linea_transporte||"Sin transporte"}</span></div><span className={"traffic-state "+clsState(u.estado)}>{stateLabels[u.estado]||u.estado}</span></div>
+      <div className="traffic-card-data"><span><small>TRACTO</small><b>{u.tracto_placas||"—"}</b></span><span><small>CAJA</small><b>{u.caja_placas||"—"}</b></span><span><small>OPERACIÓN</small><b>{u.operacion_tipo==="embarque"?"Embarque":"Recibo"}</b></span><span><small>RAMPA</small><b>{u.rampa_id?"Asignada":"—"}</b></span></div>
+      <div className="traffic-card-next"><span>{nextLabel?<>Siguiente: <b>{nextLabel}</b></>:"Flujo concluido"}</span><span>Actualización automática</span></div>
+    </div>
+  })}</div>}
+ </div>
+ </>;
+}
 function Ramps({ramps,units,onUpdate,reload}){const waiting=units.filter(u=>u.estado==="espera_turno"&&!u.rampa_id);return <><Page title="Rampas" sub="Disponibilidad y asignación."/><div className="panel assign-panel"><h3>Unidades esperando rampa</h3>{waiting.length===0?<Empty text="No hay unidades esperando asignación."/>:waiting.slice(0,10).map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{ramps.filter(r=>r.estado==="operativa"&&r.activa).slice(0,8).map(r=><button className="secondary" key={r.id} onClick={()=>onUpdate(u.id,{rampa_id:r.id,estado:"rampa_asignada"},"Rampa "+r.codigo+" asignada a "+u.folio+".")}>{r.codigo}</button>)}</div></div>)}</div><div className="ramp-grid">{ramps.map(r=>{const u=units.find(x=>x.rampa_id===r.id&&!["liberada","cancelada"].includes(x.estado));return <div className={"ramp "+(r.estado==="operativa"?"ready":"down")} key={r.id}><div><b>{r.codigo}</b><span>{r.nombre}</span></div><strong>{u?u.folio:"LIBRE"}</strong><small>{r.estado}</small>{u&&<button className="secondary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar operación</button>}</div>})}</div></>}
 
 function Dispatch({units,onUpdate,onEdit}){
