@@ -341,9 +341,26 @@ function Dispatch({units,onUpdate}){
   try{
     const {data,error}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("unidad_id",u.id).order("created_at",{ascending:true});
     if(error) throw error;
-    if(!data?.length){setEvidence({folio:u.folio,items:[]});return;}
+    let evidenceRows=data||[];
+    if(!evidenceRows.length){
+      const {data:accessRows}=await supabase.from("accesos_caseta").select("id").eq("unidad_id",u.id).order("created_at",{ascending:false}).limit(1);
+      const accessId=accessRows?.[0]?.id;
+      if(accessId){
+        const {data:byAccess}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("acceso_id",accessId).order("created_at",{ascending:true});
+        evidenceRows=byAccess||[];
+      }
+    }
     const withTimeout=(promise,ms=8000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tiempo de espera agotado al cargar la evidencia.")),ms))]);
-    const results=await Promise.all(data.map(async item=>{
+    let dataForUrls=evidenceRows;
+    if(!dataForUrls.length){
+      const folder=(u.almacen_id||"")+"/"+u.id;
+      const {data:files}=await supabase.storage.from("evidencias-caseta").list(folder,{limit:50,sortBy:{column:"created_at",order:"asc"}});
+      if(files?.length){
+        dataForUrls=files.filter(x=>x.name).map(x=>({id:"storage-"+x.name,tipo:x.name.includes("-placa.")?"placa":x.name.includes("-identificacion.")?"identificacion":"evidencia",storage_path:folder+"/"+x.name,created_at:x.created_at||new Date().toISOString()}));
+      }
+    }
+    if(!dataForUrls.length){setEvidence({folio:u.folio,items:[]});return;}
+    const results=await Promise.all(dataForUrls.map(async item=>{
       try{
         const {data:urlData,error:urlError}=await withTimeout(supabase.storage.from("evidencias-caseta").createSignedUrl(item.storage_path,900));
         return !urlError&&urlData?.signedUrl?{...item,url:urlData.signedUrl}:null;
