@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Send, X, XCircle, UserCheck, MapPin, Megaphone, ListChecks, Clock3, FileText, LockKeyhole, Unlock, ChevronDown } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Search, Send, X, XCircle, UserCheck, MapPin, Megaphone, ListChecks, Clock3, FileText, LockKeyhole, Unlock } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 const fields={operador_nombre:"Operador",linea_transporte:"Línea",tracto_placas:"Tracto",caja_placas:"Caja",pallets:"Pallets"};
@@ -188,3 +188,5 @@ _Almacén Las Torres · OP360_`;
 function EvidenceModal({data,close}){
  return <div className="csr-evidence-modal" role="dialog" aria-modal="true"><div className="csr-evidence-card"><div className="csr-evidence-head"><div><strong>Prueba de llegada</strong><span>{data.access?.folio||data.unit?.folio||"Unidad"}</span></div><button type="button" className="csr-evidence-close" onClick={close}><X size={20}/></button></div><div className="csr-evidence-summary"><div><b>Operador</b><span>{data.access?.nombre||data.unit?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{data.access?.empresa||data.unit?.linea_transporte||"—"}</span></div><div><b>Tracto</b><span>{data.access?.tracto_placas||"—"}</span></div><div><b>Caja</b><span>{data.access?.caja_placas||"—"}</span></div></div><div className="csr-evidence-actions">{["placa","identificacion"].map(tipo=>{const p=data.photos?.find(x=>x.tipo===tipo);return <div className="csr-evidence-choice" key={tipo}><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{p?.signedUrl?"Fotografía disponible":"Sin fotografía"}</small></div></div>})}</div></div></div>;
 }
+
+function duration(start,end){const ms=Math.max(0,(end?new Date(end):new Date())-new Date(start));const total=Math.floor(ms/60000),h=Math.floor(total/60),m=total%60;return h?h+"h "+String(m).padStart(2,"0")+"m":m+" min"}
