@@ -23,3 +23,5 @@
 .evidence-tile{position:relative!important;overflow:hidden!important;cursor:pointer!important;touch-action:manipulation!important}
 .evidence-photo{position:relative!important;z-index:2!important;pointer-events:none!important}
 .evidence-confirm{z-index:3!important;pointer-events:none!important}
+
+.edit-modal{width:min(620px,calc(100vw - 28px));max-height:88vh;overflow:auto;background:#fff;border:1px solid #d9dee8;border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(20,39,68,.2)}.edit-form{display:grid;gap:14px}.edit-form label{display:grid;gap:7px;color:#52627c;font-weight:800}.edit-form input,.edit-form select{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #d2d9e5;border-radius:10px;background:#fff;color:#172744;font:inherit}.edit-form .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}@media(max-width:600px){.edit-modal{padding:16px}.edit-form .actions{flex-direction:column}.edit-form .actions button{width:100%}}
