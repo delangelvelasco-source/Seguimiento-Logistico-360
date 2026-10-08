@@ -114,7 +114,7 @@ export default function App(){
   async function loadUnits(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
     if(!warehouseId) return;
     const {data,error:e}=await supabase.from("unidades")
-      .select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,contacto,cita_at,estado,rampa_id,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
+      .select("id,folio,operador_nombre,linea_transporte,tracto_numero,tracto_placas,caja_numero,caja_placas,contacto,cita_at,estado,rampa_id,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
       .eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(100);
     if(!e) setUnits(data||[]);
   }
@@ -235,6 +235,36 @@ export default function App(){
     setBusy(false);
   }
 
+  async function saveEditUnit(patch){
+    if(!editUnit) return;
+    setBusy(true); setError(""); setNotice("");
+    try{
+      const clean={
+        operador_nombre:String(patch.operador_nombre||"").trim(),
+        linea_transporte:String(patch.linea_transporte||"").trim(),
+        tracto_numero:String(patch.tracto_numero||"").trim(),
+        tracto_placas:String(patch.tracto_placas||"").trim().toUpperCase(),
+        caja_numero:String(patch.caja_numero||"").trim(),
+        caja_placas:String(patch.caja_placas||"").trim().toUpperCase(),
+        contacto:String(patch.contacto||"").trim(),
+        operacion_tipo:patch.operacion_tipo||"recibo",
+        numero_sellos:patch.operacion_tipo==="embarque" ? Number(patch.numero_sellos||0) : null
+      };
+      const {error:e}=await supabase.from("unidades").update({...clean,updated_at:new Date().toISOString()}).eq("id",editUnit.id);
+      if(e) throw e;
+      const {error:ae}=await supabase.from("accesos_caseta").update({
+        nombre:clean.operador_nombre,empresa:clean.linea_transporte,telefono:clean.contacto,
+        tracto_numero:clean.tracto_numero,tracto_placas:clean.tracto_placas,
+        caja_numero:clean.caja_numero||null,caja_placas:clean.caja_placas||null,operacion_tipo:clean.operacion_tipo
+      }).eq("unidad_id",editUnit.id);
+      if(ae) throw ae;
+      setEditUnit(null);
+      setNotice("Datos actualizados correctamente.");
+      await loadUnits();
+    }catch(e){setError(e.message||"No se pudieron actualizar los datos.");}
+    finally{setBusy(false);}
+  }
+
   async function createUser(e){
     e.preventDefault(); setBusy(true); setError(""); setNotice("");
     try{
@@ -279,6 +309,8 @@ export default function App(){
         {module==="guardia"&&<Guardia units={units} profile={profile} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="admin"&&<Admin users={users} warehouses={warehouses} form={newUser} setForm={setNewUser} submit={createUser} busy={busy}/>}
       </section>
+      {editUnit&&<EditUnitModal unit={editUnit} onClose={()=>setEditUnit(null)} onSave={saveEditUnit} busy={busy}/>}
+
     </main>
   </div>;
 }
@@ -381,10 +413,10 @@ function Dispatch({units,onUpdate,onEdit}){
 function Operation({units,ramps,onUpdate}){const active=units.filter(u=>["rampa_asignada","en_operacion"].includes(u.estado));return <><Page title="Operación" sub="Control de rampa y proceso."/><div className="panel">{active.length===0?<Empty text="No hay unidades en operación."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{u.estado==="rampa_asignada"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar</button>}{u.estado==="en_operacion"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"documentacion",operacion_fin_at:new Date().toISOString()},"Operación terminada; pasó a documentación.")}>Terminar operación</button>}</div></div>)}</div></>}
 
 function CSR({units,onUpdate}){const list=units.filter(u=>["documentacion","espera_turno"].includes(u.estado));return <><Page title="CSR" sub="Citas y validación documental."/><div className="panel">{list.length===0?<Empty text="No hay unidades pendientes de CSR."/>:list.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{cita_confirmada:true,csr_confirmacion_at:new Date().toISOString(),estado:"rampa_asignada"},"CSR confirmó la unidad.")}>Confirmar y enviar a rampa</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"CSR marcó incidencia.")}>Revisión</button></div></div>)}</div></>}
-function EditUnitModal({unit,onClose,onSave}){
- const [f,setF]=useState({operador_nombre:unit.operador_nombre||"",linea_transporte:unit.linea_transporte||"",tracto_placas:unit.tracto_placas||"",caja_placas:unit.caja_placas||"",contacto:unit.contacto||"",operacion_tipo:unit.operacion_tipo||"recibo"});
- const submit=async e=>{e.preventDefault();await onSave({...f,tracto_placas:f.tracto_placas.trim().toUpperCase(),caja_placas:f.caja_placas.trim().toUpperCase()});};
- return <div className="modal-backdrop" onClick={onClose}><div className="edit-modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Editar datos · {unit.folio}</h3><button className="secondary" type="button" onClick={onClose}>Cerrar</button></div><form onSubmit={submit} className="edit-form"><label>Operador *<input required value={f.operador_nombre} onChange={e=>setF({...f,operador_nombre:e.target.value})}/></label><label>Línea de transporte *<input required value={f.linea_transporte} onChange={e=>setF({...f,linea_transporte:e.target.value})}/></label><label>Placas del tracto *<input required value={f.tracto_placas} onChange={e=>setF({...f,tracto_placas:e.target.value})}/></label><label>Placas de caja<input value={f.caja_placas} onChange={e=>setF({...f,caja_placas:e.target.value})}/></label><label>Contacto *<input required value={f.contacto} onChange={e=>setF({...f,contacto:e.target.value})}/></label><label>Tipo de operación *<select required value={f.operacion_tipo} onChange={e=>setF({...f,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label><div className="actions"><button className="secondary" type="button" onClick={onClose}>Cancelar</button><button className="primary" type="submit">Guardar cambios</button></div></form></div></div>}
+function EditUnitModal({unit,onClose,onSave,busy}){
+ const [f,setF]=useState({operador_nombre:unit.operador_nombre||"",linea_transporte:unit.linea_transporte||"",tracto_numero:unit.tracto_numero||"",tracto_placas:unit.tracto_placas||"",caja_numero:unit.caja_numero||"",caja_placas:unit.caja_placas||"",contacto:unit.contacto||"",operacion_tipo:unit.operacion_tipo||"recibo",numero_sellos:unit.numero_sellos??""});
+ const submit=async e=>{e.preventDefault();await onSave(f);};
+ return <div className="modal-backdrop" onClick={onClose}><div className="edit-modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Editar datos · {unit.folio}</h3><button className="secondary" type="button" onClick={onClose}>Cerrar</button></div><form onSubmit={submit} className="edit-form"><label>Operador *<input required value={f.operador_nombre} onChange={e=>setF({...f,operador_nombre:e.target.value})}/></label><label>Línea de transporte *<input required value={f.linea_transporte} onChange={e=>setF({...f,linea_transporte:e.target.value})}/></label><label>No. de Tracto *<input required value={f.tracto_numero} onChange={e=>setF({...f,tracto_numero:e.target.value})}/></label><label>Placas del tracto *<input required value={f.tracto_placas} onChange={e=>setF({...f,tracto_placas:e.target.value})}/></label><label>No. de Caja *<input required value={f.caja_numero} onChange={e=>setF({...f,caja_numero:e.target.value})}/></label><label>Placas de caja *<input required value={f.caja_placas} onChange={e=>setF({...f,caja_placas:e.target.value})}/></label><label>Contacto *<input required value={f.contacto} onChange={e=>setF({...f,contacto:e.target.value})}/></label><label>Tipo de operación *<select required value={f.operacion_tipo} onChange={e=>setF({...f,operacion_tipo:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>{f.operacion_tipo==="embarque"&&<label>Número de sellos *<input type="number" min="0" required value={f.numero_sellos} onChange={e=>setF({...f,numero_sellos:e.target.value})}/></label>}<div className="actions"><button className="secondary" type="button" onClick={onClose}>Cancelar</button><button className="primary" type="submit" disabled={busy}>{busy?"Guardando…":"Guardar cambios"}</button></div></form></div></div>}
 
 function Guardia({units,profile,onUpdate}){const active=units.filter(u=>u.estado==="documentacion");return <><Page title="Guardia" sub="Control de salida y liberación de unidades."/><div className="panel"><PanelHead title={"Unidades para salida: "+active.length}/>{active.length===0?<Empty text="No hay unidades pendientes de salida."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}>Dar salida</button></div></div></div>)}</div></>}
 
