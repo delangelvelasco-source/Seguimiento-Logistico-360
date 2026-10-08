@@ -35,8 +35,8 @@ const ROLES = Object.keys(ROLE_PROFILES).filter(r=>r!=="monitor_almacen");
 const roleModules = Object.fromEntries(Object.entries(ROLE_PROFILES).map(([r,p])=>[r,p.modules]));
 
 const stateLabels = {
-  en_caseta:"En caseta", validando:"Validando", espera_turno:"Espera de turno",
-  rampa_asignada:"Rampa asignada", en_operacion:"En operación", documentacion:"Documentación",
+  en_caseta:"Caseta", validando:"Dispatch", espera_turno:"Espera de turno",
+  rampa_asignada:"Rampa", en_operacion:"Operación", documentacion:"Documentación",
   liberada:"Liberada", incidencia:"Incidencia", cancelada:"Cancelada"
 };
 
@@ -433,12 +433,13 @@ function Guardia({units,profile,onUpdate}){const active=units.filter(u=>u.estado
 function Monitor({units,counts,warehouse}){
  const active=units.filter(u=>!["liberada","cancelada","incidencia"].includes(u.estado));
  const operational=units.filter(u=>["rampa_asignada","en_operacion","documentacion"].includes(u.estado)).length;
- const attention=units.filter(u=>u.estado==="validando").length;
+ const dispatch=units.filter(u=>u.estado==="validando").length;
+ const patio=units.filter(u=>["validando","espera_turno","rampa_asignada"].includes(u.estado)).length;
  const stageKeys=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada","cancelada"];
  return <><Page title="Monitor 360" sub={warehouse?warehouse.nombre:"Vista general"}/>
  <div className="monitor-overview">
    <div className="monitor-site"><div><span>ALMACÉN</span><strong>{warehouse?.codigo||"OP360"}</strong><small>{warehouse?.nombre||"Operación general"}</small></div><div className="monitor-live"><i/> EN LÍNEA</div></div>
-   <div className="monitor-kpis"><div><span>Unidades activas</span><strong>{active.length}</strong><small>En proceso</small></div><div><span>Operación activa</span><strong>{operational}</strong><small>Rampa / operación</small></div><div><span>Validación</span><strong>{attention}</strong><small>En revisión</small></div></div>
+   <div className="monitor-kpis"><div><span>Unidades activas</span><strong>{active.length}</strong><small>En proceso</small></div><div><span>Patio</span><strong>{patio}</strong><small>Caseta · Dispatch · Espera · Rampa</small></div><div><span>Operación activa</span><strong>{operational}</strong><small>Rampa / operación</small></div></div>
  </div>
  <div className="monitor-section-title"><div><h2>Flujo operativo</h2><p>Vista en tiempo real por etapa.</p></div><span>↻ Actualización automática</span></div>
  <div className="monitor-grid monitor-grid-pro">{stageKeys.map(k=><div className={"monitor-box monitor-box-"+k} key={k}><div><small>{stateLabels[k]}</small><strong>{counts[k]||0}</strong></div><span>{k==="liberada"||k==="cancelada"?"Finalizado":k==="incidencia"?"Revisión":"En proceso"}</span></div>)}</div>
