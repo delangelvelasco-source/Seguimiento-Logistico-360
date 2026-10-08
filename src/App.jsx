@@ -370,7 +370,7 @@ function Traffic({units,counts,reload}){
  const [stage,setStage]=useState("todos");
  const [search,setSearch]=useState("");
  const stages=[
-  ["en_caseta","1","CASeta","Ingreso"],
+  ["en_caseta","1","CASETA","Ingreso"],
   ["validando","2","VALIDACIÓN","Dispatch"],
   ["espera_turno","3","ESPERA","Turno"],
   ["rampa_asignada","4","RAMPA","Asignada"],
@@ -378,7 +378,7 @@ function Traffic({units,counts,reload}){
   ["documentacion","6","SALIDA","Documentación"],
   ["liberada","✓","LIBERADAS","Finalizadas"]
  ];
- const active=units.filter(u=>!["incidencia","cancelada"].includes(u.estado));
+ const active=units.filter(u=>u.estado!=="cancelada");
  const incidents=units.filter(u=>u.estado==="incidencia");
  const filtered=active.filter(u=>{
   const q=search.trim().toLowerCase();
