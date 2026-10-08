@@ -432,14 +432,14 @@ function EditUnitModal({unit,onClose,onSave,busy}){
 function Guardia({units,profile,onUpdate}){const active=units.filter(u=>u.estado==="documentacion");return <><Page title="Guardia" sub="Control de salida y liberación de unidades."/><div className="panel"><PanelHead title={"Unidades para salida: "+active.length}/>{active.length===0?<Empty text="No hay unidades pendientes de salida."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}>Dar salida</button></div></div></div>)}</div></>}
 
 function Monitor({units,counts,warehouse}){
- const active=units.filter(u=>!["liberada","cancelada"].includes(u.estado));
+ const active=units.filter(u=>!["liberada","cancelada","incidencia"].includes(u.estado));
  const operational=units.filter(u=>["rampa_asignada","en_operacion","documentacion"].includes(u.estado)).length;
- const attention=units.filter(u=>["incidencia","validando"].includes(u.estado)).length;
- const stageKeys=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada","incidencia","cancelada"];
+ const attention=units.filter(u=>u.estado==="validando").length;
+ const stageKeys=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada","cancelada"];
  return <><Page title="Monitor 360" sub={warehouse?warehouse.nombre:"Vista general"}/>
  <div className="monitor-overview">
    <div className="monitor-site"><div><span>ALMACÉN</span><strong>{warehouse?.codigo||"OP360"}</strong><small>{warehouse?.nombre||"Operación general"}</small></div><div className="monitor-live"><i/> EN LÍNEA</div></div>
-   <div className="monitor-kpis"><div><span>Unidades activas</span><strong>{active.length}</strong><small>En proceso</small></div><div><span>Operación activa</span><strong>{operational}</strong><small>Rampa / operación</small></div><div><span>Atención</span><strong>{attention}</strong><small>Requieren revisión</small></div></div>
+   <div className="monitor-kpis"><div><span>Unidades activas</span><strong>{active.length}</strong><small>En proceso</small></div><div><span>Operación activa</span><strong>{operational}</strong><small>Rampa / operación</small></div><div><span>Validación</span><strong>{attention}</strong><small>En revisión</small></div></div>
  </div>
  <div className="monitor-section-title"><div><h2>Flujo operativo</h2><p>Vista en tiempo real por etapa.</p></div><span>↻ Actualización automática</span></div>
  <div className="monitor-grid monitor-grid-pro">{stageKeys.map(k=><div className={"monitor-box monitor-box-"+k} key={k}><div><small>{stateLabels[k]}</small><strong>{counts[k]||0}</strong></div><span>{k==="liberada"||k==="cancelada"?"Finalizado":k==="incidencia"?"Revisión":"En proceso"}</span></div>)}</div>
