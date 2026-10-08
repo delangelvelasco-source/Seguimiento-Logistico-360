@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Send, X, XCircle } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Edit3, Eye, MessageCircle, RefreshCw, Send, X, XCircle, UserCheck, MapPin, Megaphone, ListChecks, Clock3, FileText, LockKeyhole, Unlock, ChevronDown } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 const fields={operador_nombre:"Operador",linea_transporte:"Línea",tracto_placas:"Tracto",caja_placas:"Caja",pallets:"Pallets"};
+const ACTIVE_STATES=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion"];
+const stateLabel={en_caseta:"En caseta",validando:"Validación",espera_turno:"Espera de turno",rampa_asignada:"Rampa asignada",en_operacion:"En operación",documentacion:"Documentación",liberada:"Liberada"};
+
 
 export default function Dispatch({warehouseId}){
  const [units,setUnits]=useState([]);
@@ -13,13 +16,13 @@ export default function Dispatch({warehouseId}){
  const [editing,setEditing]=useState(null);
  const [draft,setDraft]=useState({});
  const [reason,setReason]=useState("");
- const [evidence,setEvidence]=useState(null);
+ const [evidence,setEvidence]=useState(null),[ramps,setRamps]=useState([]),[saving,setSaving]=useState(""),[statusOpen,setStatusOpen]=useState(null),[docModal,setDocModal]=useState(null),[sealModal,setSealModal]=useState(null);
 
  async function load(){
   if(!warehouseId)return;
   setLoading(true);setError("");
-  const r=await supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,pallets").eq("almacen_id",warehouseId).in("estado",["en_caseta","validando"]).order("created_at",{ascending:false}).limit(50);
-  if(r.error)setError(r.error.message);else setUnits(r.data||[]);
+  const [r,rr]=await Promise.all([supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,csr_confirmacion_at,csr_usuario_id,rampa_id,operacion_inicio_at,operacion_fin_at,desentrampe_at,salida_autorizada,salida_autorizada_at,pallets,numero_sellos,updated_at,created_at").eq("almacen_id",warehouseId).in("estado",ACTIVE_STATES).order("created_at",{ascending:false}).limit(50),supabase.from("rampas").select("id,nombre,codigo,estado,activa").eq("almacen_id",warehouseId).eq("activa",true).eq("estado","operativa").order("nombre")]);
+  if(r.error)setError(r.error.message);else setUnits(r.data||[]); if(rr.error)setError(prev=>prev||rr.error.message);else setRamps(rr.data||[]);
   setLoading(false);
  }
  useEffect(()=>{load();if(!warehouseId)return;const ch=supabase.channel("dispatch-"+warehouseId).on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},load).subscribe();const t=setInterval(load,15000);return()=>{clearInterval(t);supabase.removeChannel(ch)}},[warehouseId]);
@@ -35,6 +38,63 @@ export default function Dispatch({warehouseId}){
   setMessage(type==="cita"?"Cita confirmada. Lista para CSR.":"Sin cita registrado. Lista para CSR.");await load();
  }
 
+ async function logMovement(u,estadoNuevo,tipo,notas,extra={}){
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  const r=await supabase.from("unidades").update({...extra,estado:estadoNuevo,updated_at:now}).eq("id",u.id);
+  if(r.error){setError(r.error.message);return false}
+  await supabase.from("movimientos").insert({unidad_id:u.id,usuario_id:user?.id,tipo,estado_anterior:u.estado,estado_nuevo:estadoNuevo,notas,ocurrido_at:now});
+  await load();setMessage(notas);return true;
+ }
+ async function validateArrival(u){
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  return logMovement(u,"validando","dispatch_arribo_validado","Arribo validado por Dispatch.",{dispatch_registro_at:u.dispatch_registro_at||now,dispatch_usuario_id:user?.id||null});
+ }
+ async function confirmCSR(u){
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  return logMovement(u,"espera_turno","csr_confirmado","Confirmación CSR registrada. Unidad en espera de turno.",{csr_confirmacion_at:now,csr_usuario_id:user?.id||null});
+ }
+ async function assignRamp(u,rampId){
+  if(!rampId)return;
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  if(units.some(x=>x.id!==u.id&&x.rampa_id===rampId&&["rampa_asignada","en_operacion"].includes(x.estado))){setError("Esa rampa ya está ocupada.");return}
+  await logMovement(u,"rampa_asignada","rampa_asignada","Rampa asignada: "+(ramps.find(r=>r.id===rampId)?.nombre||"rampa"),{rampa_id:rampId,ubicacion_tipo:"rampa",ubicacion_at:now,ubicacion_por:user?.id||null});
+ }
+ async function callToRamp(u){
+  if(!u.rampa_id){setError("Primero asigna una rampa.");return}
+  await logMovement(u,"rampa_asignada","unidad_llamada_rampa","Unidad llamada / enviada a rampa.");
+ }
+ async function changeStatus(u,estado){
+  setStatusOpen(null); if(estado===u.estado)return;
+  await logMovement(u,estado,"estatus_operativo","Estatus operativo cambiado a "+(stateLabel[estado]||estado)+".");
+ }
+ async function registerDocument(u){
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  const ref=window.prompt("Referencia o documento recibido:",u.folio_cita||"");
+  if(ref===null)return;
+  const notes=window.prompt("Observaciones de documentación:","Documentación revisada por Dispatch.");
+  if(notes===null)return;
+  const q=await supabase.from("documentos").insert({unidad_id:u.id,usuario_id:user?.id||null,tipo:"dispatch",referencia:ref.trim()||null,validado:true,notas:notes.trim()||null,validated_at:now});
+  if(q.error){setError(q.error.message);return}
+  await logMovement(u,"documentacion","documentacion_validada","Documentación validada.");
+ }
+ async function registerSeal(u){
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  const physical=window.prompt("Número de sello físico:");
+  if(physical===null)return;
+  if(!physical.trim()){setError("Captura el número de sello.");return}
+  const documented=window.prompt("Número de sello documentado (opcional):","");
+  const q=await supabase.from("sellos_unidad").insert({unidad_id:u.id,numero_fisico:physical.trim().toUpperCase(),numero_documentado:documented?.trim().toUpperCase()||null,origen:"dispatch",resultado:"pendiente",colocado_por:user?.id||null,colocado_at:now,created_by:user?.id||null});
+  if(q.error){setError(q.error.message);return}
+  await supabase.from("unidades").update({numero_sellos:(u.numero_sellos||0)+1,updated_at:now}).eq("id",u.id);
+  setMessage("Sellado registrado: "+physical.trim().toUpperCase());await load();
+ }
+ async function authorizeRelease(u){
+  const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
+  const q=await supabase.from("unidades").update({estado:"liberada",salida_autorizada:true,salida_autorizada_at:now,salida_autorizada_por:user?.id||null,updated_at:now}).eq("id",u.id);
+  if(q.error){setError(q.error.message);return}
+  await supabase.from("movimientos").insert({unidad_id:u.id,usuario_id:user?.id,tipo:"unidad_liberada",estado_anterior:u.estado,estado_nuevo:"liberada",notas:"Unidad liberada por Dispatch.",ocurrido_at:now});
+  setMessage("Unidad liberada: "+u.folio);await load();
+ }
  async function sendOperation(u){
   const user=(await supabase.auth.getUser()).data.user;const now=new Date().toISOString();
   const r=await supabase.from("unidades").update({estado:"validando",dispatch_registro_at:u.dispatch_registro_at||now,dispatch_usuario_id:user?.id||null}).eq("id",u.id);
@@ -107,8 +167,20 @@ _Almacén Las Torres · OP360_`;
   {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
   <div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar folio, operador, línea o placa"/></div>
   {loading?<div className="empty">Cargando unidades…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}>
-   <div className="dispatch-head"><div><strong>{u.folio||"Sin folio"}</strong><span>{u.operacion_tipo||"Operación"} · {u.ubicacion_tipo||"—"}</span></div><span className="tag">{u.estado}</span></div>
-   {editing?.id===u.id?<div className="dispatch-edit">{Object.keys(fields).map(k=><label key={k}>{fields[k]}<input value={draft[k]??""} onChange={e=>setDraft({...draft,[k]:e.target.value})}/></label>)}<label className="full">Motivo<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Motivo de corrección"/></label><div className="button-row"><button className="secondary-btn" onClick={()=>setEditing(null)}><XCircle size={15}/>Cancelar</button><button className="login-btn compact" onClick={save}><CheckCircle2 size={15}/>Guardar</button></div></div>:<><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre||"—"}</span><span><b>Línea</b>{u.linea_transporte||"—"}</span><span><b>Tracto</b>{u.tracto_placas||"—"}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Pallets</b>{u.pallets??"—"}</span></div><div className="button-row"><button className="login-btn compact" onClick={()=>verEvidencia(u)}><Eye size={15}/>📷 Evidencia</button><button className="secondary-btn" onClick={()=>{setEditing(u);setDraft({...u});setReason("")}}><Edit3 size={15}/>Corregir</button><button className="secondary-btn" onClick={()=>decision(u,"cita")}><CheckCircle2 size={15}/>Confirmar cita</button><button className="secondary-btn" onClick={()=>decision(u,"sin_cita")}><XCircle size={15}/>Sin cita</button><button className="secondary-btn" onClick={()=>whatsapp(u)}><MessageCircle size={15}/>WhatsApp</button><button className="login-btn compact" onClick={()=>sendOperation(u)}><Send size={15}/>Enviar a Operación</button></div></>}
+   <div className="dispatch-head"><div><strong>{u.folio||"Sin folio"}</strong><span>{u.operacion_tipo||"Operación"} · {u.ubicacion_tipo||"—"}</span></div><span className="tag">{stateLabel[u.estado]||u.estado}</span></div>
+   {editing?.id===u.id?<div className="dispatch-edit">{Object.keys(fields).map(k=><label key={k}>{fields[k]}<input value={draft[k]??""} onChange={e=>setDraft({...draft,[k]:e.target.value})}/></label>)}<label className="full">Motivo<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Motivo de corrección"/></label><div className="button-row"><button className="secondary-btn" onClick={()=>setEditing(null)}><XCircle size={15}/>Cancelar</button><button className="login-btn compact" onClick={save}><CheckCircle2 size={15}/>Guardar</button></div></div>:<><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre||"—"}</span><span><b>Línea</b>{u.linea_transporte||"—"}</span><span><b>Tracto</b>{u.tracto_placas||"—"}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Pallets</b>{u.pallets??"—"}</span></div><div className="button-row">
+<button className="secondary-btn" onClick={()=>{setEditing(u);setDraft({...u});setReason("")}}><Edit3 size={15}/>✏️ Editar datos</button>
+<button className="secondary-btn" onClick={()=>verEvidencia(u)}><Eye size={15}/>📷 Ver evidencia</button>
+<button className="secondary-btn" onClick={()=>whatsapp(u)}><MessageCircle size={15}/>💬 WhatsApp</button>
+{u.estado==="en_caseta"&&<button className="login-btn compact" onClick={()=>validateArrival(u)}><CheckCircle2 size={15}/>✅ Validar arribo</button>}
+{u.estado==="validando"&&<button className="login-btn compact" onClick={()=>confirmCSR(u)}><UserCheck size={15}/>👤 Confirmación CSR</button>}
+{u.estado==="espera_turno"&&<label className="dispatch-action-select"><MapPin size={15}/><span>🅿️ Asignar rampa</span><select value={u.rampa_id||""} onChange={e=>assignRamp(u,e.target.value)} disabled={saving===u.id}><option value="">Seleccionar…</option>{ramps.map(r=><option key={r.id} value={r.id}>{r.nombre||r.codigo}</option>)}</select></label>}
+{u.estado==="rampa_asignada"&&<button className="login-btn compact" onClick={()=>callToRamp(u)}><Megaphone size={15}/>📢 Llamar / enviar a rampa</button>}
+{["rampa_asignada","en_operacion"].includes(u.estado)&&<button className="secondary-btn" onClick={()=>setStatusOpen(statusOpen===u.id?null:u.id)}><ListChecks size={15}/>🔄 Cambiar estatus</button>}
+{u.estado==="en_operacion"&&<span className="operation-live"><Clock3 size={15}/>⏱️ {duration(u.operacion_inicio_at,u.operacion_fin_at)}</span>}
+{u.estado==="documentacion"&&<><button className="secondary-btn" onClick={()=>registerDocument(u)}><FileText size={15}/>📃 Documentación</button><button className="secondary-btn" onClick={()=>registerSeal(u)}><LockKeyhole size={15}/>🔐 Sellado</button><button className="login-btn compact" onClick={()=>authorizeRelease(u)}><Unlock size={15}/>✅ Liberar unidad</button></>}
+</div>
+{statusOpen===u.id&&<div className="dispatch-status-menu"><strong>🔄 Estatus operativo</strong>{["espera_turno","rampa_asignada","en_operacion","documentacion"].map(s=><button key={s} type="button" onClick={()=>changeStatus(u,s)} disabled={u.estado===s}>{stateLabel[s]}</button>)}</div>}</>}
   </div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}
  </div>{evidence&&<EvidenceModal data={evidence} close={()=>setEvidence(null)}/>}</section>;
 }
