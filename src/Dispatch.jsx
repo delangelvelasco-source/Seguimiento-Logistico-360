@@ -78,16 +78,23 @@ export default function Dispatch({warehouseId}){
   await logMovement(u,"documentacion","documentacion_validada","Documentación validada.");
  }
  async function registerSeal(u){
+  setError("");
+  setSealModal({unit:u,physical:"",documented:""});
+}
+async function saveSeal(){
+  if(!sealModal)return;
   const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
-  const physical=window.prompt("Número de sello físico:");
-  if(physical===null)return;
-  if(!physical.trim()){setError("Captura el número de sello.");return}
-  const documented=window.prompt("Número de sello documentado (opcional):","");
-  const q=await supabase.from("sellos_unidad").insert({unidad_id:u.id,numero_fisico:physical.trim().toUpperCase(),numero_documentado:documented?.trim().toUpperCase()||null,origen:"dispatch",resultado:"pendiente",colocado_por:user?.id||null,colocado_at:now,created_by:user?.id||null});
+  const physical=String(sealModal.physical||"").replace(/\\D/g,"");
+  if(!physical){setError("Captura el número de sello.");return}
+  const documented=String(sealModal.documented||"").replace(/\\D/g,"");
+  const q=await supabase.from("sellos_unidad").insert({unidad_id:sealModal.unit.id,numero_fisico:physical,numero_documentado:documented||null,origen:"dispatch",resultado:"pendiente",colocado_por:user?.id||null,colocado_at:now,created_by:user?.id||null});
   if(q.error){setError(q.error.message);return}
-  await supabase.from("unidades").update({numero_sellos:(u.numero_sellos||0)+1,updated_at:now}).eq("id",u.id);
-  setMessage("Sellado registrado: "+physical.trim().toUpperCase());await load();
- }
+  const uq=await supabase.from("unidades").update({numero_sellos:(sealModal.unit.numero_sellos||0)+1,updated_at:now}).eq("id",sealModal.unit.id);
+  if(uq.error){setError(uq.error.message);return}
+  setSealModal(null);
+  setMessage("Sellado registrado: "+physical);
+  await load();
+}
  async function authorizeRelease(u){
   const user=(await supabase.auth.getUser()).data.user,now=new Date().toISOString();
   const q=await supabase.from("unidades").update({estado:"liberada",salida_autorizada:true,salida_autorizada_at:now,salida_autorizada_por:user?.id||null,updated_at:now}).eq("id",u.id);
@@ -173,11 +180,13 @@ export default function Dispatch({warehouseId}){
 </div>
 {statusOpen===u.id&&<div className="dispatch-status-menu"><strong>🔄 Estatus operativo</strong>{["espera_turno","rampa_asignada","en_operacion","documentacion"].map(s=><button key={s} type="button" onClick={()=>changeStatus(u,s)} disabled={u.estado===s}>{stateLabel[s]}</button>)}</div>}</>}
   </div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}
- </div>{evidence&&<EvidenceModal data={evidence} close={()=>setEvidence(null)}/>}</section>;
+ </div>{evidence&&<EvidenceModal data={evidence} close={()=>setEvidence(null)}/>} {sealModal&&<SealModal data={sealModal} setData={setSealModal} close={()=>setSealModal(null)} save={saveSeal}/>}</section>;
 }
 
 function EvidenceModal({data,close}){
  return <div className="evidence-modal-backdrop" role="dialog" aria-modal="true" onClick={close}><div className="evidence-modal-card" onClick={e=>e.stopPropagation()}><div className="evidence-modal-head"><div><span className="evidence-modal-kicker">OP360 · CONTROL DE ACCESO</span><strong>Prueba de llegada</strong><small>{data.access?.folio||data.unit?.folio||"Unidad"}</small></div><button type="button" className="evidence-modal-close" onClick={close} aria-label="Cerrar"><X size={20}/></button></div><div className="evidence-modal-summary"><div><b>Operador</b><span>{data.access?.nombre||data.unit?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{data.access?.empresa||data.unit?.linea_transporte||"—"}</span></div><div><b>Tracto</b><span>{data.access?.tracto_placas||data.unit?.tracto_placas||"—"}</span></div><div><b>Caja</b><span>{data.access?.caja_placas||data.unit?.caja_placas||"—"}</span></div></div><div className="evidence-photo-grid">{["placa","identificacion"].map(tipo=>{const p=data.photos?.find(x=>x.tipo===tipo);return <div className="evidence-photo-card" key={tipo}><div className="evidence-photo-title"><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{p?.signedUrl?"Fotografía disponible":"Sin fotografía"}</small></div></div>{p?.signedUrl?<img src={p.signedUrl} alt={tipo==="placa"?"Fotografía de placa":"Fotografía de identificación"} className="evidence-modal-image"/>:<div className="evidence-no-photo">No hay fotografía de {tipo==="placa"?"placa":"identificación"}.</div>}</div>})}</div></div></div>;
 }
+
+function SealModal({data,setData,close,save}){return <div className="seal-modal-backdrop" role="dialog" aria-modal="true" onClick={close}><div className="seal-modal-card" onClick={e=>e.stopPropagation()}><div className="seal-modal-head"><div><span>OP360 · SELLADO</span><strong>Número de sellos</strong><small>{data.unit?.folio||"Unidad"}</small></div><button type="button" onClick={close}>×</button></div><label>Número de sello físico *<input autoFocus inputMode="numeric" pattern="[0-9]*" type="tel" value={data.physical} onChange={e=>setData({...data,physical:e.target.value.replace(/\\D/g,"")})} placeholder="Solo números"/></label><label>Número de sello documentado <input inputMode="numeric" pattern="[0-9]*" type="tel" value={data.documented} onChange={e=>setData({...data,documented:e.target.value.replace(/\\D/g,"")})} placeholder="Solo números"/></label><div className="seal-modal-actions"><button type="button" className="secondary-btn" onClick={close}>Cancelar</button><button type="button" className="login-btn compact" onClick={save}>Guardar sello</button></div></div></div>}
 
 function duration(start,end){const ms=Math.max(0,(end?new Date(end):new Date())-new Date(start));const total=Math.floor(ms/60000),h=Math.floor(total/60),m=total%60;return h?h+"h "+String(m).padStart(2,"0")+"m":m+" min"}
