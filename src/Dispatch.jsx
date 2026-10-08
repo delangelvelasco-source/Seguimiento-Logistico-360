@@ -53,7 +53,37 @@ export default function Dispatch({warehouseId}){
  }
 
  function whatsapp(u){
-  const text="🚛 OP360 · DISPATCH\n\nFolio: "+(u.folio||"—")+"\nOperador: "+(u.operador_nombre||"—")+"\nLínea: "+(u.linea_transporte||"—")+"\nTracto: "+(u.tracto_placas||"—")+"\nCaja: "+(u.caja_placas||"—")+"\nEstatus: "+(u.estado||"—");
+  const raw=String(u.estado||"").toLowerCase().replace(/_/g," ");
+  let estatus="En proceso",detalle="La unidad continúa dentro del flujo operativo.";
+  if(raw.includes("caseta")||raw.includes("llegada")){estatus="Registro en caseta";detalle="La unidad fue registrada y se encuentra en proceso de validación.";}
+  else if(raw.includes("espera")||raw.includes("turno")){estatus="Espera de turno";detalle="La unidad permanece en espera de que se le asigne turno/rampa.";}
+  else if(raw.includes("rampa")){estatus="En rampa";detalle="La unidad ya fue asignada a una rampa y continúa con su operación.";}
+  else if(raw.includes("cargando")){estatus="Cargando";detalle="La unidad se encuentra en proceso de carga.";}
+  else if(raw.includes("descargando")){estatus="Descargando";detalle="La unidad se encuentra en proceso de descarga.";}
+  else if(raw.includes("liberad")||raw.includes("salida")||raw.includes("cerrad")){estatus="Liberada";detalle="La operación fue concluida y la unidad se encuentra liberada.";}
+  else if(raw.includes("valid")){estatus="Validación";detalle="La unidad está siendo validada por Dispatch.";}
+  const text=`🏭 *ALMACÉN LAS TORRES*
+📲 *OP360 · SEGUIMIENTO DE UNIDAD*
+
+Hola 👋 Te compartimos una actualización de tu unidad:
+
+━━━━━━━━━━━━━━━━━━
+🎫 *Folio:* ${u.folio||"—"}
+👤 *Operador:* ${u.operador_nombre||"—"}
+🚚 *Transporte:* ${u.linea_transporte||"—"}
+🚛 *Tracto:* ${u.tracto_placas||"—"}
+📦 *Caja:* ${u.caja_placas||"—"}
+🔄 *Operación:* ${u.operacion_tipo||"—"}
+━━━━━━━━━━━━━━━━━━
+
+📍 *Ubicación:* Almacén Las Torres
+🟡 *Estatus actual:* ${estatus}
+
+💬 ${detalle}
+
+⏱️ Te compartiremos cualquier cambio importante en el estatus de la unidad.
+
+_Almacén Las Torres · OP360_`;
   window.location.href="https://wa.me/?text="+encodeURIComponent(text);
  }
 
