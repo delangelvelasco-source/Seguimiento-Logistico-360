@@ -23,7 +23,41 @@ export default function Dispatch({warehouseId}){
   return()=>{clearInterval(timer);supabase.removeChannel(channel)};
 },[warehouseId]);
  const filtered=units.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas||""].join(" ").toLowerCase().includes(query.toLowerCase()));
- function enviarWhatsApp(u){ const texto=`🚛 *OP360 · DISPATCH*\n\n*Folio:* ${u.folio||"—"}\n*Operador:* ${u.operador_nombre||"—"}\n*Línea:* ${u.linea_transporte||"—"}\n*Tracto:* ${u.tracto_placas||"—"}\n*Caja:* ${u.caja_placas||"—"}\n*Operación:* ${u.operacion_tipo||"—"}\n*Estatus:* ${u.estado||"—"}\n\n📍 Unidad registrada en Caseta.`; window.location.href=`https://wa.me/?text=${encodeURIComponent(texto)}`; }
+ function enviarWhatsApp(u){
+  const raw=String(u.estado||"").toLowerCase().replace(/_/g," ");
+  let estatus="En proceso";
+  let detalle="La unidad continúa dentro del flujo operativo.";
+  if(raw.includes("caseta")||raw.includes("llegada")){estatus="Registro en caseta";detalle="La unidad fue registrada y se encuentra en proceso de validación."; }
+  else if(raw.includes("espera")||raw.includes("turno")){estatus="Espera de turno";detalle="La unidad permanece en espera de que se le asigne turno/rampa."; }
+  else if(raw.includes("rampa")){estatus="En rampa";detalle="La unidad ya fue asignada a una rampa y continúa con su operación."; }
+  else if(raw.includes("cargando")){estatus="Cargando";detalle="La unidad se encuentra en proceso de carga."; }
+  else if(raw.includes("descargando")){estatus="Descargando";detalle="La unidad se encuentra en proceso de descarga."; }
+  else if(raw.includes("liberad")||raw.includes("salida")||raw.includes("cerrad")){estatus="Liberada";detalle="La operación fue concluida y la unidad se encuentra liberada."; }
+  else if(raw.includes("valid")){estatus="Validación";detalle="La unidad está siendo validada por Dispatch."; }
+  const texto=`🏭 *ALMACÉN LAS TORRES*
+📲 *OP360 · SEGUIMIENTO DE UNIDAD*
+
+Hola 👋 Te compartimos una actualización de tu unidad:
+
+━━━━━━━━━━━━━━━━━━
+🎫 *Folio:* ${u.folio||"—"}
+👤 *Operador:* ${u.operador_nombre||"—"}
+🚚 *Transporte:* ${u.linea_transporte||"—"}
+🚛 *Tracto:* ${u.tracto_placas||"—"}
+📦 *Caja:* ${u.caja_placas||"—"}
+🔄 *Operación:* ${u.operacion_tipo||"—"}
+━━━━━━━━━━━━━━━━━━
+
+📍 *Ubicación:* Almacén Las Torres
+🟡 *Estatus actual:* ${estatus}
+
+💬 ${detalle}
+
+⏱️ Te compartiremos cualquier cambio importante en el estatus de la unidad.
+
+_Almacén Las Torres · OP360_`;
+  window.location.href=`https://wa.me/?text=${encodeURIComponent(texto)}`;
+ }
  async function verPruebaLlegada(u){
   if(!u?.id)return;
   setEvidenceLoading(true);setError("");
@@ -83,7 +117,7 @@ export default function Dispatch({warehouseId}){
   await supabase.from("movimientos").insert({unidad_id:unit.id,usuario_id:user?.id,tipo:"dispatch_a_operacion",estado_anterior:unit.estado,estado_nuevo:"validando",notas:"Enviada a la siguiente etapa",ocurrido_at:now});
   setMessage("Unidad enviada a la siguiente etapa.");await load();
  }
- return <section id="dispatch" className="users-section"><div className="panel"><div className="panel-title"><div><ClipboardCheck size={19}/><strong>Dispatch · Validación de llegada</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div><p className="section-copy">Dispatch decide cita/sin cita y actúa como segundo filtro. Cada corrección queda auditada.</p>{error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar folio, operador, línea o placa"/></div>{loading?<div className="empty">Cargando unidades…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.ubicacion_tipo}</span></div><span className="tag">{u.estado}</span></div>{editing===u.id?<div className="dispatch-edit">{Object.keys(labels).map(k=><label key={k}>{labels[k]}<input value={draft[k]||""} onChange={e=>setDraft({...draft,[k]:e.target.value})}/></label>)}<label className="full">Motivo de corrección<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Ej. documento, transportista o placa"/></label><div className="button-row"><button className="secondary-btn" onClick={()=>setEditing(null)}><XCircle size={15}/>Cancelar</button><button className="login-btn compact" onClick={()=>saveCorrections(u)}><CheckCircle2 size={15}/>Guardar corrección</button></div></div>:<><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Pallets</b>{u.pallets ?? "—"}</span></div><div className="button-row"><button className="login-btn compact" onClick={()=>verPruebaLlegada(u)} disabled={evidenceLoading}><Eye size={15}/>📷 Ver evidencia</button><button className="secondary-btn" onClick={()=>{setEditing(u.id);setDraft({...u});setReason("")}}><Edit3 size={15}/>Corregir / validar</button><button className="secondary-btn" onClick={()=>decision(u,"cita")}><CheckCircle2 size={15}/>Confirmar cita</button><button className="secondary-btn" onClick={()=>decision(u,"sin_cita")}><XCircle size={15}/>Sin cita</button><button className="secondary-btn" onClick={()=>enviarWhatsApp(u)}><MessageCircle size={15}/>💬 WhatsApp grupo</button><button className="login-btn compact" onClick={()=>sendOperation(u)}><Send size={15}/>Enviar a Operación</button></div></>}</div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}</div><DispatchEvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/></section>
+ return <section id="dispatch" className="users-section"><div className="panel"><div className="panel-title"><div><ClipboardCheck size={19}/><strong>Dispatch · Validación de llegada</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div><p className="section-copy">Dispatch decide cita/sin cita y actúa como segundo filtro. Cada corrección queda auditada.</p>{error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}{message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}<div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar folio, operador, línea o placa"/></div>{loading?<div className="empty">Cargando unidades…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.ubicacion_tipo}</span></div><span className="tag">{u.estado}</span></div>{editing===u.id?<div className="dispatch-edit">{Object.keys(labels).map(k=><label key={k}>{labels[k]}<input value={draft[k]||""} onChange={e=>setDraft({...draft,[k]:e.target.value})}/></label>)}<label className="full">Motivo de corrección<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Ej. documento, transportista o placa"/></label><div className="button-row"><button className="secondary-btn" onClick={()=>setEditing(null)}><XCircle size={15}/>Cancelar</button><button className="login-btn compact" onClick={()=>saveCorrections(u)}><CheckCircle2 size={15}/>Guardar corrección</button></div></div>:<><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Caja</b>{u.caja_placas||"—"}</span><span><b>Pallets</b>{u.pallets ?? "—"}</span></div><div className="button-row"><button className="login-btn compact" onClick={()=>verPruebaLlegada(u)} disabled={evidenceLoading}><Eye size={15}/>📷 Ver evidencia</button><button className="secondary-btn" onClick={()=>{setEditing(u.id);setDraft({...u});setReason("")}}><Edit3 size={15}/>Corregir / validar</button><button className="secondary-btn" onClick={()=>decision(u,"cita")}><CheckCircle2 size={15}/>Confirmar cita</button><button className="secondary-btn" onClick={()=>decision(u,"sin_cita")}><XCircle size={15}/>Sin cita</button><button className="secondary-btn" onClick={()=>enviarWhatsApp(u)}><MessageCircle size={15}/>💬 WhatsApp</button><button className="login-btn compact" onClick={()=>sendOperation(u)}><Send size={15}/>Enviar a Operación</button></div></>}</div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}</div><DispatchEvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/></section>
 }
 
 function DispatchEvidenceModal({evidenceModal,selectedEvidence,setSelectedEvidence,setEvidenceModal}){
