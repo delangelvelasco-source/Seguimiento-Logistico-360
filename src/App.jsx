@@ -1,3 +1,4 @@
+import Dispatch from "./Dispatch";
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase, supabaseConfigured } from "./lib/supabase";
 
@@ -302,7 +303,7 @@ export default function App(){
         {module==="caseta"&&<Caseta form={form} setForm={setForm} submit={registerUnit} units={units} busy={busy} platePhoto={platePhoto} setPlatePhoto={setPlatePhoto} idPhoto={idPhoto} setIdPhoto={setIdPhoto} citaLookup={citaLookup} buscarCita={buscarCita} profile={profile} onUpdate={(id,p,m)=>updateUnit(id,p,m)} platePreview={platePreview} setPlatePreview={setPlatePreview} idPreview={idPreview} setIdPreview={setIdPreview}/>}
         {module==="trafico"&&<Traffic units={units} counts={counts} reload={()=>loadUnits()}/>}
         {module==="rampas"&&<Ramps ramps={ramps} units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} reload={()=>loadRamps()}/>}
-        {module==="dispatch"&&<Dispatch units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} onEdit={setEditUnit}/>}
+        {module==="dispatch"&&<Dispatch warehouseId={currentWarehouse?.id} onEdit={setEditUnit}/>}
         {module==="operacion"&&<Operation units={units} ramps={ramps} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="csr"&&<CSR units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="monitor"&&<Monitor units={units} counts={counts} warehouse={currentWarehouse}/>}
@@ -419,46 +420,6 @@ function Traffic({units,counts,reload}){
  </>;
 }
 function Ramps({ramps,units,onUpdate,reload}){const waiting=units.filter(u=>u.estado==="espera_turno"&&!u.rampa_id);return <><Page title="Rampas" sub="Disponibilidad y asignación."/><div className="panel assign-panel"><h3>Unidades esperando rampa</h3>{waiting.length===0?<Empty text="No hay unidades esperando asignación."/>:waiting.slice(0,10).map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{ramps.filter(r=>r.estado==="operativa"&&r.activa).slice(0,8).map(r=><button className="secondary" key={r.id} onClick={()=>onUpdate(u.id,{rampa_id:r.id,estado:"rampa_asignada"},"Rampa "+r.codigo+" asignada a "+u.folio+".")}>{r.codigo}</button>)}</div></div>)}</div><div className="ramp-grid">{ramps.map(r=>{const u=units.find(x=>x.rampa_id===r.id&&!["liberada","cancelada"].includes(x.estado));return <div className={"ramp "+(r.estado==="operativa"?"ready":"down")} key={r.id}><div><b>{r.codigo}</b><span>{r.nombre}</span></div><strong>{u?u.folio:"LIBRE"}</strong><small>{r.estado}</small>{u&&<button className="secondary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar operación</button>}</div>})}</div></>}
-
-function Dispatch({units,onUpdate,onEdit}){
- const pending=units.filter(u=>["en_caseta","validando","espera_turno"].includes(u.estado));
- const [evidence,setEvidence]=useState(null); const [loadingEvidence,setLoadingEvidence]=useState(false);
- async function verEvidencia(u){
-  setLoadingEvidence(true); setEvidence({folio:u.folio,items:[]});
-  try{
-    const {data,error}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("unidad_id",u.id).order("created_at",{ascending:true});
-    if(error) throw error;
-    let evidenceRows=data||[];
-    if(!evidenceRows.length){
-      const {data:accessRows}=await supabase.from("accesos_caseta").select("id").eq("unidad_id",u.id).order("created_at",{ascending:false}).limit(1);
-      const accessId=accessRows?.[0]?.id;
-      if(accessId){
-        const {data:byAccess}=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("acceso_id",accessId).order("created_at",{ascending:true});
-        evidenceRows=byAccess||[];
-      }
-    }
-    const withTimeout=(promise,ms=8000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tiempo de espera agotado al cargar la evidencia.")),ms))]);
-    let dataForUrls=evidenceRows;
-    if(!dataForUrls.length){
-      const folder=(u.almacen_id||"")+"/"+u.id;
-      const {data:files}=await supabase.storage.from("evidencias-caseta").list(folder,{limit:50,sortBy:{column:"created_at",order:"asc"}});
-      if(files?.length){
-        dataForUrls=files.filter(x=>x.name).map(x=>({id:"storage-"+x.name,tipo:x.name.includes("-placa.")?"placa":x.name.includes("-identificacion.")?"identificacion":"evidencia",storage_path:folder+"/"+x.name,created_at:x.created_at||new Date().toISOString()}));
-      }
-    }
-    if(!dataForUrls.length){setEvidence({folio:u.folio,items:[]});return;}
-    const results=await Promise.all(dataForUrls.map(async item=>{
-      try{
-        const {data:urlData,error:urlError}=await withTimeout(supabase.storage.from("evidencias-caseta").createSignedUrl(item.storage_path,900));
-        return !urlError&&urlData?.signedUrl?{...item,url:urlData.signedUrl}:null;
-      }catch{return null;}
-    }));
-    const items=results.filter(Boolean);
-    setEvidence({folio:u.folio,items,error:items.length?"":"No fue posible obtener las fotografías. Verifica el acceso al almacenamiento."});
-  }catch(e){setEvidence({folio:u.folio,error:e.message||"No se pudo cargar la evidencia.",items:[]});}
-  finally{setLoadingEvidence(false);}
- }
- return <><Page title="Dispatch" sub="Control de llegada, cita y transporte."/><div className="panel"><PanelHead title={"Pendientes: "+pending.length}/>{pending.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="secondary" onClick={()=>onEdit?.(u)}>✏️ Editar datos</button><button className="secondary" onClick={()=>verEvidencia(u)}>📷 Ver evidencia</button><button className="secondary" onClick={()=>{const msg=["OP360 · Seguimiento de unidad","Folio: "+u.folio,"Operador: "+(u.operador_nombre||"—"),"Transporte: "+(u.linea_transporte||"—"),"Tracto: "+(u.tracto_placas||"—"),"Caja: "+(u.caja_placas||"—"),"Operación: "+(u.operacion_tipo==="embarque"?"Embarque":"Recibo"),"Estado: "+(stateLabels[u.estado]||u.estado)].join("\n");window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank","noopener,noreferrer")}}>💬 WhatsApp</button><button className="primary" onClick={()=>onUpdate(u.id,{estado:"espera_turno"},"Unidad confirmada por Dispatch.")}>Confirmar llegada</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"Unidad marcada con incidencia.")}>Incidencia</button></div></div>)}</div>{evidence&&<div className="modal-backdrop" onClick={()=>setEvidence(null)}><div className="evidence-modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Evidencia · {evidence.folio}</h3><button className="secondary" onClick={()=>setEvidence(null)}>Cerrar</button></div>{loadingEvidence?<Empty text="Cargando fotografías…"/>:evidence.error?<div className="form-error">{evidence.error}</div>:evidence.items.length===0?<Empty text="No hay fotografías de evidencia para esta unidad."/>:<div className="evidence-grid">{evidence.items.map(x=><div className="evidence-card" key={x.id}><b>{x.tipo==="placa"?"Placas":"ID / identificación"}</b><img src={x.url} alt={x.tipo}/><small>{new Date(x.created_at).toLocaleString("es-MX")}</small></div>)}</div>}</div></div>}</>}
 
 function Operation({units,ramps,onUpdate}){const active=units.filter(u=>["rampa_asignada","en_operacion"].includes(u.estado));return <><Page title="Operación" sub="Control de rampa y proceso."/><div className="panel">{active.length===0?<Empty text="No hay unidades en operación."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions">{u.estado==="rampa_asignada"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},"Operación iniciada.")}>Iniciar</button>}{u.estado==="en_operacion"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"documentacion",operacion_fin_at:new Date().toISOString()},"Operación terminada; pasó a documentación.")}>Terminar operación</button>}</div></div>)}</div></>}
 
