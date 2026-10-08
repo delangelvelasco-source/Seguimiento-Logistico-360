@@ -214,6 +214,10 @@ export default function App(){
       }
       await saveEvidence(platePhoto,"placa");
       await saveEvidence(idPhoto,"identificacion");
+      const {data:verifiedEvidence,error:ve}=await supabase.from("evidencias_caseta").select("tipo").eq("unidad_id",u.id);
+      if(ve) throw ve;
+      const savedTypes=new Set((verifiedEvidence||[]).map(x=>x.tipo));
+      if(!savedTypes.has("placa") || !savedTypes.has("identificacion")) throw new Error("La unidad se creó, pero faltó guardar una de las dos fotografías. No se limpió el formulario para evitar perder la evidencia.");
       setForm({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",folio_cita:"",numero_sellos:""});
       setPlatePhoto(null); setIdPhoto(null); setPlatePreview(null); setIdPreview(null); setCitaLookup({loading:false,found:false,message:""});
       const plateInput=document.getElementById("plate-file"); if(plateInput) plateInput.value="";
