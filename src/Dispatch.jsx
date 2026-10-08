@@ -161,8 +161,8 @@ _Almacén Las Torres · OP360_`;
  }
 
  return <section id="dispatch" className="users-section"><div className="panel">
-  <div className="panel-title"><div><ClipboardCheck size={19}/><strong>Dispatch · Validación de llegada</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div>
-  <p className="section-copy">Dispatch valida la llegada y decide cita o atención sin cita.</p>
+  <div className="panel-title"><div><ClipboardCheck size={19}/><strong>Dispatch · Control operativo</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div>
+  <p className="section-copy">Gestiona cada unidad desde su arribo hasta rampa, documentación, sellado y liberación.</p>
   {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}
   {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
   <div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar folio, operador, línea o placa"/></div>
