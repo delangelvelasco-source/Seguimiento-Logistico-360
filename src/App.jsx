@@ -379,8 +379,7 @@ function Traffic({units,counts,reload}){
   ["documentacion","6","SALIDA","Documentación"],
   ["liberada","✓","LIBERADAS","Finalizadas"]
  ];
- const active=units.filter(u=>u.estado!=="cancelada");
- const incidents=units.filter(u=>u.estado==="incidencia");
+ const active=units.filter(u=>!["cancelada","incidencia"].includes(u.estado));
  const filtered=active.filter(u=>{
   const q=search.trim().toLowerCase();
   const matchesStage=stage==="todos"||u.estado===stage;
@@ -401,7 +400,7 @@ function Traffic({units,counts,reload}){
    </button>
   </React.Fragment>)}
  </div>
- {incidents.length>0&&<div className="traffic-alert"><div><b>⚠️ {incidents.length} unidad{incidents.length>1?"es":""} con incidencia</b><span>No interrumpe el flujo principal; requiere revisión.</span></div><button className="secondary" onClick={()=>setStage("incidencia")}>Ver incidencias</button></div>}
+
  <div className="traffic-toolbar">
   <div className="traffic-search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar folio, operador, transporte o placas…"/>{search&&<button onClick={()=>setSearch("")}>×</button>}</div>
   <div className="traffic-filter-label">{stage==="todos"?"Todas las unidades":(stateLabels[stage]||stage)} · {filtered.length}</div>
