@@ -422,7 +422,44 @@ function Ramps({ramps,units,onUpdate,reload}){const waiting=units.filter(u=>u.es
 
 function Operation({units,ramps,onUpdate}){const active=units.filter(u=>["rampa_asignada","en_operacion"].includes(u.estado));return <><Page title="Operación" sub="Inicia carga o descarga desde la rampa asignada."/><div className="panel operation-board">{active.length===0?<Empty text="No hay unidades asignadas a una rampa."/>:active.map(u=>{const r=ramps.find(x=>x.id===u.rampa_id);const isLoad=u.operacion_tipo==="embarque";return <div className={"unit-card operation-row operation-"+u.estado} key={u.id}><div><UnitMain u={u}/><small>{r?("Rampa "+r.codigo+" · "+r.nombre):"Sin rampa"} · {isLoad?"Embarque / Carga":"Recibo / Descarga"}</small></div><div className="actions">{u.estado==="rampa_asignada"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},""+(isLoad?"Carga":"Descarga")+" iniciada en "+(r?.codigo||"la rampa")+"." )}>Iniciar {isLoad?"carga":"descarga"}</button>}{u.estado==="en_operacion"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"documentacion",operacion_fin_at:new Date().toISOString()},""+(isLoad?"Carga":"Descarga")+" terminada; pasó a documentación.")}>Terminar {isLoad?"carga":"descarga"}</button>}</div></div>})}</div></>}
 
-function CSR({units,onUpdate}){const list=units.filter(u=>["documentacion","espera_turno"].includes(u.estado));return <><Page title="CSR" sub="Citas y validación documental."/><div className="panel">{list.length===0?<Empty text="No hay unidades pendientes de CSR."/>:list.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{cita_confirmada:true,csr_confirmacion_at:new Date().toISOString(),estado:"rampa_asignada"},"CSR confirmó la unidad.")}>Confirmar y enviar a rampa</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"CSR marcó incidencia.")}>Revisión</button></div></div>)}</div></>}
+function CSR({units,onUpdate}){
+ const [day,setDay]=useState(new Date().toLocaleDateString("en-CA"));
+ const [query,setQuery]=useState("");
+ const [slot,setSlot]=useState({});
+ const [view,setView]=useState("agenda");
+ const [feedback,setFeedback]=useState("");
+ const active=units.filter(u=>!["liberada","cancelada"].includes(u.estado));
+ const pending=active.filter(u=>["documentacion","espera_turno","validando","incidencia"].includes(u.estado));
+ const dayUnits=active.filter(u=>u.cita_at&&String(u.cita_at).slice(0,10)===day);
+ const filtered=pending.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].join(" ").toLowerCase().includes(query.toLowerCase()));
+ const scheduled=dayUnits.filter(u=>[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].join(" ").toLowerCase().includes(query.toLowerCase())).sort((a,b)=>new Date(a.cita_at)-new Date(b.cita_at));
+ const saveSlot=(u)=>{const value=slot[u.id]??(u.cita_at?new Date(u.cita_at).toISOString().slice(0,16):"");if(!value){setFeedback("Selecciona fecha y hora para programar la cita.");return;}onUpdate(u.id,{cita_at:new Date(value).toISOString()},"CSR actualizó la cita de "+(u.folio||"la unidad")+".");setFeedback("Solicitud de programación enviada para "+(u.folio||"la unidad")+".");};
+ return <><Page title="CSR · Agenda y validación" sub="Programa citas, revisa documentación y confirma unidades para espera de turno."/>
+ <div className="panel" style={{padding:18,marginBottom:16}}>
+  <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+   <div><h3 style={{margin:"0 0 4px"}}>Centro de programación</h3><div style={{fontSize:13,opacity:.72}}>Consulta y organiza las citas por fecha.</div></div>
+   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className={view==="agenda"?"primary":"secondary"} onClick={()=>setView("agenda")}>Agenda del día</button><button className={view==="pendientes"?"primary":"secondary"} onClick={()=>setView("pendientes")}>Pendientes CSR</button></div>
+  </div>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))",gap:10,marginBottom:16}}>
+   <div style={{padding:14,borderRadius:12,background:"var(--surface, #f3f6fa)"}}><div style={{fontSize:12,opacity:.7}}>Citas en la fecha</div><strong style={{fontSize:26}}>{dayUnits.length}</strong></div>
+   <div style={{padding:14,borderRadius:12,background:"var(--surface, #f3f6fa)"}}><div style={{fontSize:12,opacity:.7}}>Pendientes de revisión</div><strong style={{fontSize:26}}>{pending.length}</strong></div>
+   <div style={{padding:14,borderRadius:12,background:"var(--surface, #f3f6fa)"}}><div style={{fontSize:12,opacity:.7}}>En espera de turno</div><strong style={{fontSize:26}}>{active.filter(u=>u.estado==="espera_turno").length}</strong></div>
+  </div>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12,alignItems:"end"}}>
+   <label style={{display:"grid",gap:6,fontSize:13,fontWeight:600}}>Fecha de operación<input type="date" value={day} onChange={e=>setDay(e.target.value)} style={{width:"100%",padding:11,border:"1px solid #d7dee8",borderRadius:9,background:"white",color:"#172033"}}/></label>
+   <label style={{display:"grid",gap:6,fontSize:13,fontWeight:600}}>Buscar unidad<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Folio, operador, línea o placas" style={{width:"100%",padding:11,border:"1px solid #d7dee8",borderRadius:9,background:"white",color:"#172033"}}/></label>
+  </div>
+ </div>
+ {view==="agenda"?<div className="panel" style={{padding:16}}>
+  <h3 style={{marginTop:0}}>Agenda · {new Date(day+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</h3>
+  {!scheduled.length?<Empty text="No hay unidades con cita programada para esta fecha. Busca una unidad en Pendientes CSR para asignarle horario."/>:scheduled.map(u=><div className="unit-card" key={u.id} style={{marginBottom:12}}><UnitMain u={u}/><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,alignItems:"end",marginTop:12}}><label style={{display:"grid",gap:5,fontSize:12,fontWeight:600}}>Fecha y hora<input type="datetime-local" value={slot[u.id]??new Date(u.cita_at).toISOString().slice(0,16)} onChange={e=>setSlot(p=>({...p,[u.id]:e.target.value}))} style={{padding:10,border:"1px solid #d7dee8",borderRadius:8}}/></label><button className="secondary" onClick={()=>saveSlot(u)}>Guardar horario</button></div></div>)}
+ </div>:<div className="panel" style={{padding:16}}>
+  <h3 style={{marginTop:0}}>Unidades pendientes de CSR</h3>
+  {!filtered.length?<Empty text="No hay unidades pendientes que coincidan con la búsqueda."/>:filtered.map(u=><div className="unit-card" key={u.id} style={{marginBottom:12}}><UnitMain u={u}/><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,alignItems:"end",marginTop:12}}><label style={{display:"grid",gap:5,fontSize:12,fontWeight:600}}>Programar fecha y hora<input type="datetime-local" value={slot[u.id]??(u.cita_at?new Date(u.cita_at).toISOString().slice(0,16):day+"T08:00")} onChange={e=>setSlot(p=>({...p,[u.id]:e.target.value}))} style={{padding:10,border:"1px solid #d7dee8",borderRadius:8}}/></label><button className="secondary" onClick={()=>saveSlot(u)}>Guardar cita</button><button className="primary" onClick={()=>{onUpdate(u.id,{cita_confirmada:true,csr_confirmacion_at:new Date().toISOString(),estado:"espera_turno"},"CSR confirmó la unidad. Queda en espera de turno; no se asigna rampa desde CSR.");setFeedback("Unidad confirmada y enviada a espera de turno.");}}>Confirmar · Espera de turno</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"CSR marcó incidencia para revisión documental.")}>Marcar incidencia</button></div></div>)}
+ </div>}
+ {feedback&&<div role="status" style={{marginTop:12,padding:12,borderRadius:10,background:"#edf7ef",color:"#205b32"}}>{feedback}</div>}
+ </>;
+}
 function EditUnitModal({unit,onClose,onSave,busy}){
  const [f,setF]=useState({operador_nombre:unit.operador_nombre||"",linea_transporte:unit.linea_transporte||"",tracto_numero:unit.tracto_numero||"",tracto_placas:unit.tracto_placas||"",caja_numero:unit.caja_numero||"",caja_placas:unit.caja_placas||"",contacto:unit.contacto||"",operacion_tipo:unit.operacion_tipo||"recibo",numero_sellos:unit.numero_sellos??""});
  const submit=async e=>{e.preventDefault();await onSave(f);};
