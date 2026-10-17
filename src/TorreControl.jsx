@@ -157,6 +157,21 @@ export default function TorreControl({warehouseId,onLogout}){
           <MiniKpi icon={<AlertTriangle/>} label="Retrasadas" value={stats.delayed} note="> 30 min" tone="red"/>
         </div>
 
+        <section className="tc-flow-panel">
+          <div className="tc-section-heading"><div><span className="tc-eyebrow">OPERACIÓN EN TIEMPO REAL</span><h2>Flujo operativo</h2></div><span className="tc-live-pill"><i/> En vivo</span></div>
+          <div className="tc-flow-track">
+            {[
+              {key:"en_caseta",label:"Caseta",icon:"▣",count:activeUnits.filter(u=>["en_caseta","validando"].includes(u.estado)).length,color:"amber"},
+              {key:"dispatch",label:"Dispatch",icon:"▰",count:activeUnits.filter(u=>u.estado==="espera_turno"&&u.ubicacion_tipo==="dispatch").length,color:"blue"},
+              {key:"espera_turno",label:"Espera turno",icon:"◷",count:activeUnits.filter(u=>u.estado==="espera_turno").length,color:"orange"},
+              {key:"rampa_asignada",label:"Rampa",icon:"▣",count:assignedCount,color:"violet"},
+              {key:"en_operacion",label:"Operación",icon:"⚙",count:operationCount,color:"green"},
+              {key:"documentacion",label:"Documentación",icon:"▤",count:activeUnits.filter(u=>u.estado==="documentacion").length,color:"purple"},
+              {key:"liberada",label:"Liberada",icon:"✓",count:stats.completed,color:"success"}
+            ].map(stage=><div className={"tc-flow-stage "+stage.color} key={stage.key}><div className="tc-flow-icon">{stage.icon}</div><strong>{stage.label}</strong><b>{stage.count}</b><span>{stage.key==="liberada"?"Finalizado":stage.count?"En proceso":"Sin unidades"}</span></div>)}
+          </div>
+        </section>
+
         <div className="monitor-main-grid">
           <section className="ramps-hero">
             <div className="ramps-title"><strong>Rampas MTY-II · Las Torres</strong><div><span className="legend green"/>Disponible <span className="legend blue"/>Asignada <span className="legend" style={{background:"#f59e0b"}}/>En operación <span className="legend gray"/>Bloqueada</div></div>
