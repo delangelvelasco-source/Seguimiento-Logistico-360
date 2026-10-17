@@ -331,3 +331,31 @@
 .m360-ops-mini .empty{padding:18px;color:#8293aa;font-size:12px}
 @media(max-width:900px){.m360-ops-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.m360-ops-bottom{grid-template-columns:1fr}.m360-ops-search{min-width:220px}}
 @media(max-width:600px){.m360-ops-top{align-items:stretch;flex-direction:column;padding:16px}.m360-ops-top h2{font-size:19px}.m360-ops-search{width:auto;min-width:0}.m360-ops-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.m360-ops-tabs button{min-height:54px;padding:10px;font-size:11px}.m360-ops-tabs button:last-child{grid-column:1/-1}.m360-ops-table-panel>.m360-panel-title,.m360-ops-mini>.m360-panel-title{padding:14px}.m360-ops-table th,.m360-ops-table td{padding:11px 12px}}
+
+
+/* OP360 Monitor 360 — paleta clara solicitada */
+.m360-ops{color:#1e2d47}
+.m360-ops-top{background:linear-gradient(120deg,#ffffff,#f4f8ff);border-color:#dce6f2;box-shadow:0 8px 24px rgba(31,55,90,.055)}
+.m360-eyebrow{color:#477ed0}
+.m360-ops-top h2{color:#172844}
+.m360-ops-top p,.m360-ops-mini .m360-panel-title p,.m360-ops-table-panel .m360-panel-title p{color:#7b8ba5}
+.m360-ops-search{background:#fff;border-color:#d8e2ef;color:#7184a0;box-shadow:0 1px 2px #243b5a08}
+.m360-ops-search input{color:#1e2d47}
+.m360-ops-search input::placeholder{color:#91a0b5}
+.m360-ops-tabs button{background:#fff;border-color:#dce5f0;color:#596b86;box-shadow:0 3px 9px rgba(32,54,86,.035)}
+.m360-ops-tabs button b{background:#eef3fa;color:#334a6a}
+.m360-ops-tabs button.selected{background:linear-gradient(120deg,#2d72e8,#4789f5);border-color:#3d7ef0;color:#fff}
+.m360-ops-table-panel,.m360-ops-mini{background:#fff;border-color:#dce5ef;box-shadow:0 7px 22px rgba(31,55,90,.045)}
+.m360-ops-table-panel>.m360-panel-title,.m360-ops-mini>.m360-panel-title{border-bottom-color:#e7edf5}
+.m360-ops-table-panel .m360-panel-title h2,.m360-ops-mini .m360-panel-title h2{color:#1b2b47}
+.m360-ops-table th{background:#f4f7fb;color:#71819a;border-bottom:1px solid #e4ebf4}
+.m360-ops-table td{border-top-color:#e9eef5;color:#566781}
+.m360-ops-table td>b{color:#20314d}
+.m360-ops-table td small{color:#8291a7}
+.m360-ops-table tbody tr:hover{background:#f6f9fe}
+.m360-ops-table-panel>.empty{color:#7b8ba5}
+.m360-ops-mini>.m360-panel-title> b{background:#eaf2ff;color:#326ed0}
+.m360-ops-mini article{border-bottom-color:#e9eef5}
+.m360-ops-mini article>div b{color:#20314d}
+.m360-ops-mini article>div span,.m360-ops-mini article small{color:#7b8ba5}
+.m360-ops-mini .empty{color:#8291a7}
