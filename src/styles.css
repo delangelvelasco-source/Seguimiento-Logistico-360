@@ -1733,3 +1733,166 @@ footer{color:#71809a}
 @media(prefers-reduced-motion:reduce){
   .monitor-nav{transition:none}
 }
+
+
+/* OP360 TORRE DE CONTROL · FASE 2: REDISEÑO VISUAL DEL ALMACÉN INDIVIDUAL
+   Solo presentación. No cambia consultas, estados ni procesos operativos. */
+.monitor-dashboard{
+  --tc-bg:#f3f6fb;
+  --tc-panel:#ffffff;
+  --tc-ink:#172b49;
+  --tc-muted:#71809a;
+  --tc-border:#dfe6f0;
+  background:var(--tc-bg);
+  color:var(--tc-ink);
+  min-height:100vh;
+  font-size:14px;
+}
+.monitor-header{
+  position:sticky;top:0;z-index:30;
+  min-height:76px;height:auto;padding:12px 24px;
+  background:#fff;color:var(--tc-ink);
+  border-bottom:1px solid var(--tc-border);
+  box-shadow:0 3px 14px rgba(27,48,78,.06);
+  gap:22px;
+}
+.monitor-brand strong{color:#183354;font-size:20px;letter-spacing:.02em}
+.monitor-brand span{color:#7b8aa1;font-size:10px;letter-spacing:.15em}
+.monitor-logo{background:#2463ad;border-radius:12px;box-shadow:0 4px 12px #2463ad25}
+.monitor-live{color:#52647e;font-size:12px}
+.monitor-live small{color:#8390a4}
+.monitor-time strong{color:#172b49;font-size:22px}
+.monitor-time small{color:#7d8ba0}
+.monitor-user strong{color:#243b5b}
+.monitor-user span{color:#8190a5}
+.monitor-user{border-left-color:#e2e8f0}
+.monitor-body{grid-template-columns:218px minmax(0,1fr);min-height:calc(100vh - 76px)}
+.monitor-sidebar{background:#fff;border-right:1px solid #e0e7f0}
+.monitor-sidebar nav{padding:18px 12px}
+.monitor-nav{color:#536681;border-radius:11px;padding:13px 14px;margin:4px 0;font-weight:650}
+.monitor-nav.active{background:#edf4ff;border:1px solid #dbe8fb;color:#1e5ba4;box-shadow:none}
+.monitor-nav:hover:not(.active){background:#f5f8fc;color:#1d3555}
+.monitor-sidebar-footer{background:#fff;border-top:1px solid #e6ebf2}
+.monitor-sidebar-footer span,.monitor-sidebar-footer small{color:#8390a4}
+.monitor-sidebar-footer strong{color:#203754}
+.monitor-content{padding:24px 26px 32px;max-width:none;width:100%;min-width:0}
+.monitor-kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.mini-kpi{
+  min-height:118px;padding:18px;gap:13px;
+  background:#fff;border:1px solid #e0e7f0;border-radius:15px;
+  box-shadow:0 5px 18px rgba(29,53,84,.045);
+}
+.mini-kpi>div:last-child span{color:#6f7e94;font-size:12px;font-weight:650}
+.mini-kpi>div:last-child strong{color:#172b49;font-size:30px;line-height:1.15}
+.mini-kpi>div:last-child small{color:#8794a7;font-size:11px}
+.mini-icon{width:44px;height:44px;border-radius:12px;background:#edf4ff;color:#2868b4}
+.mini-kpi.green .mini-icon{background:#e8f8f0;color:#17845b}
+.mini-kpi.red .mini-icon{background:#fff0ef;color:#c34242}
+.monitor-main-grid{grid-template-columns:minmax(0,1.65fr) minmax(300px,1fr);gap:16px;margin-bottom:18px}
+.ramps-hero,.warehouse-status,.units-table-card,.side-list{
+  background:#fff;border:1px solid #e0e7f0;border-radius:16px;
+  box-shadow:0 5px 18px rgba(29,53,84,.04);
+}
+.ramps-hero{padding:20px}
+.ramps-title{gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.ramps-title>strong,.status-head>strong,.table-title>strong,.side-list-head>strong{color:#203754;font-size:16px;font-weight:800}
+.ramps-title>div{color:#667791;font-size:11px;gap:9px;display:flex;align-items:center;flex-wrap:wrap}
+.warehouse-visual{border-radius:12px;overflow:hidden;background:#edf2f8;border:1px solid #dfe7f1}
+.warehouse-sky{min-height:52px;background:linear-gradient(110deg,#e5edf7,#f4f7fb);color:#5d718d;font-size:11px;font-weight:800;letter-spacing:.12em}
+.warehouse-building{gap:8px;padding:18px 12px;background:#e8eef6}
+.dock{border-radius:8px;min-height:82px;border:1px solid #d0d9e6;background:#fff;box-shadow:0 2px 6px #1b35520a}
+.dock b{border-radius:5px 0 5px 0;background:#dce8f8;color:#245a9b}
+.dock-door{border-color:#b6c5d8;background:#f5f8fc}
+.dock.free .dock-truck{color:#1b9a6a}
+.dock.busy{background:#eef5ff;border-color:#83a9df}
+.dock.busy b{background:#d9e8ff;color:#205da7}
+.dock.blocked{background:#f3f4f6;border-color:#d6dce5}
+.warehouse-status{padding:20px}
+.status-head{padding-bottom:14px;border-bottom:1px solid #edf0f5}
+.status-head>span{color:#71809a;font-size:12px}
+.status-head>span b{color:#203754}
+.capacity-summary{padding:20px 0;border-bottom:1px solid #edf0f5;gap:18px}
+.capacity-ring>div{box-shadow:0 0 0 5px #f1f5fa}
+.capacity-ring strong{color:#203754}
+.capacity-ring span{color:#7c8ba0}
+.capacity-side em{background:#e7f8ef;color:#16865a;border:1px solid #c7eedb}
+.capacity-side span{color:#7c8ba0}
+.capacity-side b{color:#203754}
+.status-list{padding:14px 0;border-bottom:1px solid #edf0f5}
+.status-list>div span{color:#6d7d93}
+.status-list>div b{color:#203754}
+.avg-time{padding-top:16px}
+.avg-time>strong{color:#203754}
+.avg-time>div{gap:8px}
+.avg-time>div span{background:#f6f8fc;border:1px solid #e8edf4;border-radius:9px;padding:10px;color:#71809a}
+.avg-time>div b{color:#203754}
+.monitor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:20px 0 14px}
+.monitor-tabs{display:flex;gap:7px;flex-wrap:wrap}
+.monitor-tabs button{border:1px solid #dfe6f0;background:#fff;color:#64758d;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700}
+.monitor-tabs button.active{background:#eaf2ff;border-color:#cbdcf7;color:#1f5da7}
+.monitor-search input{background:#fff;color:#203754;border:1px solid #dce4ee;border-radius:10px;min-height:40px}
+.monitor-search input::placeholder{color:#9aa6b7}
+.monitor-lower-grid{grid-template-columns:minmax(0,1.8fr) minmax(280px,.8fr);gap:16px}
+.units-table-card{overflow:hidden}
+.table-title{padding:17px 18px;border-bottom:1px solid #e8edf4}
+.table-title button{background:#f2f6fc;color:#285e9d;border:1px solid #dce7f5;border-radius:8px;padding:8px 10px}
+.monitor-table-wrap{overflow:auto}
+.monitor-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff}
+.monitor-table thead th{background:#f6f8fc;color:#6c7b91;font-size:10px;letter-spacing:.055em;text-transform:uppercase;padding:13px 12px;border-bottom:1px solid #e5ebf3;white-space:nowrap}
+.monitor-table tbody td{color:#344964;padding:13px 12px;border-bottom:1px solid #edf1f6;font-size:12px;white-space:nowrap}
+.monitor-table tbody tr:hover{background:#f8fbff}
+.monitor-table tbody tr:last-child td{border-bottom:0}
+.monitor-table td strong{color:#203754}
+.type-pill,.ramp-pill{background:#edf4ff;color:#285f9e;border:1px solid #dce8fa;border-radius:6px;padding:4px 7px}
+.status-pill.green{background:#e7f8ef;color:#16865a}
+.status-pill.yellow,.status-pill.orange{background:#fff5df;color:#a56b0a}
+.status-pill.red{background:#fff0ef;color:#bf3f3f}
+.monitor-empty{padding:30px;color:#8390a4;text-align:center}
+.monitor-error{background:#fff0ef;color:#ad3535;border:1px solid #f5cecb;border-radius:10px;padding:12px}
+.monitor-arrival-alert,.monitor-appointment-alert{border-radius:12px}
+.side-list{padding:17px}
+.side-list-head{padding-bottom:12px;border-bottom:1px solid #edf1f6}
+.side-list-head>span{color:#2865a8;font-weight:700}
+.side-row{padding:12px 0;border-bottom:1px solid #edf1f6;gap:12px}
+.side-row:last-child{border-bottom:0}
+.side-row>b{background:#f0f5fc;color:#365d8e;border-radius:7px;padding:6px 7px;height:max-content}
+.side-row>span{color:#344964;font-size:12px;font-weight:700}
+.side-row small{color:#8491a4;font-weight:500}
+.monitor-logout{border:1px solid #dce5ef;border-radius:9px;background:#fff;color:#526984;padding:8px 10px}
+@media(min-width:1500px){
+  .monitor-content{padding:28px 32px 36px}
+  .monitor-kpis{gap:18px}
+  .mini-kpi{min-height:130px;padding:22px}
+  .mini-kpi>div:last-child strong{font-size:34px}
+  .ramps-hero,.warehouse-status{padding:24px}
+  .monitor-table thead th{font-size:11px;padding:15px}
+  .monitor-table tbody td{font-size:13px;padding:15px}
+}
+@media(max-width:1200px){
+  .monitor-body{grid-template-columns:190px minmax(0,1fr)}
+  .monitor-content{padding:18px}
+  .monitor-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .monitor-main-grid{grid-template-columns:minmax(0,1fr)}
+  .monitor-lower-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:760px){
+  .monitor-header{padding:10px 12px;gap:10px;flex-wrap:wrap}
+  .monitor-header-right{gap:10px;flex-wrap:wrap}
+  .monitor-body{grid-template-columns:1fr}
+  .monitor-sidebar{border-right:0;border-bottom:1px solid #e0e7f0}
+  .monitor-sidebar nav{display:flex;gap:6px;overflow-x:auto;padding:8px}
+  .monitor-nav{white-space:nowrap;flex:0 0 auto;padding:10px}
+  .monitor-sidebar-footer{display:none}
+  .monitor-content{padding:12px}
+  .monitor-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .mini-kpi{padding:12px;min-height:96px;gap:9px}
+  .mini-icon{width:36px;height:36px}
+  .mini-kpi>div:last-child strong{font-size:25px}
+  .monitor-toolbar{align-items:stretch}
+  .monitor-search{width:100%}
+  .monitor-search input{width:100%}
+  .warehouse-building{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dock{min-height:70px}
+  .capacity-summary{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){.monitor-dashboard *{transition:none!important;animation:none!important}}
