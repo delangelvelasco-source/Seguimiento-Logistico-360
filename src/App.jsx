@@ -117,7 +117,7 @@ export default function App(){
     if(!warehouseId) return;
     const {data,error:e}=await supabase.from("unidades")
       .select("id,folio,operador_nombre,linea_transporte,tracto_numero,tracto_placas,caja_numero,caja_placas,contacto,cita_at,estado,rampa_id,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
-      .eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(100);
+      .eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(500);
     if(!e) setUnits(data||[]);
   }
 
@@ -432,11 +432,16 @@ function EditUnitModal({unit,onClose,onSave,busy}){
 function Guardia({units,profile,onUpdate}){const active=units.filter(u=>u.estado==="documentacion");return <><Page title="Guardia" sub="Control de salida y liberación de unidades."/><div className="panel"><PanelHead title={"Unidades para salida: "+active.length}/>{active.length===0?<Empty text="No hay unidades pendientes de salida."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}>Dar salida</button></div></div></div>)}</div></>}
 
 function Monitor({units,counts,warehouse}){
+ const [selectedDay,setSelectedDay]=useState(new Date().toLocaleDateString("en-CA"));
+ const [showLagging,setShowLagging]=useState(false);
  const active=units.filter(u=>!["liberada","cancelada","incidencia"].includes(u.estado));
  const operational=units.filter(u=>["rampa_asignada","en_operacion","documentacion"].includes(u.estado)).length;
  const patio=units.filter(u=>["en_caseta","validando","espera_turno","rampa_asignada"].includes(u.estado)).length;
  const today=units.filter(u=>{if(!u.created_at)return false;const d=new Date(u.created_at);const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate()});
  const completed=today.filter(u=>u.estado==="liberada").length;
+ const dayUnits=units.filter(u=>u.created_at&&new Date(u.created_at).toLocaleDateString("en-CA")===selectedDay);
+ const lagging=active.filter(u=>u.created_at&&(Date.now()-new Date(u.created_at).getTime())>=60*60*1000);
+ const selectedDateLabel=new Date(selectedDay+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
  const stageKeys=["en_caseta","validando","espera_turno","rampa_asignada","en_operacion","documentacion","liberada"];
  const stageNames={"en_caseta":"Caseta","validando":"Dispatch","espera_turno":"Espera turno","rampa_asignada":"Rampa","en_operacion":"Operación","documentacion":"Documentación","liberada":"Liberada"};
  const stageIcons={"en_caseta":"▣","validando":"▰","espera_turno":"◷","rampa_asignada":"▰","en_operacion":"⚙","documentacion":"▤","liberada":"✓"};
@@ -447,6 +452,7 @@ function Monitor({units,counts,warehouse}){
  <section className="m360-board">
   <header className="m360-header"><div className="m360-brand"><div className="m360-logo">OP</div><div><b>OP360</b><span>Monitor 360 · {warehouse?.nombre||"Almacén"}</span></div></div><div className="m360-online"><i/> En línea<small>Actualización automática</small></div></header>
   <div className="m360-site"><div className="m360-site-icon">▦</div><div className="m360-site-name"><small>ALMACÉN</small><strong>{warehouse?.codigo||"OP360"} · {warehouse?.nombre||"Operación general"}</strong><span>⌖ Monterrey, Nuevo León</span></div><div className="m360-date"><small>{new Date().toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</small><b>{new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</b><span>Tiempo real</span></div><div className="m360-weather"><span>☀</span><b>Monitor activo</b><small>Estado del almacén</small></div></div>
+  <section className="m360-panel m360-history"><div className="m360-panel-title"><div><h2>Calendario de operación</h2><p>Consulta las unidades registradas por fecha y revisa las que llevan más de 60 minutos sin finalizar.</p></div><span className="m360-count">{dayUnits.length} unidades</span></div><div className="m360-history-controls"><label>Seleccionar día<input type="date" value={selectedDay} onChange={e=>setSelectedDay(e.target.value)} /></label><button type="button" className={showLagging?"m360-lagging-btn selected":"m360-lagging-btn"} onClick={()=>setShowLagging(v=>!v)}>⏱ Unidades rezagadas ({lagging.length})</button></div><div className="m360-history-summary"><b>{selectedDateLabel}</b><span>{dayUnits.filter(u=>u.estado==="liberada").length} liberadas · {dayUnits.filter(u=>!["liberada","cancelada"].includes(u.estado)).length} pendientes / en proceso</span></div>{showLagging?<div className="m360-history-list">{lagging.length?lagging.map(u=><article key={u.id}><div><b>{u.folio||"Sin folio"}</b><span className={"m360-state "+u.estado}>{stageNames[u.estado]||stateLabels[u.estado]||u.estado}</span></div><p>{u.operador_nombre||"Sin operador"} · {u.linea_transporte||"Sin transporte"}</p><small>{u.tracto_placas||"Sin placas"} · Ingresó {new Date(u.created_at).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}</small><strong>Tiempo transcurrido: {timeLabel(u)}</strong></article>):<Empty text="No hay unidades activas con más de 60 minutos transcurridos."/>}</div>:<div className="m360-history-list">{dayUnits.length?dayUnits.map(u=><article key={u.id}><div><b>{u.folio||"Sin folio"}</b><span className={"m360-state "+u.estado}>{stageNames[u.estado]||stateLabels[u.estado]||u.estado}</span></div><p>{u.operador_nombre||"Sin operador"} · {u.linea_transporte||"Sin transporte"}</p><small>{u.tracto_placas||"Sin placas"} · {new Date(u.created_at).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</small></article>):<Empty text="No hay unidades registradas en esta fecha dentro del historial cargado."/>}</div></section>
   <div className="m360-kpis">
    <div className="m360-kpi primary"><span className="m360-kpi-icon">▣</span><small>Unidades del día</small><strong>{today.length}</strong><span>{active.length} activas · {completed} liberadas</span></div>
    <div className="m360-kpi green"><span className="m360-kpi-icon">▰</span><small>En proceso</small><strong>{active.length}</strong></div>
