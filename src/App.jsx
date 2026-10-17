@@ -307,7 +307,7 @@ export default function App(){
         {module==="dispatch"&&<Dispatch warehouseId={currentWarehouse?.id} onEdit={setEditUnit}/>}
         {module==="operacion"&&<Operation units={units} ramps={ramps} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="csr"&&<CSR units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
-        {module==="monitor"&&<Monitor units={units} counts={counts} warehouse={currentWarehouse}/>}
+        {module==="monitor"&&<Monitor units={units} counts={counts} warehouse={currentWarehouse} ramps={ramps}/>}
         {module==="guardia"&&<Guardia units={units} profile={profile} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="admin"&&<Admin users={users} warehouses={warehouses} form={newUser} setForm={setNewUser} submit={createUser} busy={busy}/>}
       </section>
@@ -431,7 +431,7 @@ function EditUnitModal({unit,onClose,onSave,busy}){
 
 function Guardia({units,profile,onUpdate}){const active=units.filter(u=>u.estado==="documentacion");return <><Page title="Guardia" sub="Control de salida y liberación de unidades."/><div className="panel"><PanelHead title={"Unidades para salida: "+active.length}/>{active.length===0?<Empty text="No hay unidades pendientes de salida."/>:active.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}>Dar salida</button></div></div></div>)}</div></>}
 
-function Monitor({units,counts,warehouse}){
+function Monitor({units,counts,warehouse,ramps=[]}){
  const [selectedDay,setSelectedDay]=useState(new Date().toLocaleDateString("en-CA"));
  const [showLagging,setShowLagging]=useState(false);
  const active=units.filter(u=>!["liberada","cancelada","incidencia"].includes(u.estado));
@@ -448,6 +448,9 @@ function Monitor({units,counts,warehouse}){
  const stageColors={"en_caseta":["#fff2d6","#c78b18"],"validando":["#e7f1ff","#2775d2"],"espera_turno":["#fff0e7","#e4773b"],"rampa_asignada":["#eee9ff","#6747d8"],"en_operacion":["#e5f7ed","#218956"],"documentacion":["#f0e9ff","#7948ce"],"liberada":["#e5f7ed","#22945a"]};
  const timeLabel=u=>{if(!u.created_at)return "—";const mins=Math.max(0,Math.floor((Date.now()-new Date(u.created_at).getTime())/60000));return mins<60?mins+" min":Math.floor(mins/60)+" h "+(mins%60)+" min"};
  const rampUnits=active.filter(u=>u.rampa_codigo||u.rampa_id||u.rampa);
+ const rampForUnit=r=>active.find(u=>String(u.rampa_id||"")===String(r.id)||String(u.rampa_codigo||u.rampa||"")===String(r.codigo||r.nombre||""));
+ const rampLabel=r=>r.codigo||r.nombre||("Rampa "+String(r.id||"").slice(0,6));
+ const rampState=r=>{const u=rampForUnit(r);if(u)return {label:"En uso",kind:"occupied",unit:u};const st=String(r.estado||"").toLowerCase();if(!r.activa||st.includes("fuera")||st.includes("servicio"))return {label:"Fuera de servicio",kind:"offline"};if(st.includes("espera")||st.includes("asign"))return {label:"En espera",kind:"waiting"};if(st.includes("carg")||st.includes("descarg")||st.includes("oper"))return {label:"En operación",kind:"working"};return {label:"Disponible",kind:"free"};};
  return <><Page title="Monitor 360" sub={warehouse?warehouse.nombre:"Vista general"}/>
  <section className="m360-board">
   <header className="m360-header"><div className="m360-brand"><div className="m360-logo">OP</div><div><b>OP360</b><span>Monitor 360 · {warehouse?.nombre||"Almacén"}</span></div></div><div className="m360-online"><i/> En línea<small>Actualización automática</small></div></header>
@@ -463,9 +466,9 @@ function Monitor({units,counts,warehouse}){
   <section className="m360-panel m360-flow"><div className="m360-panel-title"><div><h2>Flujo operativo</h2><p>Seguimiento visual por etapa en tiempo real.</p></div><span className="m360-live-tag"><i/> Actualización automática</span></div>
    <div className="m360-flow-track">{stageKeys.map(k=>{const tone=stageColors[k];const value=k==="liberada"?completed:units.filter(u=>u.estado===k).length;return <div className={"m360-stage "+k} key={k}><div className="m360-stage-icon" style={{background:tone[0],color:tone[1]}}>{stageIcons[k]}</div><strong>{stageNames[k]}</strong><b>{value}</b><span>{k==="liberada"?"Finalizado":value?"En proceso":"En espera"}</span></div>})}</div>
   </section>
-  <section className="m360-panel m360-ramps"><div className="m360-panel-title"><div><h2>Rampas</h2><p>Estado de rampas asociado a las unidades activas.</p></div><span className="m360-count">{rampUnits.length} asignaciones</span></div>
-   <div className="m360-ramp-summary"><span><i className="free"/> Asignadas a unidades activas</span><span><i className="idle"/> Sin asignación registrada en unidad</span></div>
-   {rampUnits.length?<div className="m360-ramp-grid">{rampUnits.map((u,i)=><div className="m360-ramp-card occupied" key={u.id||i}><span className="m360-ramp-symbol">▣</span><div><b>{u.rampa_codigo||u.rampa||("Rampa "+u.rampa_id)}</b><small>{u.folio||"Unidad activa"}</small><small>{u.tracto_placas||u.caja_placas||"Placas pendientes"}</small></div><strong>ASIGNADA</strong></div>)}</div>:<div className="m360-empty-inline">No hay asignaciones de rampa registradas en las unidades activas.</div>}
+  <section className="m360-panel m360-ramps"><div className="m360-panel-title"><div><h2>Rampas</h2><p>Estado de las posiciones configuradas en este almacén.</p></div><span className="m360-count">{ramps.length} posiciones</span></div>
+   <div className="m360-ramp-summary"><span><i className="free"/> Disponible</span><span><i className="used"/> En uso</span><span><i className="waiting"/> En espera</span><span><i className="offline"/> Fuera de servicio</span></div>
+   {ramps.length?<div className="m360-ramp-grid">{ramps.map((r,i)=>{const state=rampState(r);return <div className={"m360-ramp-card "+state.kind} key={r.id||i}><span className="m360-ramp-symbol">▣</span><div><b>{rampLabel(r)}</b><small>{state.unit?.folio||"Sin unidad asignada"}</small><small>{state.unit?.tracto_placas||state.unit?.caja_placas||r.motivo||"Posición registrada"}</small></div><strong>{state.label.toUpperCase()}</strong></div>})}</div>:<div className="m360-empty-inline">No hay posiciones de rampa configuradas para este almacén.</div>}
   </section>
   <section className="m360-panel m360-units"><div className="m360-panel-title"><div><h2>Unidades activas · {active.length}</h2><p>Folio, operador, unidad, etapa y tiempo transcurrido.</p></div></div>
    {active.length?<div className="m360-table-wrap"><table className="m360-table"><thead><tr><th>Folio</th><th>Operador / transporte</th><th>Unidad</th><th>Etapa</th><th>Tiempo</th></tr></thead><tbody>{active.slice(0,30).map(u=><tr key={u.id}><td><b>{u.folio||"—"}</b></td><td>{u.operador_nombre||"Sin operador"}<small>{u.linea_transporte||"Sin transporte"}</small></td><td>{u.tracto_placas||"—"}<small>{u.caja_placas||""}</small></td><td><span className={"m360-state "+u.estado}>{stageNames[u.estado]||stateLabels[u.estado]||u.estado}</span></td><td>{timeLabel(u)}</td></tr>)}</tbody></table><div className="m360-mobile-units">{active.slice(0,30).map(u=><article key={u.id}><div><b>{u.folio||"—"}</b><span className={"m360-state "+u.estado}>{stageNames[u.estado]||stateLabels[u.estado]||u.estado}</span></div><p>{u.operador_nombre||"Sin operador"} · {u.linea_transporte||"Sin transporte"}</p><small>{u.tracto_placas||"—"} · {u.caja_placas||"—"}</small><footer><span>Tiempo en sistema</span><b>{timeLabel(u)}</b></footer></article>)}</div></div>:<Empty text="No hay unidades activas en este momento."/>}
