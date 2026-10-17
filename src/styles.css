@@ -1560,3 +1560,176 @@ footer{color:#71809a}
 .traffic-list>div{display:grid;grid-template-columns:1fr 2fr auto;gap:12px;align-items:center;padding:13px 0;border-top:1px solid #e5e9ef}
 .traffic-list b{color:#142744}.traffic-list span{color:#687893;font-size:13px}.traffic-list em{font-style:normal;font-size:11px;font-weight:900;color:#a16d08;background:#fffaf0;border:1px solid #d7b76d;padding:5px 8px;border-radius:12px}
 @media(max-width:800px){.warehouse-switch{margin-left:8px;margin-right:6px;max-width:190px}.traffic-grid{grid-template-columns:1fr 1fr}.traffic-list>div{grid-template-columns:1fr;gap:5px}}
+
+
+/* OP360 MONITOR · FASE 1: LEGIBILIDAD, JERARQUÍA VISUAL Y ADAPTACIÓN A TV */
+.monitor-dashboard{
+  min-height:100vh;
+  background:#07111f;
+  color:#eaf1fb;
+  font-family:Inter,Arial,sans-serif;
+  font-size:14px;
+  font-variant-numeric:tabular-nums;
+}
+.monitor-header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  min-height:78px;
+  height:auto;
+  padding:12px 22px;
+  gap:20px;
+  background:rgba(8,20,35,.97);
+  border-bottom:1px solid #263a52;
+  box-shadow:0 5px 18px rgba(0,0,0,.16);
+}
+.monitor-brand{min-width:220px;gap:12px}
+.monitor-logo{
+  width:48px;height:48px;border-radius:12px;
+  background:linear-gradient(145deg,#3b91ff,#1556c9);
+  box-shadow:0 5px 16px rgba(38,117,239,.28);
+}
+.monitor-brand strong{font-size:20px;letter-spacing:.04em}
+.monitor-brand span{font-size:10px;letter-spacing:.18em;color:#8ca5c3;margin-top:3px}
+.monitor-live{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12px;color:#c2d1e3}
+.monitor-live i{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#2bd68a;box-shadow:0 0 0 4px rgba(43,214,138,.12)}
+.monitor-live small{color:#7f94ad;font-size:11px}
+.monitor-header-right{gap:17px}
+.monitor-time{font-size:23px;line-height:1.1;color:#f3f7ff}
+.monitor-time small{font-size:11px;color:#90a4bd;margin-top:6px}
+.monitor-user{border-left:1px solid #293d55;padding-left:16px}
+.monitor-avatar{width:36px;height:36px;border-radius:50%;background:#193b62;color:#cfe6ff;font-weight:800}
+.monitor-user strong{font-size:12px;color:#e8f1fc}
+.monitor-user span{font-size:11px;color:#8fa4bd;margin-top:3px}
+.monitor-body{grid-template-columns:205px minmax(0,1fr);min-height:calc(100vh - 78px)}
+.monitor-sidebar{background:#0a1727;border-right:1px solid #22364e}
+.monitor-sidebar nav{padding:14px 10px}
+.monitor-nav{padding:13px 14px;margin:3px 0;border:1px solid transparent;border-radius:10px;color:#9eb0c7;font-size:13px;font-weight:650;transition:background .15s ease,color .15s ease}
+.monitor-nav svg{width:18px;height:18px;flex:0 0 18px}
+.monitor-nav.active{background:linear-gradient(110deg,#1d5fc3,#1b4c9c);border-color:#3477d8;color:#fff;box-shadow:0 5px 15px rgba(14,75,164,.18)}
+.monitor-nav:hover:not(.active){background:#12263d;color:#edf5ff}
+.monitor-sidebar-footer{margin-top:auto;padding:18px 16px;border-top:1px solid #22364e;background:#091522}
+.monitor-sidebar-footer span,.monitor-sidebar-footer small{color:#8096b0}
+.monitor-sidebar-footer strong{font-size:15px;color:#eaf2fc;margin:5px 0}
+.monitor-sidebar-footer button{margin-top:13px;color:#a8bfd8}
+.monitor-content{padding:20px 22px 28px;min-width:0;max-width:2200px;width:100%;margin:0 auto}
+.monitor-kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.mini-kpi{
+  min-height:112px;padding:17px;
+  gap:13px;border:1px solid #243b55;border-radius:14px;
+  background:linear-gradient(145deg,#11243a,#0c1a2b);
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+}
+.mini-icon{width:46px;height:46px;border-radius:12px;background:#15345a;color:#70b8ff}
+.mini-icon svg{width:23px;height:23px}
+.mini-kpi.green .mini-icon{background:#123d34;color:#48e0a1}
+.mini-kpi.red .mini-icon{background:#482632;color:#ff8b98}
+.mini-kpi label,.mini-kpi span{color:#a4b7ce;font-size:12px;font-weight:650;line-height:1.35}
+.mini-kpi strong{font-size:31px;line-height:1;margin:8px 0 5px;color:#f4f8ff}
+.mini-kpi small{font-size:11px;font-weight:650}
+.monitor-main-grid{grid-template-columns:minmax(0,1.8fr) minmax(300px,1fr);gap:16px;align-items:stretch}
+.ramps-hero,.warehouse-status,.units-table-card,.side-list{border:1px solid #263b54;border-radius:14px;background:#0c1b2d;box-shadow:0 8px 22px rgba(0,0,0,.1)}
+.ramps-title{min-height:60px;height:auto;padding:14px 17px;gap:12px;flex-wrap:wrap;border-bottom:1px solid #263b54}
+.ramps-title>strong{font-size:17px;letter-spacing:-.01em;color:#edf5ff}
+.ramps-title>div{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:11px;color:#b1c2d7}
+.legend{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:-7px}
+.warehouse-visual{height:clamp(240px,27vw,360px);background:linear-gradient(#7299b7 0%,#c8d8df 48%,#a6a8a7 49%,#505b66 100%)}
+.warehouse-sky{font-size:11px;letter-spacing:.18em}
+.warehouse-building{padding-left:clamp(12px,2vw,30px);padding-right:clamp(12px,2vw,30px);gap:clamp(4px,.65vw,10px)}
+.dock{border-radius:7px 7px 3px 3px}
+.dock b{font-size:12px;min-width:28px;min-height:24px;border-radius:5px}
+.dock-door{border-radius:4px 4px 1px 1px}
+.warehouse-status{padding-bottom:4px}
+.status-head{min-height:60px;padding:14px 17px;border-bottom:1px solid #263b54}
+.status-head strong{font-size:16px;color:#edf5ff}
+.status-head span{font-size:11px;color:#9eb2ca}
+.capacity-summary{padding:20px 18px;gap:18px}
+.capacity-ring>div{width:clamp(104px,9vw,132px);height:clamp(104px,9vw,132px)}
+.capacity-ring strong{font-size:27px}
+.capacity-ring span{font-size:10px}
+.capacity-side em{font-size:11px;padding:6px 9px;border-radius:7px}
+.capacity-side span{font-size:12px;color:#a4b8cf}
+.capacity-side b{font-size:17px;color:#65e4aa}
+.status-list{margin:0 18px;padding:12px 0;border-top:1px solid #263b54;border-bottom:1px solid #263b54}
+.status-list>div{padding:7px 0}
+.status-list span{font-size:12px;color:#9fb3ca}
+.status-list b{font-size:14px;color:#edf5ff}
+.avg-time{padding:16px 18px}
+.avg-time>strong{font-size:13px;color:#dce8f7}
+.avg-time>div{gap:9px;margin-top:10px}
+.avg-time span{padding:10px;background:#10243a;border:1px solid #203953;border-radius:9px;font-size:11px;color:#a9bdd3}
+.avg-time b{font-size:12px;color:#f0f6ff}
+.monitor-toolbar{align-items:center;gap:12px;margin:18px 0 12px}
+.monitor-tabs{gap:7px;scrollbar-width:thin}
+.monitor-tabs button{padding:12px 15px;border-radius:10px;border:1px solid #2a415c;background:#102137;color:#aebfd4;font-size:12px;font-weight:700}
+.monitor-tabs button.active{background:#236ed8;border-color:#438df3;color:#fff;box-shadow:0 4px 12px rgba(35,110,216,.2)}
+.monitor-search{min-width:190px;border:1px solid #2a415c;background:#0d1c2d;border-radius:10px;padding:0 11px}
+.monitor-search input{color:#eff6ff}
+.monitor-search input::placeholder{color:#8197b1}
+.monitor-table,.monitor-dashboard table{border-collapse:separate;border-spacing:0}
+.monitor-dashboard th{background:#12263c;color:#a9bfd8;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.monitor-dashboard td{color:#d8e4f2;font-size:12px}
+.monitor-dashboard tr{border-color:#243951}
+.monitor-dashboard .empty{padding:28px 16px;color:#8fa5bf}
+.monitor-dashboard button:focus-visible,.monitor-dashboard input:focus-visible,.monitor-dashboard select:focus-visible{outline:2px solid #69b4ff;outline-offset:2px}
+@media(min-width:1600px){
+  .monitor-content{padding:24px 28px 34px}
+  .monitor-kpis{gap:16px;margin-bottom:18px}
+  .mini-kpi{min-height:124px;padding:20px}
+  .mini-kpi strong{font-size:36px}
+  .monitor-main-grid{gap:18px}
+  .ramps-title>strong{font-size:19px}
+}
+@media(max-width:1250px){
+  .monitor-header{gap:14px;padding-left:16px;padding-right:16px}
+  .monitor-brand{min-width:160px}
+  .monitor-header-right{gap:12px}
+  .monitor-live small{display:none}
+  .monitor-body{grid-template-columns:175px minmax(0,1fr)}
+  .monitor-content{padding:16px}
+  .monitor-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .monitor-main-grid{grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)}
+}
+@media(max-width:900px){
+  .monitor-header{position:relative;flex-wrap:wrap}
+  .monitor-brand{min-width:0;flex:1}
+  .monitor-header-right{margin-left:auto}
+  .monitor-body{grid-template-columns:1fr}
+  .monitor-sidebar{display:none}
+  .monitor-content{padding:14px}
+  .monitor-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .monitor-main-grid{grid-template-columns:1fr}
+  .warehouse-visual{height:280px}
+  .monitor-toolbar{align-items:stretch;flex-direction:column}
+  .monitor-tabs{max-width:100%}
+  .monitor-search{width:100%}
+}
+@media(max-width:560px){
+  .monitor-header{padding:12px;gap:12px}
+  .monitor-logo{width:40px;height:40px;font-size:19px}
+  .monitor-brand strong{font-size:17px}
+  .monitor-brand span{font-size:9px}
+  .monitor-live{width:100%;order:3;font-size:11px}
+  .monitor-header-right{gap:10px}
+  .monitor-time{font-size:17px}
+  .monitor-time small{font-size:9px}
+  .monitor-user{display:none}
+  .monitor-logout span{display:none}
+  .monitor-content{padding:10px}
+  .monitor-kpis{gap:8px}
+  .mini-kpi{min-height:96px;padding:11px;gap:9px;align-items:flex-start}
+  .mini-icon{width:35px;height:35px;border-radius:9px}
+  .mini-icon svg{width:18px;height:18px}
+  .mini-kpi strong{font-size:25px}
+  .mini-kpi label,.mini-kpi span{font-size:10px}
+  .mini-kpi small{font-size:9px}
+  .ramps-title{align-items:flex-start;flex-direction:column}
+  .warehouse-visual{height:225px}
+  .capacity-summary{padding:16px 12px;gap:12px}
+  .status-list{margin:0 12px}
+  .avg-time{padding:13px 12px}
+  .monitor-tabs button{padding:10px 12px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .monitor-nav{transition:none}
+}
