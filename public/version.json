@@ -1,6 +1,6 @@
 {
-  "build": "20261017-op360-monitor-flow-01",
-  "version": "2026.10.17-op360-monitor-flow",
-  "commit": "be4e905458c7d22249477d38beb3417036a2dd02",
-  "updated": "2026-10-17T12:19:16.197Z"
+  "build": "20261017-op360-monitor-flow-02",
+  "version": "2026.10.17-monitor-active-component",
+  "commit": "85e80e1631d644f0fe008a89edb84e2b7ad9b229",
+  "updated": "2026-10-17T12:30:00Z"
 }
