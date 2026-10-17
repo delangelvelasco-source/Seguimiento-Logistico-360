@@ -251,3 +251,17 @@
 .m360-history-list article small{display:block;font-size:10px;color:#8794a8;overflow-wrap:anywhere}
 .m360-history-list article>strong{display:block;font-size:10px;color:#a94b38;margin-top:7px}
 @media(max-width:760px){.m360-history-controls{display:grid;grid-template-columns:1fr;width:100%}.m360-history-controls label{min-width:0;width:100%}.m360-history-controls input[type=date]{width:100%;box-sizing:border-box}.m360-lagging-btn{width:100%;text-align:center}.m360-history-summary{align-items:flex-start;flex-direction:column;gap:5px}.m360-history-list{grid-template-columns:1fr}.m360-history-list article{padding:10px}}
+
+
+/* Corrección: rampas reales configuradas, no UUID de rampa */
+.m360-ramp-card.free{background:#f1faf5;border-color:#d5efdf;border-top-color:#4e9d6b}
+.m360-ramp-card.free .m360-ramp-symbol,.m360-ramp-card.free>strong{color:#278451}
+.m360-ramp-card.occupied{background:#eff6ff;border-color:#d3e4fb;border-top-color:#397bd0}
+.m360-ramp-card.occupied .m360-ramp-symbol,.m360-ramp-card.occupied>strong{color:#286fc1}
+.m360-ramp-card.waiting{background:#fff8e9;border-color:#f4e4bd;border-top-color:#d8a12b}
+.m360-ramp-card.waiting .m360-ramp-symbol,.m360-ramp-card.waiting>strong{color:#a87912}
+.m360-ramp-card.working{background:#fff1e9;border-color:#f5d8c9;border-top-color:#d97442}
+.m360-ramp-card.working .m360-ramp-symbol,.m360-ramp-card.working>strong{color:#b95d32}
+.m360-ramp-card.offline{background:#f0f2f5;border-color:#dfe4eb;border-top-color:#8d97a6}
+.m360-ramp-card.offline .m360-ramp-symbol,.m360-ramp-card.offline>strong{color:#6f7b8c}
+.m360-ramp-summary i.used{background:#397bd0}.m360-ramp-summary i.waiting{background:#d8a12b}.m360-ramp-summary i.offline{background:#8d97a6}
