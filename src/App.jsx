@@ -56,7 +56,7 @@ export default function App(){
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
   const [module,setModule]=useState("trafico");
-  useEffect(()=>{ if(profile?.rol==="caseta") setModule("caseta"); else if(profile?.rol==="monitor_almacen") setModule("monitor"); },[profile?.rol]);
+  useEffect(()=>{ if(profile?.rol==="caseta") setModule("caseta"); else if(profile?.rol==="monitor_almacen" || String(profile?.username||"").toLowerCase()==="mtorres") setModule("monitor"); },[profile?.rol,profile?.username]);
   const [login,setLogin]=useState({user:"",password:""});
   const [form,setForm]=useState({operador_nombre:"",linea_transporte:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:"",contacto:"",operacion_tipo:"recibo",cita_at:"",folio_cita:"",numero_sellos:""});
   const [newUser,setNewUser]=useState({username:"",nombre:"",rol:"caseta",almacen_id:"",password:""});
@@ -70,6 +70,7 @@ export default function App(){
 
   const allowed = roleModules[profile?.rol] || [];
   const can = key => allowed.includes(key);
+  const monitorOnly = profile?.rol==="monitor_almacen" || String(profile?.username||"").toLowerCase()==="mtorres";
 
   useEffect(()=>{
     let alive=true;
@@ -296,7 +297,7 @@ export default function App(){
       <button className="logout" onClick={logout}>Cerrar sesión</button>
     </aside>
     <main>
-      {profile?.rol!=="monitor_almacen"&&<header className="topbar"><div><small>OP360 / {MODULES.find(m=>m[0]===module)?.[1]}</small><h2>{currentWarehouse?currentWarehouse.codigo+" · "+currentWarehouse.nombre:"Operación general"}</h2></div><div className="live"><i/> En línea</div></header>}
+      {!monitorOnly&&<header className="topbar"><div><small>OP360 / {MODULES.find(m=>m[0]===module)?.[1]}</small><h2>{currentWarehouse?currentWarehouse.codigo+" · "+currentWarehouse.nombre:"Operación general"}</h2></div><div className="live"><i/> En línea</div></header>}
       {error&&<div className="alert error">{error}<button onClick={()=>setError("")}>×</button></div>}
       {notice&&<div className="alert ok">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
       <section className="content">
