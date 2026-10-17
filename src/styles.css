@@ -1935,3 +1935,96 @@ footer{color:#71809a}
 @media(prefers-reduced-motion:reduce){
   .monitor-dashboard .mini-kpi,.monitor-dashboard .monitor-tabs button,.monitor-dashboard .monitor-table tbody tr{transition:none}
 }
+
+
+/* OP360 · ESTRUCTURA ALTERNATIVA MOBILE: RESUMEN EJECUTIVO */
+@media(max-width:760px){
+  .monitor-dashboard{background:#f4f7fb;color:#172b49}
+  .monitor-header{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 12px;padding:14px 16px;background:#fff}
+  .monitor-brand{display:flex;align-items:center;gap:10px}
+  .monitor-logo{width:42px;height:42px;border-radius:12px}
+  .monitor-brand strong{font-size:18px}
+  .monitor-brand span{font-size:9px;letter-spacing:.12em}
+  .monitor-live{grid-column:1/-1;order:3;padding:8px 10px;background:#f0f7f3;border:1px solid #d9eee1;border-radius:9px;font-size:11px}
+  .monitor-live small{display:none}
+  .monitor-header-right{display:contents}
+  .monitor-time{grid-column:2;grid-row:1;text-align:right}
+  .monitor-time strong{font-size:17px}
+  .monitor-time small{display:block;font-size:10px}
+  .monitor-header-right>svg,.monitor-user,.monitor-logout{display:none!important}
+  .monitor-body{display:block;min-height:0}
+  .monitor-sidebar{position:sticky;top:0;z-index:20;background:#fff;border:0;border-bottom:1px solid #e0e7f0;box-shadow:0 4px 12px #1c35520a}
+  .monitor-sidebar nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px 10px;overflow:visible}
+  .monitor-nav{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;margin:0;padding:8px 3px;border:1px solid transparent;border-radius:10px;font-size:9px;line-height:1.15;text-align:center;white-space:normal}
+  .monitor-nav svg{width:18px;height:18px;flex:0 0 auto}
+  .monitor-nav.active{background:#edf4ff;border-color:#dbe8fb}
+  .monitor-sidebar-footer{display:none}
+  .monitor-content{padding:14px 12px 28px;display:flex;flex-direction:column;gap:14px}
+  .monitor-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}
+  .mini-kpi{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:10px;min-height:104px;padding:13px;border-radius:14px;box-shadow:0 3px 12px #1d35520a}
+  .mini-kpi:first-child{grid-column:1/-1;grid-template-columns:46px minmax(0,1fr);min-height:112px}
+  .mini-icon{width:38px;height:38px;border-radius:11px}
+  .mini-kpi:first-child .mini-icon{width:46px;height:46px}
+  .mini-kpi>div:last-child{min-width:0}
+  .mini-kpi>div:last-child span{display:block;font-size:11px;line-height:1.25}
+  .mini-kpi>div:last-child strong{display:block;font-size:29px;line-height:1.12;margin:4px 0}
+  .mini-kpi:first-child>div:last-child strong{font-size:36px}
+  .mini-kpi>div:last-child small{display:block;font-size:10px;line-height:1.3}
+  .monitor-main-grid{display:flex;flex-direction:column;gap:12px;margin:0}
+  .ramps-hero,.warehouse-status,.units-table-card,.side-list{border-radius:15px;box-shadow:0 3px 12px #1d35520a}
+  .ramps-hero{padding:15px}
+  .ramps-title{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin-bottom:12px}
+  .ramps-title>strong{font-size:15px}
+  .ramps-title>div{font-size:10px;gap:7px}
+  .warehouse-visual{height:auto;min-height:0}
+  .warehouse-sky{min-height:40px;padding:10px;font-size:10px}
+  .warehouse-building{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px}
+  .dock{min-width:0;min-height:64px;padding:4px}
+  .dock b{font-size:10px}
+  .dock-door{height:20px}
+  .dock-truck{font-size:14px}
+  .warehouse-status{padding:15px}
+  .status-head{gap:8px;align-items:center}
+  .status-head>strong{font-size:15px}
+  .capacity-summary{display:flex;align-items:center;justify-content:flex-start;gap:18px;padding:16px 0}
+  .capacity-ring>div{width:94px;height:94px}
+  .capacity-ring strong{font-size:20px}
+  .capacity-ring span{font-size:9px}
+  .capacity-side{min-width:0}
+  .capacity-side em{font-size:10px}
+  .capacity-side span,.capacity-side b{font-size:11px}
+  .status-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;padding:12px 0}
+  .status-list>div{display:flex;flex-direction:column;gap:4px}
+  .status-list>div span{font-size:10px}
+  .status-list>div b{font-size:18px}
+  .avg-time{padding:13px 0 0}
+  .avg-time>div{display:grid;grid-template-columns:1fr;gap:7px}
+  .avg-time>div span{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:10px}
+  .monitor-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin:0}
+  .monitor-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+  .monitor-tabs button{flex:0 0 auto;font-size:11px;padding:10px 12px}
+  .monitor-search{position:relative;width:100%}
+  .monitor-search input{width:100%;box-sizing:border-box;padding:11px 38px 11px 12px}
+  .monitor-search svg{position:absolute;right:12px;top:12px}
+  .monitor-error,.monitor-arrival-alert,.monitor-appointment-alert{margin:0}
+  .monitor-lower-grid{display:flex;flex-direction:column;gap:12px}
+  .table-title{padding:14px;gap:8px}
+  .table-title>strong{font-size:14px}
+  .table-title button{font-size:11px;white-space:nowrap}
+  .monitor-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .monitor-table{min-width:760px}
+  .monitor-table thead th{position:static;font-size:10px;padding:11px 10px}
+  .monitor-table tbody td{font-size:11px;padding:11px 10px}
+  .monitor-sidecards{display:grid;grid-template-columns:1fr;gap:12px}
+  .side-list{padding:14px}
+  .side-row{padding:11px 0}
+}
+@media(max-width:380px){
+  .monitor-sidebar nav{grid-template-columns:repeat(5,minmax(0,1fr));padding:7px 5px}
+  .monitor-nav{font-size:8px}
+  .monitor-content{padding:10px}
+  .mini-kpi{padding:10px;grid-template-columns:32px minmax(0,1fr);gap:8px}
+  .mini-icon{width:32px;height:32px}
+  .mini-kpi>div:last-child strong{font-size:25px}
+  .warehouse-building{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
