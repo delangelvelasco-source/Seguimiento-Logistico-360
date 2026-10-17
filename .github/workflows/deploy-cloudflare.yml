@@ -25,7 +25,7 @@ jobs:
       - name: Publish OP360 assets and Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
-          command: deploy --name op360
+          command: deploy --config wrangler.jsonc --name op360
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
