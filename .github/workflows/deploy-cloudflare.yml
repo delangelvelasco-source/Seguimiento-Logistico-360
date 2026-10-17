@@ -22,10 +22,10 @@ jobs:
         run: npm ci
       - name: Build production bundle
         run: npm run build
-      - name: Publish to Cloudflare Workers
+      - name: Publish OP360 assets and Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
-          command: deploy
+          command: deploy --name op360
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
