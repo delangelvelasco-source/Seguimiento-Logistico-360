@@ -441,8 +441,13 @@ function Monitor({units,counts,warehouse}){
    <div className="monitor-site"><div><span>ALMACÉN</span><strong>{warehouse?.codigo||"OP360"}</strong><small>{warehouse?.nombre||"Operación general"}</small></div><div className="monitor-live"><i/> EN LÍNEA</div></div>
    <div className="monitor-kpis"><div><span>Unidades activas</span><strong>{active.length}</strong><small>En proceso</small></div><div><span>Patio</span><strong>{patio}</strong><small>Caseta · Dispatch · Espera · Rampa</small></div><div><span>Operación activa</span><strong>{operational}</strong><small>Rampa / operación</small></div></div>
  </div>
- <div className="monitor-section-title"><div><h2>Flujo operativo</h2><p>Vista en tiempo real por etapa.</p></div><span>↻ Actualización automática</span></div>
- <div className="monitor-grid monitor-grid-pro">{stageKeys.map(k=><div className={"monitor-box monitor-box-"+k} key={k}><div><small>{stateLabels[k]}</small><strong>{counts[k]||0}</strong></div><span>{k==="liberada"||k==="cancelada"?"Finalizado":k==="incidencia"?"Revisión":"En proceso"}</span></div>)}</div>
+ <section className="monitor-flow-redesign">
+   <div className="monitor-flow-heading"><div><small>OPERACIÓN EN TIEMPO REAL</small><h2>Flujo operativo</h2><p>Seguimiento visual de las unidades por etapa.</p></div><span><i/> Actualización automática</span></div>
+   <div className="monitor-flow-track">{stageKeys.map((k,i)=><div className={"monitor-flow-stage stage-"+k} key={k}>
+     <div className="monitor-flow-symbol">{({"en_caseta":"▣","validando":"▤","espera_turno":"◷","rampa_asignada":"▰","en_operacion":"⚙","documentacion":"▤","liberada":"✓","cancelada":"×"})[k]}</div>
+     <strong>{stateLabels[k]}</strong><b>{counts[k]||0}</b><span>{k==="liberada"||k==="cancelada"?"Finalizado":k==="incidencia"?"Revisión":(counts[k]||0)?"En proceso":"Sin unidades"}</span>
+   </div>)}</div>
+ </section>
  <div className="panel monitor-active"><PanelHead title={"Unidades activas · "+active.length}/>{active.length===0?<Empty text="No hay unidades activas en este momento."/>:<div className="monitor-unit-list">{active.slice(0,20).map(u=><div className="monitor-unit" key={u.id}><div><b>{u.folio}</b><span>{u.operador_nombre||"Sin operador"} · {u.linea_transporte||"Sin transporte"}</span><small>{u.tracto_placas||"—"}{u.caja_placas?" · "+u.caja_placas:""}</small></div><span className={clsState(u.estado)}>{stateLabels[u.estado]||u.estado}</span></div>)}</div>}</div>
  </>}
 
