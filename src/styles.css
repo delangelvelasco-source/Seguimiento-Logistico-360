@@ -233,3 +233,21 @@
 .app.monitor-only .m360-site-name strong{font-size:clamp(14px,1.3vw,20px)}
 .app.monitor-only .m360-panel-title h2{font-size:clamp(16px,1.3vw,21px)}
 @media(max-width:760px){.app.monitor-only>main{padding:8px}.app.monitor-only .m360-header{top:0}.app.monitor-only .m360-site{grid-template-columns:30px minmax(0,1fr) auto}.app.monitor-only .m360-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.app.monitor-only .m360-kpi.primary{grid-column:span 2}}
+
+
+/* Calendario histórico y control de unidades rezagadas */
+.m360-history-controls{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.m360-history-controls label{display:flex;flex-direction:column;gap:6px;color:#647590;font-size:11px;font-weight:800;min-width:190px}
+.m360-history-controls input[type=date]{font:inherit;color:#1b2f50;background:#fff;border:1px solid #dbe4ef;border-radius:10px;padding:10px 12px;min-height:42px}
+.m360-lagging-btn{border:1px solid #f0d9a7;background:#fff8e8;color:#99680b;border-radius:10px;padding:11px 14px;font:inherit;font-size:11px;font-weight:800;min-height:42px;cursor:pointer}
+.m360-lagging-btn.selected{background:#a94b38;border-color:#a94b38;color:white}
+.m360-history-summary{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#f5f8fc;border:1px solid #e6ecf4;border-radius:10px;padding:10px 12px;margin-bottom:10px;color:#6d7d96;font-size:11px}
+.m360-history-summary b{color:#233958;font-size:12px;text-transform:capitalize}
+.m360-history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.m360-history-list article{border:1px solid #e3eaf3;border-radius:10px;padding:11px;min-width:0}
+.m360-history-list article>div{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.m360-history-list article>div>b{font-size:12px;color:#1d3150;overflow-wrap:anywhere}
+.m360-history-list article p{font-size:11px;color:#647590;margin:7px 0 4px}
+.m360-history-list article small{display:block;font-size:10px;color:#8794a8;overflow-wrap:anywhere}
+.m360-history-list article>strong{display:block;font-size:10px;color:#a94b38;margin-top:7px}
+@media(max-width:760px){.m360-history-controls{display:grid;grid-template-columns:1fr;width:100%}.m360-history-controls label{min-width:0;width:100%}.m360-history-controls input[type=date]{width:100%;box-sizing:border-box}.m360-lagging-btn{width:100%;text-align:center}.m360-history-summary{align-items:flex-start;flex-direction:column;gap:5px}.m360-history-list{grid-template-columns:1fr}.m360-history-list article{padding:10px}}
