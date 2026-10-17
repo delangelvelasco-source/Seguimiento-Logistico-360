@@ -1,6 +1,6 @@
 {
-  "build": "20261007-op360-rebuild-01",
-  "version": "2026.10.07-op360-rebuild",
-  "commit": "clean-operational-core",
-  "updated": "2026-10-07T12:14:31.181Z"
+  "build": "20261017-op360-monitor-flow-01",
+  "version": "2026.10.17-op360-monitor-flow",
+  "commit": "be4e905458c7d22249477d38beb3417036a2dd02",
+  "updated": "2026-10-17T12:19:16.197Z"
 }
