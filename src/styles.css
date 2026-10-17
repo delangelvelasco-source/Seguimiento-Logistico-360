@@ -1896,3 +1896,42 @@ footer{color:#71809a}
   .capacity-summary{flex-wrap:wrap}
 }
 @media(prefers-reduced-motion:reduce){.monitor-dashboard *{transition:none!important;animation:none!important}}
+
+
+/* OP360 TORRE DE CONTROL · AJUSTE DIRECTO 3
+   Pulido de jerarquía visual, lectura en TV y controles de operación. */
+.monitor-dashboard{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.005em}
+.monitor-header{backdrop-filter:blur(10px)}
+.monitor-brand{min-width:190px}
+.monitor-live{display:flex;align-items:center;gap:8px}
+.monitor-live::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#19a66a;box-shadow:0 0 0 4px #e4f7ed}
+.monitor-kpis .mini-kpi{position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.monitor-kpis .mini-kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#4b83cb}
+.monitor-kpis .mini-kpi.green::after{background:#20a36b}
+.monitor-kpis .mini-kpi.red::after{background:#d95c5c}
+.monitor-kpis .mini-kpi:hover{transform:translateY(-2px);border-color:#c7d8ed;box-shadow:0 10px 24px rgba(29,53,84,.09)}
+.monitor-toolbar{padding:4px 0}
+.monitor-tabs button{transition:background .15s ease,border-color .15s ease,color .15s ease}
+.monitor-tabs button:focus-visible,.monitor-logout:focus-visible,.table-title button:focus-visible{outline:3px solid #9bc3f5;outline-offset:2px}
+.monitor-table thead th{position:sticky;top:0;z-index:2}
+.monitor-table tbody tr{transition:background .12s ease}
+.side-list-head>span{display:inline-flex;align-items:center;gap:6px;background:#edf7ff;border-radius:7px;padding:6px 9px}
+.ramps-hero,.warehouse-status,.units-table-card,.side-list{min-width:0}
+.warehouse-visual{box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+@media(min-width:1600px){
+  .monitor-body{grid-template-columns:232px minmax(0,1fr)}
+  .monitor-kpis{gap:20px}
+  .mini-kpi{min-height:140px}
+  .mini-kpi>div:last-child span{font-size:13px}
+  .mini-kpi>div:last-child strong{font-size:38px}
+  .ramps-title>strong,.status-head>strong,.table-title>strong,.side-list-head>strong{font-size:18px}
+}
+@media(max-width:760px){
+  .monitor-brand{min-width:0}
+  .monitor-live::before{width:7px;height:7px}
+  .monitor-kpis .mini-kpi:hover{transform:none}
+  .monitor-table thead th{position:static}
+}
+@media(prefers-reduced-motion:reduce){
+  .monitor-dashboard .mini-kpi,.monitor-dashboard .monitor-tabs button,.monitor-dashboard .monitor-table tbody tr{transition:none}
+}
