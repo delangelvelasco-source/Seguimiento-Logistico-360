@@ -19,14 +19,14 @@ export default function TorreControl({warehouseId,onLogout}){
       supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId}),
-      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).eq("fecha",new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())).not("estado","in","(cancelada,cerrada)").order("hora_inicio",{ascending:true}),
+      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,referencia,cuenta_cliente,cerrada_at,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).gte("fecha",new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())).lte("fecha",(()=>{const d=new Date();d.setDate(d.getDate()+1);return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)})()).order("fecha",{ascending:true}).order("hora_inicio",{ascending:true}),
       supabase.rpc("listar_alertas_citas_monitor",{p_almacen_id:warehouseId})
     ]);
     if(seq!==loadSeq.current)return;
     if(u.error)setError(u.error.message);else setUnits((u.data||[]).filter(isVisibleUnit));
     if(r.error)setError(prev=>prev||r.error.message);else setRamps(r.data||[]);
     if(c.error)setError(prev=>prev||c.error.message);else setPatio(c.data?.[0]||null);
-    if(p.error)setError(prev=>prev||p.error.message);else setCitas((p.data||[]).map(x=>({...x,precarga:Array.isArray(x.cita_datos_precarga)?(x.cita_datos_precarga[0]||null):(x.cita_datos_precarga||null)})));
+    if(p.error)setError(prev=>prev||p.error.message);else setCitas((p.data||[]).filter(x=>!["cancelada","cerrada"].includes(String(x.estado||"").toLowerCase())&&!x.cerrada_at).map(x=>({...x,precarga:Array.isArray(x.cita_datos_precarga)?(x.cita_datos_precarga[0]||null):(x.cita_datos_precarga||null)})));
     if(a.error)setError(prev=>prev||a.error.message);else setAlertasCita(a.data||[]);
     setLastUpdate(new Date());setLoading(false);
   }
@@ -229,7 +229,7 @@ export default function TorreControl({warehouseId,onLogout}){
               return {
                 time:String(c.hora_inicio||"").slice(0,5),
                 title:(c.tipo_operacion==="embarque"?"Embarque":"Recibo")+(s.late?" · "+s.label:""),
-                sub:(c.precarga?.linea_transporte||"Línea pendiente")+" · "+c.folio,
+                sub:(c.precarga?.linea_transporte||c.cuenta_cliente||c.referencia||"Línea pendiente")+" · "+c.folio+(c.estado==="borrador"?" · Pendiente de confirmar":""),
                 late:s.late,
                 delay:s.minutes
               };
