@@ -19,7 +19,7 @@ export default function TorreControl({warehouseId,onLogout}){
       supabase.rpc("listar_unidades_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_rampas_monitor",{p_almacen_id:warehouseId}),
       supabase.rpc("listar_patio_monitor",{p_almacen_id:warehouseId}),
-      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,referencia,cuenta_cliente,cerrada_at,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).gte("fecha",new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())).lte("fecha",(()=>{const d=new Date();d.setDate(d.getDate()+1);return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)})()).order("fecha",{ascending:true}).order("hora_inicio",{ascending:true}),
+      supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,estado,pallets,referencia,cuenta_cliente,cerrada_at,cita_datos_precarga(linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas)").eq("almacen_id",warehouseId).gte("fecha",dateKey(Date.now())).lte("fecha",shiftDateKey(Date.now(),1)).order("fecha",{ascending:true}).order("hora_inicio",{ascending:true}),
       supabase.rpc("listar_alertas_citas_monitor",{p_almacen_id:warehouseId})
     ]);
     if(seq!==loadSeq.current)return;
@@ -250,7 +250,16 @@ function averageMinutes(list,startGetter,endGetter,now){if(!list.length)return n
 function formatAverage(v){return v==null?"—":formatMinutes(v)}
 
 function isToday(value){if(!value)return false;return dateKey(value)===dateKey(Date.now())}
-function dateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value))}
+function dateKey(value){
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(value));
+  const part=type=>parts.find(p=>p.type===type)?.value||"00";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function shiftDateKey(value,days){
+  const [year,month,day]=dateKey(value).split("-").map(Number);
+  const shifted=new Date(Date.UTC(year,month-1,day+days));
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth()+1).padStart(2,"0")}-${String(shifted.getUTCDate()).padStart(2,"0")}`;
+}
 function isActiveOperationalUnit(u){return !u.salida_caseta_at&&u.ubicacion_tipo!=="fuera"&&!["liberada","cancelada"].includes(u.estado)}
 
 // El monitor operativo trabaja por jornada: al cambiar el día se ocultan
