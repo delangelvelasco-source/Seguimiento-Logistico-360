@@ -467,3 +467,5 @@
 @media(max-width:1100px){.m360-ramp-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}}
 @media(max-width:760px){.m360-ramp-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.m360-dock-number{height:28px;font-size:12px}.m360-dock-door{height:30px;padding-bottom:5px}.m360-dock-door span{width:23px;height:10px;border-width:2px}.m360-dock-info{padding:5px}.m360-dock-info b{font-size:9px}.m360-dock-info small{font-size:8px}}
 @media(max-width:420px){.m360-ramp-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}}
+
+/* OP360 deploy refresh: ensure production rebuild picks up the dock-grid monitor from main. */
