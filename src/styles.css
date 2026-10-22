@@ -359,3 +359,26 @@
 .m360-ops-mini article>div b{color:#20314d}
 .m360-ops-mini article>div span,.m360-ops-mini article small{color:#7b8ba5}
 .m360-ops-mini .empty{color:#8291a7}
+
+
+/* Monitor 360: fondo más claro y contraste legible */
+.m360-board{background:#edf3fa;color:#20324b;border-radius:18px;padding:12px}
+.m360-ops{color:#20324b}
+.m360-ops-top{background:linear-gradient(120deg,#f9fbff,#eaf2fb);border-color:#d3dfed;box-shadow:0 8px 24px rgba(25,49,81,.06)}
+.m360-eyebrow{color:#356eb5}
+.m360-ops-top h2{color:#20324b}
+.m360-ops-top p{color:#64748b}
+.m360-ops-search{background:#fff;border-color:#d4dfed;color:#53657d}
+.m360-ops-search input{color:#20324b}
+.m360-ops-tabs{background:#f7faff;border-color:#d8e3f0}
+.m360-ops-tabs button{color:#53657d}
+.m360-ops-tabs button.selected{background:#e3efff;color:#1d4f91;border-color:#b8d3f5}
+.m360-ops-table-panel,.m360-ops-mini{background:#fff;border-color:#d8e3f0;color:#20324b;box-shadow:0 4px 16px rgba(25,49,81,.04)}
+.m360-ops-table thead{background:#f1f6fc}
+.m360-ops-table th{color:#61738b}
+.m360-ops-table td{color:#2c3e56;border-color:#e8eef6}
+.m360-ops-table td small,.m360-ops-mini article small{color:#718198}
+.m360-ops-mini article{border-color:#e7edf5}
+.m360-count{background:#edf4fc;color:#49617e;border-color:#d8e4f1}
+.m360-ops-bottom{color:#20324b}
+@media(max-width:700px){.m360-board{padding:7px}}
