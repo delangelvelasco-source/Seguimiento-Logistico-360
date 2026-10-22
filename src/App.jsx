@@ -116,7 +116,7 @@ export default function App(){
   async function loadUnits(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
     if(!warehouseId) return;
     const {data,error:e}=await supabase.from("unidades")
-      .select("id,folio,operador_nombre,linea_transporte,tracto_numero,tracto_placas,caja_numero,caja_placas,contacto,cita_at,estado,rampa_id,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
+      .select("id,folio,operador_nombre,linea_transporte,tracto_numero,tracto_placas,caja_numero,caja_placas,contacto,cita_at,estado,rampa_id,ubicacion_tipo,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
       .eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(500);
     if(!e) setUnits(data||[]);
   }
@@ -232,9 +232,23 @@ export default function App(){
 
   async function updateUnit(id,patch,message){
     setBusy(true); setError(""); setNotice("");
-    const {error:e}=await supabase.from("unidades").update({...patch,updated_at:new Date().toISOString()}).eq("id",id);
-    if(e) setError(e.message); else { setNotice(message||"Actualizado."); await loadUnits(); }
-    setBusy(false);
+    try{
+      const unit=units.find(u=>u.id===id);
+      if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&patch.rampa_id){
+        const ramp=ramps.find(r=>r.id===patch.rampa_id);
+        if(!ramp) throw new Error("No se encontró la rampa seleccionada en este almacén.");
+        if(!ramp.activa||ramp.estado!=="operativa") throw new Error("No se puede asignar la unidad a "+(ramp.codigo||"esa rampa")+": está bloqueada o en mantenimiento.");
+        if(unit?.almacen_id&&ramp.almacen_id&&unit.almacen_id!==ramp.almacen_id) throw new Error("La rampa pertenece a otro almacén.");
+      }
+      const safePatch={...patch,updated_at:new Date().toISOString()};
+      if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&patch.rampa_id) safePatch.ubicacion_tipo="rampa";
+      if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&!patch.rampa_id&&unit?.ubicacion_tipo==="rampa") safePatch.ubicacion_tipo="patio";
+      const {error:e}=await supabase.from("unidades").update(safePatch).eq("id",id);
+      if(e) throw e;
+      setNotice(message||"Actualizado.");
+      await Promise.all([loadUnits(),loadRamps()]);
+    }catch(e){setError(e.message||"No se pudo actualizar la unidad.");}
+    finally{setBusy(false);}
   }
 
   async function saveEditUnit(patch){
@@ -462,7 +476,7 @@ function Monitor({units,counts,warehouse,ramps=[]}){
  const stageColors={"en_caseta":["#fff2d6","#c78b18"],"validando":["#e7f1ff","#2775d2"],"espera_turno":["#fff0e7","#e4773b"],"rampa_asignada":["#eee9ff","#6747d8"],"en_operacion":["#e5f7ed","#218956"],"documentacion":["#f0e9ff","#7948ce"],"liberada":["#e5f7ed","#22945a"]};
  const timeLabel=u=>{if(!u.created_at)return "—";const mins=Math.max(0,Math.floor((Date.now()-new Date(u.created_at).getTime())/60000));return mins<60?mins+" min":Math.floor(mins/60)+" h "+(mins%60)+" min"};
  const rampUnits=active.filter(u=>u.rampa_codigo||u.rampa_id||u.rampa);
- const rampForUnit=r=>active.find(u=>String(u.rampa_id||"")===String(r.id)||String(u.rampa_codigo||u.rampa||"")===String(r.codigo||r.nombre||""));
+ const rampForUnit=r=>active.find(u=>u.ubicacion_tipo==="rampa"&&String(u.rampa_id||"")===String(r.id));
  const rampLabel=(r,i=0)=>{const code=String(r.codigo||"").trim();if(code)return code;const name=String(r.nombre||"").trim();const hasUuid=/[0-9a-f]{8}-[0-9a-f-]{27,}/i.test(name);return name&&!hasUuid?name:("Rampa "+String(i+1).padStart(2,"0"));};
  const rampState=r=>{const st=String(r.estado||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");if(!r.activa||st.includes("mantenimiento")||st.includes("fuera")||st.includes("servicio")||st.includes("no_disponible")||st.includes("no disponible"))return {label:st.includes("mantenimiento")?"En mantenimiento":"Fuera de servicio",kind:"offline"};const u=rampForUnit(r);if(u)return {label:"En uso",kind:"occupied",unit:u};if(st.includes("espera")||st.includes("asign"))return {label:"En espera",kind:"waiting"};if(st.includes("carg")||st.includes("descarg")||st.includes("ocupad")||st.includes("en operacion"))return {label:"En operación",kind:"working"};return {label:"Disponible",kind:"free"};};
  return <><Page title="Monitor 360" sub={warehouse?warehouse.nombre:"Vista general"}/>
