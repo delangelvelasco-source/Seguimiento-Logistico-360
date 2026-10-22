@@ -176,7 +176,7 @@ export default function App(){
       if(!platePhoto || !idPhoto) throw new Error("Debes tomar la foto de placas y la foto de ID.");
       const f=folio();
       const {data:u,error:e1}=await supabase.from("unidades").insert({
-        folio:f, operador_nombre:form.operador_nombre.trim(), linea_transporte:form.linea_transporte.trim(),
+        folio:f, operador_nombre:form.operador_nombre.trim(), linea_transporte:form.linea_transporte.trim(), tipo_unidad:form.tipo_unidad||"tractocamion",
         tracto_numero:form.tracto_numero.trim(), tracto_placas:form.tracto_placas.trim().toUpperCase(),
         caja_numero:form.caja_numero.trim()||null, caja_placas:form.caja_placas.trim().toUpperCase()||null,
         contacto:form.contacto.trim(), cita_at:null, folio_cita:form.folio_cita.trim()||null, numero_sellos:form.operacion_tipo==="embarque" ? Number(form.numero_sellos||0) : null, estado:"en_caseta",
