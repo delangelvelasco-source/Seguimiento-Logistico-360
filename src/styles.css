@@ -402,3 +402,30 @@
 .exit-panel .unit-card .actions{position:static!important;inset:auto!important;transform:none!important;float:none!important;display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .exit-panel .unit-card .actions button{position:static!important;inset:auto!important;transform:none!important;white-space:normal;max-width:100%}
 @media(max-width:720px){.exit-panel .unit-card{grid-template-columns:minmax(0,1fr);gap:10px}.exit-panel .unit-card .actions{justify-content:stretch}.exit-panel .unit-card .actions button{width:100%}}
+
+
+/* Monitor 360 - visual refresh for ramp administration */
+#rampas>.panel{background:linear-gradient(145deg,#10243d,#173653);border:1px solid #294867;border-radius:20px;padding:clamp(15px,2vw,26px);box-shadow:0 14px 34px #0714262e;color:#eaf3ff}
+#rampas .panel-title strong,#rampas .panel-title svg{color:#f4f8ff}
+#rampas .section-copy{color:#b7c9df;line-height:1.6}
+#rampas .ramp-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0;padding:0}
+#rampas .ramp-summary>div{background:#07142566;border:1px solid #355575;border-radius:14px;padding:14px 16px;min-width:0}
+#rampas .ramp-summary span{display:block;color:#a9bfd8;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+#rampas .ramp-summary strong{display:block;color:#fff;font-size:28px;margin-top:6px}
+#rampas .ramp-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#rampas .ramp-card{position:relative;min-width:0;display:flex;flex-direction:column;gap:13px;padding:17px;background:linear-gradient(145deg,#1b3858,#142c48);border:1px solid #355574;border-top:4px solid #35c783;border-radius:16px;color:#eaf3ff;box-shadow:0 5px 14px #030c191f;transition:transform .18s ease,box-shadow .18s ease}
+#rampas .ramp-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px #030c1940}
+#rampas .ramp-head{align-items:flex-start}
+#rampas .ramp-head strong{display:block;color:#fff;font-size:19px}
+#rampas .ramp-head span{display:inline-block;color:#a9c0da;font-size:11px;margin-top:4px}
+#rampas .ramp-head svg{flex-shrink:0;color:#4be09a}
+#rampas .ramp-card label{display:block;color:#b8cbe0;font-size:11px;font-weight:800}
+#rampas .ramp-card select,#rampas .ramp-card input{width:100%;min-width:0;margin-top:6px;border:1px solid #456584;border-radius:10px;background:#0d2036;color:#f2f7ff;padding:10px 11px;outline:none}
+#rampas .ramp-card select:focus,#rampas .ramp-card input:focus{border-color:#49a6ff;box-shadow:0 0 0 3px #49a6ff29}
+#rampas .ramp-card .ramp-save{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#237bd1;color:white;border:1px solid #4596e6;border-radius:10px;padding:11px 14px;font-weight:800}
+#rampas .ramp-card .ramp-save:hover{background:#328be2}
+#rampas .notice.error{background:#4b2029;color:#ffdce0;border-color:#87404a}
+#rampas .notice.success{background:#123e36;color:#baf7d8;border-color:#286d58}
+#rampas .empty{color:#c1d2e6}
+@media(max-width:1000px){#rampas .ramp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){#rampas>.panel{padding:13px;border-radius:16px}#rampas .ramp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#rampas .ramp-card{padding:11px;gap:10px;border-radius:13px}#rampas .ramp-head strong{font-size:16px}#rampas .ramp-summary{gap:7px}#rampas .ramp-summary>div{padding:10px}#rampas .ramp-summary span{font-size:9px}#rampas .ramp-summary strong{font-size:22px}#rampas .ramp-card select,#rampas .ramp-card input{font-size:12px;padding:9px 8px}}
