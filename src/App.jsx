@@ -512,7 +512,7 @@ function CSR({units,onUpdate,warehouseId}){
    if(r.error){setAppointmentError("No se pudo guardar la cita: "+r.error.message);return;}
    const p=await supabase.from("cita_datos_precarga").upsert({cita_id:r.data.id,linea_transporte:newAppointment.linea_transporte.trim()||null,operador_nombre:newAppointment.operador_nombre.trim()||null,tracto_numero:newAppointment.tracto_numero.trim()||null,tracto_placas:newAppointment.tracto_placas.trim().toUpperCase()||null,caja_numero:newAppointment.caja_numero.trim()||null,caja_placas:newAppointment.caja_placas.trim().toUpperCase()||null,observaciones:newAppointment.referencia.trim()||null,actualizado_por:user.id},{onConflict:"cita_id"});
    if(p.error){setAppointmentError("La cita "+r.data.folio+" se creó, pero faltó guardar los datos previos: "+p.error.message);return;}
-   setAppointmentMessage("Cita registrada correctamente: "+r.data.folio);setShowAddAppointment(false);
+   setAppointmentMessage("Cita registrada correctamente: "+r.data.folio);setShowAddAppointment(false);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});
    const start=new Date(month.getFullYear(),month.getMonth(),1),end=new Date(month.getFullYear(),month.getMonth()+1,1);
    const fresh=await supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,pallets,estado,cerrada_at,unidades_solicitadas").eq("almacen_id",warehouseId).gte("fecha",dateKey(start)).lt("fecha",dateKey(end)).order("fecha").order("hora_inicio").limit(500);
    if(!fresh.error)setAppointments((fresh.data||[]).filter(x=>x.estado!=="cancelada"&&!x.cerrada_at));
@@ -523,7 +523,7 @@ function CSR({units,onUpdate,warehouseId}){
  <section className="panel" style={{padding:20,marginBottom:16}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
    <div><h2 style={{margin:"0 0 5px",fontSize:21,color:"#172744"}}>Calendario de citas</h2><p style={{margin:0,color:"#71809a",fontSize:13}}>Citas del almacén · actualización automática cada minuto</p></div>
-   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");setNewAppointment(p=>({...p,hora_inicio:openTimes[0]||""}));setShowAddAppointment(v=>!v);}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
+   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");if(showAddAppointment){setShowAddAppointment(false);}else{setNewAppointment({...empty,hora_inicio:openTimes[0]||""});setShowAddAppointment(true);}}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
   </div>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:14}}>
    <button className="secondary" aria-label="Mes anterior" onClick={()=>shiftMonth(-1)}>‹</button>
@@ -563,7 +563,7 @@ function CSR({units,onUpdate,warehouseId}){
     <label>Número de caja<input value={newAppointment.caja_numero} onChange={e=>setNewAppointment({...newAppointment,caja_numero:e.target.value})}/></label>
     <label>Placas de caja<input value={newAppointment.caja_placas} onChange={e=>setNewAppointment({...newAppointment,caja_placas:e.target.value.toUpperCase()})}/></label>
    </div>}
-   <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>setShowAddAppointment(false)}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando cita…":openTimes.length===0?"Sin horarios disponibles":"Guardar cita"}</button></div>
+   <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>{setShowAddAppointment(false);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});}}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando cita…":openTimes.length===0?"Sin horarios disponibles":"Guardar cita"}</button></div>
   </form>}
   {!appointmentError&&selectedAppointments.length===0&&!loadingAppointments?<Empty text="No hay citas programadas para esta fecha."/>:null}
   {selectedAppointments.map(a=><article key={a.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 0",borderTop:"1px solid #edf0f5"}}>
