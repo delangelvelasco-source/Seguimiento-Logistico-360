@@ -402,3 +402,18 @@
 .exit-panel .unit-card .actions{position:static!important;inset:auto!important;transform:none!important;float:none!important;display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .exit-panel .unit-card .actions button{position:static!important;inset:auto!important;transform:none!important;white-space:normal;max-width:100%}
 @media(max-width:720px){.exit-panel .unit-card{grid-template-columns:minmax(0,1fr);gap:10px}.exit-panel .unit-card .actions{justify-content:stretch}.exit-panel .unit-card .actions button{width:100%}}
+
+
+/* OP360 · Vista compacta para administración de posiciones */
+.ramp-yard{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ramp-yard .ramp{min-height:112px;padding:10px 12px;border-radius:11px}
+.ramp-yard .ramp-head{gap:7px}
+.ramp-yard .ramp-head b{font-size:15px;line-height:1.15}
+.ramp-yard .ramp-head span{font-size:10px;max-width:100px}
+.ramp-yard .ramp-light{width:9px;height:9px;flex:0 0 9px}
+.ramp-yard .ramp strong{font-size:11px;line-height:1.2;margin:8px 0 4px}
+.ramp-yard .ramp span,.ramp-yard .ramp small{font-size:10px;line-height:1.25;margin-top:2px}
+.ramp-yard .ramp small{min-height:18px}
+.ramp-yard .ramp .secondary{padding:7px 9px;font-size:11px;margin-top:6px;border-radius:8px}
+@media(max-width:1000px){.ramp-yard{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}}
+@media(max-width:720px){.ramp-yard{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ramp-yard .ramp{min-height:104px;padding:9px}.ramp-yard .ramp-head b{font-size:14px}.ramp-yard .ramp strong{font-size:10px;margin:7px 0 3px}.ramp-yard .ramp span,.ramp-yard .ramp small{font-size:9px}.ramp-yard .ramp .secondary{font-size:10px;padding:7px 6px}}
