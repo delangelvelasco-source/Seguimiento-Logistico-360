@@ -336,6 +336,7 @@ function Login({login,setLogin,submit,busy,error}){
 }
 
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
+ const [casetaTab,setCasetaTab]=useState("ingreso");
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
  const capture=(type,e)=>{
    const input=e.currentTarget;
@@ -349,9 +350,10 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    };
    reader.readAsDataURL(file);
  };
- const salida=units.filter(u=>u.estado==="documentacion");
- return <><Page title="Caseta" sub="Registro de ingreso. El gafete no interviene en este flujo."/>
- <div className="grid2">
+ const salida=units.filter(u=>u.estado==="documentacion"&&!u.salida_autorizada);
+ return <><Page title="Caseta" sub="Registro de ingreso y control de salida del almacén."/>
+ <div className="m360-ops-tabs caseta-tabs"><button type="button" className={casetaTab==="ingreso"?"selected":""} onClick={()=>setCasetaTab("ingreso")}>Registrar ingreso</button><button type="button" className={casetaTab==="salida"?"selected":""} onClick={()=>setCasetaTab("salida")}>Registrar salida <b>{salida.length}</b></button></div>
+ {casetaTab==="ingreso"&&<div className="grid2">
   <form className="panel" onSubmit={submit}>
    <h3>Registrar unidad</h3>
    <div className="formgrid">
@@ -376,10 +378,10 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    <button className="primary" disabled={busy}>{busy?"Guardando y enviando evidencia…":"Registrar y enviar a Dispatch"}</button>
   </form>
   <div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div>
- </div>
- <div className="panel exit-panel"><h3>Salida de unidades</h3><p className="section-copy">Caseta también controla la salida de los guardias.</p>
-  {salida.length===0?<Empty text="No hay unidades pendientes de salida."/>:salida.slice(0,20).map(u=><div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" disabled={busy} onClick={()=>{if(u.operacion_tipo==="embarque"){setExitSeal(u)}else{onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}}}>Dar salida</button></div></div></div>)}
- </div></>;
+ </div>}
+ {casetaTab==="salida"&&<div className="panel exit-panel"><h3>Unidades pendientes de salida</h3><p className="section-copy">Caseta también controla la salida de los guardias.</p>
+  {salida.length===0?<Empty text="No hay unidades pendientes de salida."/>:salida.slice(0,50).map(u=><div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" type="button" disabled={busy} onClick={()=>{if(window.confirm("¿Confirmas la salida del almacén para "+u.folio+"?"))onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}}>Confirmar salida</button></div></div></div>)}
+ </div>};
 }
 
 function Traffic({units,counts,reload}){
