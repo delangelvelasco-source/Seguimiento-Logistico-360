@@ -337,6 +337,8 @@ function Login({login,setLogin,submit,busy,error}){
 
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const [casetaTab,setCasetaTab]=useState("ingreso");
+ const [sealsByUnit,setSealsByUnit]=useState({});
+ const [sealLoading,setSealLoading]=useState(false);
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
  const capture=(type,e)=>{
    const input=e.currentTarget;
@@ -350,7 +352,10 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    };
    reader.readAsDataURL(file);
  };
- const salida=units.filter(u=>u.estado==="documentacion"&&!u.salida_autorizada);
+ const salida=units.filter(u=>u.salida_autorizada===true&&!u.salida_caseta_at);
+ useEffect(()=>{let alive=true;async function loadSeals(){const ids=salida.map(u=>u.id);if(!ids.length){setSealsByUnit({});return;}setSealLoading(true);const {data,error}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",ids);if(alive&&!error){const grouped={};for(const seal of (data||[])){(grouped[seal.unidad_id]||(grouped[seal.unidad_id]=[])).push(seal);}setSealsByUnit(grouped);}if(alive)setSealLoading(false);}loadSeals();return()=>{alive=false}},[casetaTab,units.map(u=>u.id+":"+u.salida_autorizada+":"+u.salida_caseta_at).join("|")]);
+ async function verifyExit(u){const expected=(sealsByUnit[u.id]||[]).filter(x=>x.origen==="dispatch").map(x=>String(x.numero_fisico||"").trim()).filter(Boolean);const typed=window.prompt("Captura el/los número(s) de sello que verifica el guardia para "+u.folio+(expected.length?"\\nSellos registrados por Dispatch: "+expected.join(", "):"\\nNo hay sellos registrados por Dispatch."),"");if(typed===null)return;const physical=typed.trim();if(!physical){window.alert("Debes capturar el sello físico para validar la salida.");return;}const match=expected.length>0&&expected.includes(physical);const {data:userData}=await supabase.auth.getUser();const now=new Date().toISOString();const {error}=await supabase.from("sellos_unidad").insert({unidad_id:u.id,numero_fisico:physical,numero_documentado:expected.join(", ")||null,origen:"guardia",resultado:match?"coincide":"diferencia",requiere_revision:!match,motivo_revision:match?null:"Sello físico no coincide con los registrados por Dispatch",colocado_por:userData?.user?.id||null,verificado_por:userData?.user?.id||null,verificado_at:now,observaciones:match?"Sello verificado por guardia; coincide con Dispatch.":"Salida retenida: validar discrepancia de sellos.",created_by:userData?.user?.id||null,updated_at:now});if(error){window.alert("No se pudo guardar la validación: "+error.message);return;}if(!match){window.alert("NO COINCIDE o no existe sello de Dispatch. La salida queda pendiente para revisión.");const {data}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",[u.id]);setSealsByUnit(prev=>({...prev,[u.id]:data||[]}));return;}const {error:updateError}=await supabase.from("unidades").update({salida_caseta_at:now,guardia_salida_usuario_id:userData?.user?.id||null,updated_at:now}).eq("id",u.id).eq("salida_autorizada",true).is("salida_caseta_at",null);if(updateError){window.alert("Sello validado, pero no se pudo registrar la salida: "+updateError.message);return;}window.alert("Sello coincide. Salida registrada para "+u.folio+".");onUpdate(u.id,{salida_caseta_at:now,guardia_salida_usuario_id:userData?.user?.id||null},"Salida validada para "+u.folio+".");}
+
  return <><Page title="Caseta" sub="Registro de ingreso y control de salida del almacén."/>
  <div className="m360-ops-tabs caseta-tabs"><button type="button" className={casetaTab==="ingreso"?"selected":""} onClick={()=>setCasetaTab("ingreso")}>Registrar ingreso</button><button type="button" className={casetaTab==="salida"?"selected":""} onClick={()=>setCasetaTab("salida")}>Registrar salida <b>{salida.length}</b></button></div>
  {casetaTab==="ingreso"&&<div className="grid2">
@@ -379,8 +384,9 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
   </form>
   <div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div>
  </div>}
- {casetaTab==="salida"&&<div className="panel exit-panel"><h3>Unidades pendientes de salida</h3><p className="section-copy">Caseta también controla la salida de los guardias.</p>
-  {salida.length===0?<Empty text="No hay unidades pendientes de salida."/>:salida.slice(0,50).map(u=><div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" type="button" disabled={busy} onClick={()=>{if(window.confirm("¿Confirmas la salida del almacén para "+u.folio+"?"))onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}}>Confirmar salida</button></div></div></div>)}
+ {casetaTab==="salida"&&<div className="panel exit-panel"><h3>Unidades liberadas por Dispatch · Validación de sellos</h3><p className="section-copy">Captura el sello físico que presenta el guardia. La salida solo se registra si coincide con un sello registrado por Dispatch.</p>
+  {sealLoading&&<p>Consultando sellos…</p>}
+  {salida.length===0?<Empty text="No hay unidades liberadas por Dispatch pendientes de validar en este almacén."/>:salida.slice(0,100).map(u=>{const seals=sealsByUnit[u.id]||[];const expected=seals.filter(x=>x.origen==="dispatch");const guard=seals.filter(x=>x.origen==="guardia");const lastGuard=guard[guard.length-1];return <div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>{u.operacion_tipo==="embarque"?"Embarque":"Recibo"} · Sellos de Dispatch: {expected.length?expected.map(x=>x.numero_fisico).join(", "):"SIN REGISTRO"}{lastGuard?" · Última validación: "+lastGuard.resultado:""}</small><div className="actions"><button className="primary" type="button" disabled={busy||sealLoading} onClick={()=>verifyExit(u)}>Validar sello y registrar salida</button></div></div></div>})}
  </div>}
  </>;
 }
