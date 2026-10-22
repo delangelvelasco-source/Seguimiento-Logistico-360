@@ -391,3 +391,14 @@
 .caseta-tabs button b{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-left:6px;border-radius:50%;background:#e8eef8;color:#24466f}
 .caseta-tabs button.selected b{background:#fff;color:#1d4ed8}
 @media(max-width:720px){.caseta-tabs{top:98px;gap:8px}.caseta-tabs button{font-size:13px;padding:10px 8px;min-height:48px}}
+
+
+/* Caseta exit list: actions stay inside each row and never float over content */
+.caseta-tabs{position:static!important;top:auto!important;z-index:auto!important}
+.caseta-tabs button{position:static!important}
+.exit-panel{position:relative;isolation:isolate;overflow:visible}
+.exit-panel .unit-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,auto);align-items:center;gap:20px;padding:18px 0}
+.exit-panel .unit-card>div{min-width:0}
+.exit-panel .unit-card .actions{position:static!important;inset:auto!important;transform:none!important;float:none!important;display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.exit-panel .unit-card .actions button{position:static!important;inset:auto!important;transform:none!important;white-space:normal;max-width:100%}
+@media(max-width:720px){.exit-panel .unit-card{grid-template-columns:minmax(0,1fr);gap:10px}.exit-panel .unit-card .actions{justify-content:stretch}.exit-panel .unit-card .actions button{width:100%}}
