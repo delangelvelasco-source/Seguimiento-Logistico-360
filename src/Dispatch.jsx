@@ -21,7 +21,7 @@ export default function Dispatch({warehouseId}){
  async function load(){
   if(!warehouseId)return;
   setLoading(true);setError("");
-  const [r,rr]=await Promise.all([supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,csr_confirmacion_at,csr_usuario_id,rampa_id,operacion_inicio_at,operacion_fin_at,desentrampe_at,salida_autorizada,salida_autorizada_at,pallets,numero_sellos,updated_at,created_at").eq("almacen_id",warehouseId).in("estado",ACTIVE_STATES).order("created_at",{ascending:false}).limit(50),supabase.from("rampas").select("id,nombre,codigo,estado,activa").eq("almacen_id",warehouseId).eq("activa",true).eq("estado","operativa").order("nombre")]);
+  const [r,rr]=await Promise.all([supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,contacto,tracto_numero,tracto_placas,caja_numero,caja_placas,estado,ubicacion_tipo,operacion_tipo,cita_at,cita_confirmada,sin_cita,dispatch_registro_at,csr_confirmacion_at,csr_usuario_id,rampa_id,operacion_inicio_at,operacion_fin_at,desentrampe_at,salida_autorizada,salida_autorizada_at,pallets,numero_sellos,updated_at,created_at").eq("almacen_id",warehouseId).in("estado",ACTIVE_STATES).order("created_at",{ascending:false}).limit(50),supabase.from("rampas").select("id,nombre,codigo,estado,activa").eq("almacen_id",warehouseId).eq("activa",true).eq("estado","operativa").order("nombre")]);
   if(r.error)setError(r.error.message);else setUnits(r.data||[]); if(rr.error)setError(prev=>prev||rr.error.message);else setRamps(rr.data||[]);
   setLoading(false);
  }
@@ -159,7 +159,7 @@ async function saveSeal(){
   };
   if(!clean.nombre||!clean.empresa||!clean.tracto_placas){setError("Completa operador, empresa y placas del tracto.");return false;}
   const now=new Date().toISOString();
-  const accessUpdate=await supabase.from("accesos_caseta").update({...clean,updated_at:now}).eq("id",evidence.access.id).eq("almacen_id",warehouseId);
+  const accessUpdate=await supabase.from("accesos_caseta").update(clean).eq("id",evidence.access.id).eq("almacen_id",warehouseId);
   if(accessUpdate.error){setError("No se pudieron guardar los datos de acceso: "+accessUpdate.error.message);return false;}
   const unitUpdate=await supabase.from("unidades").update({
    operador_nombre:clean.nombre,linea_transporte:clean.empresa,contacto:clean.telefono||null,
