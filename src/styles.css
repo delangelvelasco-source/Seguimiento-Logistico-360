@@ -382,3 +382,12 @@
 .m360-count{background:#edf4fc;color:#49617e;border-color:#d8e4f1}
 .m360-ops-bottom{color:#20324b}
 @media(max-width:700px){.m360-board{padding:7px}}
+
+
+/* Caseta: acciones de ingreso/salida visibles y adaptadas a móvil */
+.caseta-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px;position:sticky;top:118px;z-index:8;background:#f3f5f8;padding:8px 0}
+.caseta-tabs button{min-height:48px;padding:12px 14px;border:1px solid #cbd7e6;border-radius:12px;background:#fff;color:#27405f;font-size:14px;font-weight:750;cursor:pointer;box-shadow:0 3px 10px rgba(20,39,68,.06)}
+.caseta-tabs button.selected{background:#2563eb;border-color:#2563eb;color:#fff}
+.caseta-tabs button b{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-left:6px;border-radius:50%;background:#e8eef8;color:#24466f}
+.caseta-tabs button.selected b{background:#fff;color:#1d4ed8}
+@media(max-width:720px){.caseta-tabs{top:98px;gap:8px}.caseta-tabs button{font-size:13px;padding:10px 8px;min-height:48px}}
