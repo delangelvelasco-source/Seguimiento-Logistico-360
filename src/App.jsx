@@ -381,7 +381,8 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  </div>}
  {casetaTab==="salida"&&<div className="panel exit-panel"><h3>Unidades pendientes de salida</h3><p className="section-copy">Caseta también controla la salida de los guardias.</p>
   {salida.length===0?<Empty text="No hay unidades pendientes de salida."/>:salida.slice(0,50).map(u=><div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>Estado: {stateLabels[u.estado]||u.estado}{u.operacion_tipo==="embarque"&&u.numero_sellos!=null?" · Sellos: "+u.numero_sellos:""}</small><div className="actions"><button className="primary" type="button" disabled={busy} onClick={()=>{if(window.confirm("¿Confirmas la salida del almacén para "+u.folio+"?"))onUpdate(u.id,{estado:"liberada",salida_caseta_at:new Date().toISOString(),guardia_salida_usuario_id:profile?.id||null,salida_autorizada:true,salida_autorizada_at:new Date().toISOString()},"Salida registrada para "+u.folio+".")}}>Confirmar salida</button></div></div></div>)}
- </div>};
+ </div>}
+ </>;
 }
 
 function Traffic({units,counts,reload}){
