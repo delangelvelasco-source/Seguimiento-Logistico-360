@@ -490,15 +490,17 @@ function CSR({units,onUpdate,warehouseId}){
  const closeTime=selectedWeekday===6?13*60:18*60;
  const availableTimes=[];
  if(isBusinessDay){for(let m=8*60;m+30<=closeTime;m+=30){availableTimes.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));}}
+ const occupiedTimes=new Set(appointments.filter(a=>a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at).map(a=>String(a.hora_inicio||"").slice(0,5)));
+ const openTimes=availableTimes.filter(t=>!occupiedTimes.has(t));
  const todayKey=dateKey(new Date());
  async function saveAppointment(e){
   e.preventDefault();setAppointmentError("");setAppointmentMessage("");
   if(!warehouseId){setAppointmentError("Selecciona un almacén antes de registrar la cita.");return;}
   if(selectedDay<todayKey){setAppointmentError("No puedes registrar una cita en una fecha pasada.");return;}
-  if(!availableTimes.includes(newAppointment.hora_inicio)){setAppointmentError("La hora está fuera de la ventana permitida para ese día.");return;}
+  if(!openTimes.includes(newAppointment.hora_inicio)){setAppointmentError("Ese horario ya tiene una cita registrada. Selecciona otro bloque disponible.");return;}
   const startMinutes=Number(newAppointment.hora_inicio.slice(0,2))*60+Number(newAppointment.hora_inicio.slice(3,5)),endMinutes=startMinutes+30;
-  const conflicts=appointments.filter(a=>a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at&&a.tipo_operacion===newAppointment.tipo_operacion&&Number(String(a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_inicio||"00:00").slice(3,5))<endMinutes&&Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(3,5))>startMinutes);
-  if(conflicts.length>=2){setAppointmentError("Esta ventana ya tiene el máximo de 2 citas para "+(newAppointment.tipo_operacion==="embarque"?"embarques":"recibos")+". Elige otra hora.");return;}
+  const conflicts=appointments.filter(a=>a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at&&Number(String(a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_inicio||"00:00").slice(3,5))<endMinutes&&Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(3,5))>startMinutes);
+  if(conflicts.length>0){setAppointmentError("Ese bloque ya está ocupado por una cita previa. Elige otra hora.");return;}
   setSavingAppointment(true);
   try{
    const auth=await supabase.auth.getUser(),user=auth.data?.user;
@@ -521,7 +523,7 @@ function CSR({units,onUpdate,warehouseId}){
  <section className="panel" style={{padding:20,marginBottom:16}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
    <div><h2 style={{margin:"0 0 5px",fontSize:21,color:"#172744"}}>Calendario de citas</h2><p style={{margin:0,color:"#71809a",fontSize:13}}>Citas del almacén · actualización automática cada minuto</p></div>
-   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");setNewAppointment(p=>({...p,hora_inicio:availableTimes[0]||"08:00"}));setShowAddAppointment(v=>!v);}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
+   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");setNewAppointment(p=>({...p,hora_inicio:openTimes[0]||""}));setShowAddAppointment(v=>!v);}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
   </div>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:14}}>
    <button className="secondary" aria-label="Mes anterior" onClick={()=>shiftMonth(-1)}>‹</button>
@@ -546,10 +548,10 @@ function CSR({units,onUpdate,warehouseId}){
   {appointmentMessage?<div style={{padding:12,marginBottom:10,borderRadius:10,background:"#e8f7ee",color:"#247449",fontSize:13,fontWeight:700}}>{appointmentMessage}</div>:null}
   {showAddAppointment&&<form onSubmit={saveAppointment} style={{border:"1px solid #d9e4f3",background:"#f8fbff",borderRadius:14,padding:16,marginBottom:16}}>
    <h3 style={{margin:"0 0 5px",color:"#172744"}}>Nueva cita · {selectedLabel}</h3>
-   <p style={{margin:"0 0 14px",fontSize:12,color:"#60718b"}}>{selectedWeekday===0?"Domingo: no hay ventana de citas.":selectedWeekday===6?"Ventana del sábado: 08:00–13:00.":"Ventana de lunes a viernes: 08:00–18:00."} · Bloques de 30 minutos · máximo 2 citas por tipo en cada bloque.</p>
+   <p style={{margin:"0 0 14px",fontSize:12,color:"#60718b"}}>{selectedWeekday===0?"Domingo: no hay ventana de citas.":selectedWeekday===6?"Ventana del sábado: 08:00–13:00.":"Ventana de lunes a viernes: 08:00–18:00."} · Bloques de 30 minutos · cada horario admite una sola cita.</p>
    {!isBusinessDay?<div style={{fontSize:13,color:"#a12622"}}>Este día no tiene ventana de citas. Selecciona de lunes a sábado.</div>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12}}>
     <label>Tipo de operación<select required value={newAppointment.tipo_operacion} onChange={e=>setNewAppointment({...newAppointment,tipo_operacion:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
-    <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{availableTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select></label>
+    <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{openTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select></label>
     <label>Cuenta / cliente<input value={newAppointment.cuenta_cliente} onChange={e=>setNewAppointment({...newAppointment,cuenta_cliente:e.target.value})} placeholder="Nombre del cliente"/></label>
     <label>Referencia<input value={newAppointment.referencia} onChange={e=>setNewAppointment({...newAppointment,referencia:e.target.value})} placeholder="SID, RID o referencia"/></label>
     <label>Pallets<input type="number" min="0" value={newAppointment.pallets} onChange={e=>setNewAppointment({...newAppointment,pallets:e.target.value})}/></label>
@@ -561,7 +563,7 @@ function CSR({units,onUpdate,warehouseId}){
     <label>Número de caja<input value={newAppointment.caja_numero} onChange={e=>setNewAppointment({...newAppointment,caja_numero:e.target.value})}/></label>
     <label>Placas de caja<input value={newAppointment.caja_placas} onChange={e=>setNewAppointment({...newAppointment,caja_placas:e.target.value.toUpperCase()})}/></label>
    </div>}
-   <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>setShowAddAppointment(false)}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay}>{savingAppointment?"Guardando cita…":"Guardar cita"}</button></div>
+   <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>setShowAddAppointment(false)}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando cita…":openTimes.length===0?"Sin horarios disponibles":"Guardar cita"}</button></div>
   </form>}
   {!appointmentError&&selectedAppointments.length===0&&!loadingAppointments?<Empty text="No hay citas programadas para esta fecha."/>:null}
   {selectedAppointments.map(a=><article key={a.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 0",borderTop:"1px solid #edf0f5"}}>
