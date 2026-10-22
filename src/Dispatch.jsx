@@ -145,9 +145,37 @@ async function saveSeal(){
   window.location.href="https://wa.me/?text="+encodeURIComponent(text);
  }
 
+ async function saveEvidenceEdits(values){
+  if(!evidence)return;
+  setError("");setMessage("");
+  const clean={
+   nombre:String(values.nombre||"").trim(),
+   empresa:String(values.empresa||"").trim(),
+   telefono:String(values.telefono||"").trim(),
+   tracto_numero:String(values.tracto_numero||"").trim(),
+   tracto_placas:String(values.tracto_placas||"").trim().toUpperCase(),
+   caja_numero:String(values.caja_numero||"").trim(),
+   caja_placas:String(values.caja_placas||"").trim().toUpperCase()
+  };
+  if(!clean.nombre||!clean.empresa||!clean.tracto_placas){setError("Completa operador, empresa y placas del tracto.");return false;}
+  const now=new Date().toISOString();
+  const accessUpdate=await supabase.from("accesos_caseta").update({...clean,updated_at:now}).eq("id",evidence.access.id).eq("almacen_id",warehouseId);
+  if(accessUpdate.error){setError("No se pudieron guardar los datos de acceso: "+accessUpdate.error.message);return false;}
+  const unitUpdate=await supabase.from("unidades").update({
+   operador_nombre:clean.nombre,linea_transporte:clean.empresa,contacto:clean.telefono||null,
+   tracto_numero:clean.tracto_numero||null,tracto_placas:clean.tracto_placas,
+   caja_numero:clean.caja_numero||null,caja_placas:clean.caja_placas||null,updated_at:now
+  }).eq("id",evidence.unit.id).eq("almacen_id",warehouseId);
+  if(unitUpdate.error){setError("Los datos de acceso se guardaron, pero no se pudieron sincronizar con la unidad: "+unitUpdate.error.message);return false;}
+  setEvidence(prev=>({...prev,access:{...prev.access,...clean,updated_at:now},unit:{...prev.unit,operador_nombre:clean.nombre,linea_transporte:clean.empresa,contacto:clean.telefono,tracto_numero:clean.tracto_numero,tracto_placas:clean.tracto_placas,caja_numero:clean.caja_numero,caja_placas:clean.caja_placas,updated_at:now}}));
+  setMessage("Datos de llegada corregidos y guardados.");
+  await load();
+  return true;
+ }
+
  async function verEvidencia(u){
   setError("");
-  const a=await supabase.from("accesos_caseta").select("id,folio,nombre,empresa,tracto_placas,caja_placas,entrada_at").eq("unidad_id",u.id).eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(1).maybeSingle();
+  const a=await supabase.from("accesos_caseta").select("id,folio,nombre,empresa,telefono,tracto_numero,tracto_placas,caja_numero,caja_placas,entrada_at").eq("unidad_id",u.id).eq("almacen_id",warehouseId).order("entrada_at",{ascending:false}).limit(1).maybeSingle();
   if(a.error){setError(a.error.message);return}
   if(!a.data){setError("No se encontró el registro de llegada.");return}
   const e=await supabase.from("evidencias_caseta").select("id,tipo,storage_path,created_at").eq("acceso_id",a.data.id).order("created_at",{ascending:false});
@@ -180,11 +208,21 @@ async function saveSeal(){
 </div>
 {statusOpen===u.id&&<div className="dispatch-status-menu"><strong>🔄 Estatus operativo</strong>{["espera_turno","rampa_asignada","en_operacion","documentacion"].map(s=><button key={s} type="button" onClick={()=>changeStatus(u,s)} disabled={u.estado===s}>{stateLabel[s]}</button>)}</div>}</>}
   </div>)}</div>:<div className="empty">No hay unidades pendientes de Dispatch.</div>}
- </div>{evidence&&<EvidenceModal data={evidence} close={()=>setEvidence(null)}/>} {sealModal&&<SealModal data={sealModal} setData={setSealModal} close={()=>setSealModal(null)} save={saveSeal}/>}</section>;
+ </div>{evidence&&<EvidenceModal data={evidence} close={()=>setEvidence(null)} save={saveEvidenceEdits}/>} {sealModal&&<SealModal data={sealModal} setData={setSealModal} close={()=>setSealModal(null)} save={saveSeal}/>}</section>;
 }
 
-function EvidenceModal({data,close}){
- return <div className="evidence-modal-backdrop" role="dialog" aria-modal="true" onClick={close}><div className="evidence-modal-card" onClick={e=>e.stopPropagation()}><div className="evidence-modal-head"><div><span className="evidence-modal-kicker">OP360 · CONTROL DE ACCESO</span><strong>Prueba de llegada</strong><small>{data.access?.folio||data.unit?.folio||"Unidad"}</small></div><button type="button" className="evidence-modal-close" onClick={close} aria-label="Cerrar"><X size={20}/></button></div><div className="evidence-modal-summary"><div><b>Operador</b><span>{data.access?.nombre||data.unit?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{data.access?.empresa||data.unit?.linea_transporte||"—"}</span></div><div><b>Tracto</b><span>{data.access?.tracto_placas||data.unit?.tracto_placas||"—"}</span></div><div><b>Caja</b><span>{data.access?.caja_placas||data.unit?.caja_placas||"—"}</span></div></div><div className="evidence-photo-grid">{["placa","identificacion"].map(tipo=>{const p=data.photos?.find(x=>x.tipo===tipo);return <div className="evidence-photo-card" key={tipo}><div className="evidence-photo-title"><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{p?.signedUrl?"Fotografía disponible":"Sin fotografía"}</small></div></div>{p?.signedUrl?<img src={p.signedUrl} alt={tipo==="placa"?"Fotografía de placa":"Fotografía de identificación"} className="evidence-modal-image"/>:<div className="evidence-no-photo">No hay fotografía de {tipo==="placa"?"placa":"identificación"}.</div>}</div>})}</div></div></div>;
+function EvidenceModal({data,close,save}){
+ const [editing,setEditing]=useState(false);
+ const [saving,setSaving]=useState(false);
+ const [error,setError]=useState("");
+ const [f,setF]=useState(()=>({nombre:data.access?.nombre||data.unit?.operador_nombre||"",empresa:data.access?.empresa||data.unit?.linea_transporte||"",telefono:data.access?.telefono||data.unit?.contacto||"",tracto_numero:data.access?.tracto_numero||data.unit?.tracto_numero||"",tracto_placas:data.access?.tracto_placas||data.unit?.tracto_placas||"",caja_numero:data.access?.caja_numero||data.unit?.caja_numero||"",caja_placas:data.access?.caja_placas||data.unit?.caja_placas||""}));
+ const change=(k,v)=>setF(p=>({...p,[k]:v}));
+ async function submit(e){e.preventDefault();setSaving(true);setError("");const ok=await save(f);setSaving(false);if(ok)setEditing(false);}
+ return <div className="evidence-modal-backdrop" role="dialog" aria-modal="true" onClick={close}><div className="evidence-modal-card" onClick={e=>e.stopPropagation()}><div className="evidence-modal-head"><div><span className="evidence-modal-kicker">OP360 · CONTROL DE ACCESO</span><strong>Prueba de llegada</strong><small>{data.access?.folio||data.unit?.folio||"Unidad"}</small></div><button type="button" className="evidence-modal-close" onClick={close} aria-label="Cerrar"><X size={20}/></button></div>
+ <div className="evidence-modal-summary"><div><b>Operador</b><span>{data.access?.nombre||data.unit?.operador_nombre||"—"}</span></div><div><b>Empresa</b><span>{data.access?.empresa||data.unit?.linea_transporte||"—"}</span></div><div><b>Tracto</b><span>{data.access?.tracto_placas||data.unit?.tracto_placas||"—"}</span></div><div><b>Caja</b><span>{data.access?.caja_placas||data.unit?.caja_placas||"—"}</span></div></div>
+ <div style={{display:"flex",justifyContent:"flex-end",margin:"12px 0"}}><button type="button" className="secondary-btn" onClick={()=>{setEditing(v=>!v);setError("");}}><Edit3 size={15}/>{editing?"Cancelar edición":"Editar datos de llegada"}</button></div>
+ {editing&&<form onSubmit={submit} className="dispatch-edit" style={{marginBottom:16}}><p style={{margin:"0 0 8px",fontSize:13,color:"#52627b"}}>Corrige los datos mientras consultas la fotografía de la INE. Los cambios se guardarán en el registro de acceso y en la unidad.</p><label>Nombre del operador *<input required value={f.nombre} onChange={e=>change("nombre",e.target.value)}/></label><label>Empresa / transporte *<input required value={f.empresa} onChange={e=>change("empresa",e.target.value)}/></label><label>Teléfono / contacto<input value={f.telefono} onChange={e=>change("telefono",e.target.value)}/></label><label>Número de tracto<input value={f.tracto_numero} onChange={e=>change("tracto_numero",e.target.value)}/></label><label>Placas del tracto *<input required value={f.tracto_placas} onChange={e=>change("tracto_placas",e.target.value)}/></label><label>Número de caja<input value={f.caja_numero} onChange={e=>change("caja_numero",e.target.value)}/></label><label>Placas de caja<input value={f.caja_placas} onChange={e=>change("caja_placas",e.target.value)}/></label>{error&&<div className="notice error"><span>{error}</span></div>}<div className="button-row"><button type="button" className="secondary-btn" onClick={()=>setEditing(false)} disabled={saving}><XCircle size={15}/>Cancelar</button><button type="submit" className="login-btn compact" disabled={saving}><CheckCircle2 size={15}/>{saving?"Guardando…":"Guardar correcciones"}</button></div></form>}
+ <div className="evidence-photo-grid">{["placa","identificacion"].map(tipo=>{const p=data.photos?.find(x=>x.tipo===tipo);return <div className="evidence-photo-card" key={tipo}><div className="evidence-photo-title"><span>{tipo==="placa"?"📷":"🪪"}</span><div><strong>{tipo==="placa"?"Placa":"ID / INE"}</strong><small>{p?.signedUrl?"Fotografía disponible":"Sin fotografía"}</small></div></div>{p?.signedUrl?<img src={p.signedUrl} alt={tipo==="placa"?"Fotografía de placa":"Fotografía de identificación"} className="evidence-modal-image"/>:<div className="evidence-no-photo">No hay fotografía de {tipo==="placa"?"placa":"identificación"}.</div>}</div>})}</div></div></div>;
 }
 
 function SealModal({data,setData,close,save}){return <div className="seal-modal-backdrop" role="dialog" aria-modal="true" onClick={close}><div className="seal-modal-card" onClick={e=>e.stopPropagation()}><div className="seal-modal-head"><div><span>OP360 · SELLADO</span><strong>Número de sellos</strong><small>{data.unit?.folio||"Unidad"}</small></div><button type="button" onClick={close}>×</button></div><label>Número de sello físico *<input autoFocus inputMode="numeric" pattern="[0-9]*" type="tel" value={data.physical} onChange={e=>setData({...data,physical:e.target.value.replace(/\\D/g,"")})} placeholder="Solo números"/></label><label>Número de sello documentado <input inputMode="numeric" pattern="[0-9]*" type="tel" value={data.documented} onChange={e=>setData({...data,documented:e.target.value.replace(/\\D/g,"")})} placeholder="Solo números"/></label><div className="seal-modal-actions"><button type="button" className="secondary-btn" onClick={close}>Cancelar</button><button type="button" className="login-btn compact" onClick={save}>Guardar sello</button></div></div></div>}
