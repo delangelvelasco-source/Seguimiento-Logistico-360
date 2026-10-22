@@ -320,7 +320,7 @@ export default function App(){
         {module==="rampas"&&<Ramps ramps={ramps} units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)} reload={()=>loadRamps()}/>}
         {module==="dispatch"&&<Dispatch warehouseId={currentWarehouse?.id} onEdit={setEditUnit}/>}
         {module==="operacion"&&<Operation units={units} ramps={ramps} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
-        {module==="csr"&&<CSR units={units} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
+        {module==="csr"&&<CSR units={units} warehouseId={currentWarehouse?.id} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="monitor"&&<Monitor units={units} counts={counts} warehouse={currentWarehouse} ramps={ramps}/>}
         {module==="guardia"&&<Guardia units={units} profile={profile} onUpdate={(id,p,m)=>updateUnit(id,p,m)}/>}
         {module==="admin"&&<Admin users={users} warehouses={warehouses} form={newUser} setForm={setNewUser} submit={createUser} busy={busy}/>}
@@ -446,7 +446,78 @@ function Ramps({ramps,units,onUpdate,reload}){const waiting=units.filter(u=>u.es
 
 function Operation({units,ramps,onUpdate}){const active=units.filter(u=>["rampa_asignada","en_operacion"].includes(u.estado));return <><Page title="Operación" sub="Inicia carga o descarga desde la rampa asignada."/><div className="panel operation-board">{active.length===0?<Empty text="No hay unidades asignadas a una rampa."/>:active.map(u=>{const r=ramps.find(x=>x.id===u.rampa_id);const isLoad=u.operacion_tipo==="embarque";return <div className={"unit-card operation-row operation-"+u.estado} key={u.id}><div><UnitMain u={u}/><small>{r?("Rampa "+r.codigo+" · "+r.nombre):"Sin rampa"} · {isLoad?"Embarque / Carga":"Recibo / Descarga"}</small></div><div className="actions">{u.estado==="rampa_asignada"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"en_operacion",operacion_inicio_at:new Date().toISOString()},""+(isLoad?"Carga":"Descarga")+" iniciada en "+(r?.codigo||"la rampa")+"." )}>Iniciar {isLoad?"carga":"descarga"}</button>}{u.estado==="en_operacion"&&<button className="primary" onClick={()=>onUpdate(u.id,{estado:"documentacion",operacion_fin_at:new Date().toISOString()},""+(isLoad?"Carga":"Descarga")+" terminada; pasó a documentación.")}>Terminar {isLoad?"carga":"descarga"}</button>}</div></div>})}</div></>}
 
-function CSR({units,onUpdate}){const list=units.filter(u=>["documentacion","espera_turno"].includes(u.estado));return <><Page title="CSR" sub="Citas y validación documental."/><div className="panel">{list.length===0?<Empty text="No hay unidades pendientes de CSR."/>:list.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{cita_confirmada:true,csr_confirmacion_at:new Date().toISOString(),estado:"rampa_asignada"},"CSR confirmó la unidad.")}>Confirmar y enviar a rampa</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"CSR marcó incidencia.")}>Revisión</button></div></div>)}</div></>}
+function CSR({units,onUpdate,warehouseId}){
+ const [selectedDay,setSelectedDay]=useState(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;});
+ const [month,setMonth]=useState(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);});
+ const [appointments,setAppointments]=useState([]);
+ const [loadingAppointments,setLoadingAppointments]=useState(false);
+ const [appointmentError,setAppointmentError]=useState("");
+ const list=units.filter(u=>["documentacion","espera_turno"].includes(u.estado));
+ const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+ const selectedLabel=new Date(selectedDay+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ useEffect(()=>{
+  let alive=true;
+  async function load(){
+   if(!warehouseId){setAppointments([]);setAppointmentError("");return;}
+   setLoadingAppointments(true);setAppointmentError("");
+   const start=new Date(month.getFullYear(),month.getMonth(),1);
+   const end=new Date(month.getFullYear(),month.getMonth()+1,1);
+   const {data,error}=await supabase.from("citas")
+    .select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,pallets,estado,cerrada_at,unidades_solicitadas")
+    .eq("almacen_id",warehouseId).gte("fecha",dateKey(start)).lt("fecha",dateKey(end))
+    .order("fecha").order("hora_inicio").limit(500);
+   if(!alive)return;
+   if(error){setAppointmentError("No se pudieron cargar las citas. Intenta actualizar en unos momentos.");setAppointments([]);}
+   else setAppointments((data||[]).filter(a=>a.estado!=="cancelada"&&!a.cerrada_at));
+   setLoadingAppointments(false);
+  }
+  load();
+  const timer=setInterval(load,60000);
+  return()=>{alive=false;clearInterval(timer)};
+ },[warehouseId,month.getFullYear(),month.getMonth()]);
+ const monthDays=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+ const firstDay=(new Date(month.getFullYear(),month.getMonth(),1).getDay()+6)%7;
+ const dayCounts=appointments.reduce((acc,a)=>{acc[a.fecha]=(acc[a.fecha]||0)+1;return acc;},{});
+ const selectedAppointments=appointments.filter(a=>a.fecha===selectedDay).sort((a,b)=>String(a.hora_inicio||"").localeCompare(String(b.hora_inicio||"")));
+ const shiftMonth=delta=>{const next=new Date(month.getFullYear(),month.getMonth()+delta,1);setMonth(next);setSelectedDay(dateKey(next));};
+ const fmtTime=t=>t?String(t).slice(0,5):"Hora pendiente";
+ return <><Page title="CSR" sub="Calendario de citas y validación documental."/>
+ <section className="panel" style={{padding:20,marginBottom:16}}>
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
+   <div><h2 style={{margin:"0 0 5px",fontSize:21,color:"#172744"}}>Calendario de citas</h2><p style={{margin:0,color:"#71809a",fontSize:13}}>Citas del almacén · actualización automática cada minuto</p></div>
+   <button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button>
+  </div>
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:14}}>
+   <button className="secondary" aria-label="Mes anterior" onClick={()=>shiftMonth(-1)}>‹</button>
+   <strong style={{fontSize:17,textTransform:"capitalize"}}>{month.toLocaleDateString("es-MX",{month:"long",year:"numeric"})}</strong>
+   <button className="secondary" aria-label="Mes siguiente" onClick={()=>shiftMonth(1)}>›</button>
+  </div>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:5}}>
+   {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d=><div key={d} style={{textAlign:"center",fontSize:11,fontWeight:800,color:"#71809a",padding:"7px 0"}}>{d}</div>)}
+   {Array.from({length:firstDay},(_,i)=><div key={"blank"+i}/>)}
+   {Array.from({length:monthDays},(_,i)=>{const day=i+1;const key=dateKey(new Date(month.getFullYear(),month.getMonth(),day));const active=key===selectedDay;const count=dayCounts[key]||0;const todayKey=dateKey(new Date());return <button key={key} type="button" onClick={()=>setSelectedDay(key)} aria-label={day+" citas "+count} style={{minHeight:58,padding:"7px 2px",borderRadius:12,border:active?"2px solid #315fa8":key===todayKey?"1px solid #315fa8":"1px solid #e2e8f0",background:active?"#eaf1fc":"#fff",color:"#172744",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,boxShadow:active?"0 3px 10px #315fa81c":"none"}}>
+    <span style={{fontSize:14,fontWeight:active?800:600}}>{day}</span>{count>0?<span style={{fontSize:10,fontWeight:800,background:"#315fa8",color:"#fff",borderRadius:20,minWidth:18,padding:"2px 5px"}}>{count}</span>:<span style={{height:14,fontSize:9,color:"#9aa6b8"}}>·</span>}
+   </button>})}
+  </div>
+  <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:12,fontSize:11,color:"#71809a"}}><span>● Citas programadas</span><span style={{color:"#315fa8"}}>Borde azul: día seleccionado</span></div>
+ </section>
+ <section className="panel" style={{padding:20,marginBottom:16}}>
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:14}}>
+   <div><h2 style={{margin:"0 0 5px",fontSize:19,color:"#172744",textTransform:"capitalize"}}>{selectedLabel}</h2><p style={{margin:0,fontSize:13,color:"#71809a"}}>Agenda de citas · {selectedAppointments.length} registradas</p></div>
+   {loadingAppointments?<span style={{fontSize:12,color:"#71809a"}}>Actualizando…</span>:null}
+  </div>
+  {appointmentError?<Empty text={appointmentError}/>:null}
+  {!appointmentError&&selectedAppointments.length===0&&!loadingAppointments?<Empty text="No hay citas programadas para esta fecha."/>:null}
+  {selectedAppointments.map(a=><article key={a.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 0",borderTop:"1px solid #edf0f5"}}>
+   <div style={{minWidth:66,background:"#edf3fc",color:"#244f91",borderRadius:10,padding:"9px 6px",textAlign:"center",fontWeight:800,fontSize:13}}>{fmtTime(a.hora_inicio)}</div>
+   <div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><strong>{a.folio||"Cita sin folio"}</strong><span style={{fontSize:10,fontWeight:800,padding:"4px 7px",borderRadius:20,background:a.tipo_operacion==="embarque"?"#fff1df":"#e8f7ee",color:a.tipo_operacion==="embarque"?"#a55a10":"#247449"}}>{a.tipo_operacion==="embarque"?"Embarque":"Recibo"}</span></div>
+    <p style={{margin:"5px 0",fontSize:13,color:"#52627b"}}>{a.cuenta_cliente||a.referencia||"Sin referencia de cliente"}</p>
+    <small style={{color:"#71809a"}}>{a.hora_fin?"Hasta "+fmtTime(a.hora_fin)+" · ":""}{a.unidades_solicitadas!=null?a.unidades_solicitadas+" unidades · ":""}{a.estado==="borrador"?"Pendiente de confirmar":a.estado||"Programada"}</small>
+   </div>
+  </article>)}
+ </section>
+ <section className="panel"><PanelHead title={"Unidades pendientes de CSR: "+list.length}/>{list.length===0?<Empty text="No hay unidades pendientes de CSR."/>:list.map(u=><div className="unit-card" key={u.id}><UnitMain u={u}/><div className="actions"><button className="primary" onClick={()=>onUpdate(u.id,{cita_confirmada:true,csr_confirmacion_at:new Date().toISOString(),estado:"rampa_asignada"},"CSR confirmó la unidad.")}>Confirmar y enviar a rampa</button><button className="secondary" onClick={()=>onUpdate(u.id,{estado:"incidencia"},"CSR marcó incidencia.")}>Revisión</button></div></div>)}</section></>}
+
 function EditUnitModal({unit,onClose,onSave,busy}){
  const [f,setF]=useState({operador_nombre:unit.operador_nombre||"",linea_transporte:unit.linea_transporte||"",tracto_numero:unit.tracto_numero||"",tracto_placas:unit.tracto_placas||"",caja_numero:unit.caja_numero||"",caja_placas:unit.caja_placas||"",contacto:unit.contacto||"",operacion_tipo:unit.operacion_tipo||"recibo",numero_sellos:unit.numero_sellos??""});
  const submit=async e=>{e.preventDefault();await onSave(f);};
