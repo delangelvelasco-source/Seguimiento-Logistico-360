@@ -548,3 +548,9 @@
 .csr-quick-capture .csr-form-grid input:focus{outline:2px solid #2c7be5;outline-offset:1px}
 .csr-quick-capture>.login-btn{width:100%;margin-top:16px;min-height:48px}
 @media(max-width:600px){.csr-create-toolbar{align-items:stretch;flex-direction:column}.csr-create-toolbar button{width:100%}.csr-quick-modal{padding:8px;align-items:flex-start}.csr-quick-capture{max-height:calc(100vh - 16px);padding:15px;border-radius:14px}.csr-quick-capture .csr-form-grid{grid-template-columns:1fr}.csr-quick-capture-head h3{font-size:18px}.csr-quick-capture-head{align-items:flex-start}}
+
+
+.csr-appointment-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.csr-appointment-row>div{min-width:0;flex:1}
+.csr-appointment-row>button{flex-shrink:0;min-height:38px}
+@media(max-width:600px){.csr-appointment-row{align-items:stretch;flex-direction:column}.csr-appointment-row>button{width:100%}}
