@@ -34,16 +34,25 @@ jobs:
             echo "::error::Missing GitHub Actions secret CLOUDFLARE_ACCOUNT_ID."
             exit 1
           fi
+          if printf '%s' "$token" | grep -q '[[:space:]]'; then
+            echo "::error::Cloudflare API token still contains whitespace after normalization."
+            exit 1
+          fi
+          if printf '%s' "$account_id" | grep -q '[^0-9a-fA-F]'; then
+            echo "::error::Cloudflare account ID must contain only hexadecimal characters."
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "::add-mask::$account_id"
           echo "api_token=$token" >> "$GITHUB_OUTPUT"
           echo "account_id=$account_id" >> "$GITHUB_OUTPUT"
-          echo "Cloudflare credentials are present and normalized; values are intentionally hidden."
+          echo "Cloudflare credentials passed format checks; token length: ${#token} characters. Value hidden."
       - name: Install dependencies
         run: npm install
       - name: Build production bundle
         run: npm run build
       - name: Publish OP360 assets and Worker to Cloudflare
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ steps.cloudflare_credentials.outputs.api_token }}
-          accountId: ${{ steps.cloudflare_credentials.outputs.account_id }}
-          command: deploy --config wrangler.jsonc --name op360
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ steps.cloudflare_credentials.outputs.api_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare_credentials.outputs.account_id }}
+        run: npx --yes wrangler@4 deploy --config wrangler.jsonc --name op360
