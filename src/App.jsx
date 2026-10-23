@@ -595,7 +595,7 @@ function CSR({units,onUpdate,warehouseId}){
   finally{setSavingAppointment(false);}
  }
  return <><Page title="CSR" sub="Calendario de citas y validación documental."/>
- <section className="panel" style={{padding:20,marginBottom:16}}>
+ <section className="panel csr-calendar-panel" style={{padding:20,marginBottom:16}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
    <div><h2 style={{margin:"0 0 5px",fontSize:21,color:"#172744"}}>Calendario de citas</h2><p style={{margin:0,color:"#71809a",fontSize:13}}>Citas del almacén · actualización automática cada minuto</p></div>
    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");if(showAddAppointment){setShowAddAppointment(false);setEditingAppointment(null);}else{setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:openTimes[0]||"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});setShowAddAppointment(true);}}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
@@ -605,7 +605,7 @@ function CSR({units,onUpdate,warehouseId}){
    <strong style={{fontSize:17,textTransform:"capitalize"}}>{month.toLocaleDateString("es-MX",{month:"long",year:"numeric"})}</strong>
    <button className="secondary" aria-label="Mes siguiente" onClick={()=>shiftMonth(1)}>›</button>
   </div>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:5}}>
+  <div className="csr-calendar-grid" style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:5}}>
    {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d=><div key={d} style={{textAlign:"center",fontSize:11,fontWeight:800,color:"#71809a",padding:"7px 0"}}>{d}</div>)}
    {Array.from({length:firstDay},(_,i)=><div key={"blank"+i}/>)}
    {Array.from({length:monthDays},(_,i)=>{const day=i+1;const key=dateKey(new Date(month.getFullYear(),month.getMonth(),day));const active=key===selectedDay;const count=dayCounts[key]||0;const todayKey=dateKey(new Date());return <button key={key} type="button" onClick={()=>setSelectedDay(key)} aria-label={day+" citas "+count} style={{minHeight:58,padding:"7px 2px",borderRadius:12,border:active?"2px solid #315fa8":key===todayKey?"1px solid #315fa8":"1px solid #e2e8f0",background:active?"#eaf1fc":"#fff",color:"#172744",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,boxShadow:active?"0 3px 10px #315fa81c":"none"}}>
@@ -614,14 +614,14 @@ function CSR({units,onUpdate,warehouseId}){
   </div>
   <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:12,fontSize:11,color:"#71809a"}}><span>● Citas programadas</span><span style={{color:"#315fa8"}}>Borde azul: día seleccionado</span></div>
  </section>
- <section className="panel" style={{padding:20,marginBottom:16}}>
+ <section className="panel csr-agenda-panel" style={{padding:20,marginBottom:16}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:14}}>
    <div><h2 style={{margin:"0 0 5px",fontSize:19,color:"#172744",textTransform:"capitalize"}}>{selectedLabel}</h2><p style={{margin:0,fontSize:13,color:"#71809a"}}>Agenda de citas · {selectedAppointments.length} registradas</p></div>
    {loadingAppointments?<span style={{fontSize:12,color:"#71809a"}}>Actualizando…</span>:null}
   </div>
   {appointmentError?<div style={{padding:12,marginBottom:10,borderRadius:10,background:"#fff1f0",color:"#a12622",fontSize:13}}>{appointmentError}</div>:null}
   {appointmentMessage?<div style={{padding:12,marginBottom:10,borderRadius:10,background:"#e8f7ee",color:"#247449",fontSize:13,fontWeight:700}}>{appointmentMessage}</div>:null}
-  {showAddAppointment&&<div role="dialog" aria-modal="true" aria-label={editingAppointment?"Editar cita":"Agregar cita"} onMouseDown={e=>{if(e.target===e.currentTarget){setShowAddAppointment(false);setEditingAppointment(null);}}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,23,42,.58)",display:"flex",alignItems:"center",justifyContent:"center",padding:14,overflowY:"auto"}}><form onSubmit={saveAppointment} onClick={e=>e.stopPropagation()} style={{width:"min(780px,100%)",maxHeight:"calc(100vh - 28px)",overflowY:"auto",border:"1px solid #d9e4f3",background:"#f8fbff",borderRadius:14,padding:16,margin:"auto",boxShadow:"0 20px 60px rgba(15,23,42,.25)"}}>
+  {showAddAppointment&&<div role="dialog" aria-modal="true" aria-label={editingAppointment?"Editar cita":"Agregar cita"} onMouseDown={e=>{if(e.target===e.currentTarget){setShowAddAppointment(false);setEditingAppointment(null);}}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,23,42,.58)",display:"flex",alignItems:"center",justifyContent:"center",padding:14,overflowY:"auto"}}><form className="csr-appointment-form" onSubmit={saveAppointment} onClick={e=>e.stopPropagation()} style={{width:"min(780px,100%)",maxHeight:"calc(100vh - 28px)",overflowY:"auto",border:"1px solid #d9e4f3",background:"#f8fbff",borderRadius:14,padding:16,margin:"auto",boxShadow:"0 20px 60px rgba(15,23,42,.25)"}}>
    <h3 style={{margin:"0 0 5px",color:"#172744"}}>{editingAppointment?"Editar cita · "+editingAppointment.folio:"Nueva cita · "+selectedLabel}</h3>
    <p style={{margin:"0 0 14px",fontSize:12,color:"#60718b"}}>{selectedWeekday===0?"Domingo: no hay ventana de citas.":selectedWeekday===6?"Ventana del sábado: 08:00–13:00.":"Ventana de lunes a viernes: 08:00–18:00."} · Bloques de 30 minutos · cada horario admite una sola cita.</p>
    {!isBusinessDay?<div style={{fontSize:13,color:"#a12622"}}>Este día no tiene ventana de citas. Selecciona de lunes a sábado.</div>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12}}>
@@ -642,7 +642,7 @@ function CSR({units,onUpdate,warehouseId}){
    <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>{setShowAddAppointment(false);setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});}}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando…":openTimes.length===0?"Sin horarios disponibles":editingAppointment?"Guardar cambios":"Guardar cita"}</button></div>
   </form></div>}
   {!appointmentError&&selectedAppointments.length===0&&!loadingAppointments?<Empty text="No hay citas programadas para esta fecha."/>:null}
-  {selectedAppointments.map(a=><article key={a.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 0",borderTop:"1px solid #edf0f5"}}>
+  {selectedAppointments.map(a=><article className="csr-appointment-card" key={a.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 0",borderTop:"1px solid #edf0f5"}}>
    <div style={{minWidth:66,background:"#edf3fc",color:"#244f91",borderRadius:10,padding:"9px 6px",textAlign:"center",fontWeight:800,fontSize:13}}>{fmtTime(a.hora_inicio)}</div>
    <div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><strong>{a.folio||"Cita sin folio"}</strong><span style={{fontSize:10,fontWeight:800,padding:"4px 7px",borderRadius:20,background:a.tipo_operacion==="embarque"?"#fff1df":"#e8f7ee",color:a.tipo_operacion==="embarque"?"#a55a10":"#247449"}}>{a.tipo_operacion==="embarque"?"Embarque":"Recibo"}</span></div>
     <p style={{margin:"5px 0",fontSize:13,color:"#52627b"}}>{a.cuenta_cliente||a.referencia||"Sin referencia de cliente"}</p>
