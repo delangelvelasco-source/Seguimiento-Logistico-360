@@ -554,3 +554,111 @@
 .csr-appointment-row>div{min-width:0;flex:1}
 .csr-appointment-row>button{flex-shrink:0;min-height:38px}
 @media(max-width:600px){.csr-appointment-row{align-items:stretch;flex-direction:column}.csr-appointment-row>button{width:100%}}
+
+
+/* OP360 CSR · rediseño nativo de la agenda y captura de citas */
+.csr-calendar-panel,.csr-agenda-panel{
+  border:1px solid #dce5f0!important;border-radius:20px!important;
+  background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)!important;
+  box-shadow:0 8px 26px rgba(25,48,82,.055)!important;
+  padding:clamp(14px,2.2vw,24px)!important;
+}
+.csr-calendar-panel h2,.csr-agenda-panel h2{letter-spacing:-.035em!important;font-weight:800!important}
+.csr-calendar-panel>div:first-child{align-items:center}
+.csr-calendar-panel button,.csr-agenda-panel button{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.csr-calendar-panel button:hover,.csr-agenda-panel button:hover{transform:translateY(-1px)}
+.csr-calendar-grid{gap:7px!important}
+.csr-calendar-grid button{
+  min-height:68px!important;border-radius:13px!important;
+  border:1px solid #e0e8f2!important;background:#fff!important;
+  box-shadow:0 2px 5px rgba(26,50,84,.025)!important;
+}
+.csr-calendar-grid button[aria-pressed="true"],
+.csr-calendar-grid button:focus-visible{
+  outline:2px solid #2563eb!important;outline-offset:1px;
+}
+.csr-calendar-grid button:hover{border-color:#8bb5f4!important;background:#f3f8ff!important}
+.csr-calendar-grid button span:first-child{font-size:15px!important}
+.csr-calendar-grid button span:nth-child(2){background:#2463d3!important;min-width:22px!important}
+.csr-agenda-panel>div:first-child{padding-bottom:12px;border-bottom:1px solid #eaf0f7}
+.csr-appointment-card{
+  margin-top:10px!important;padding:15px!important;border:1px solid #e2eaf4!important;
+  border-radius:15px!important;background:#fff!important;align-items:center!important;
+  box-shadow:0 3px 12px rgba(25,48,82,.035)!important;
+}
+.csr-appointment-card>div:first-child{min-width:72px!important;background:#edf4ff!important;color:#1f55a5!important;border:1px solid #d9e8ff}
+.csr-appointment-card>div:nth-child(2)>div:first-child strong{font-size:15px;color:#1b2c48;letter-spacing:.01em}
+.csr-appointment-card>div:nth-child(2)>p{font-weight:650!important;color:#415574!important}
+.csr-appointment-card>div:nth-child(2)>div:last-child button{
+  border-radius:9px!important;border:1px solid #c8d9f2!important;background:#f3f7ff!important;
+  color:#1f56a5!important;font-weight:750!important;padding:8px 12px!important;
+}
+.csr-appointment-card>div:nth-child(2)>div:last-child button:hover{background:#e4efff!important}
+.csr-agenda-panel [role="dialog"]{
+  background:rgba(12,25,46,.68)!important;backdrop-filter:blur(8px)!important;
+  padding:clamp(8px,2vw,24px)!important;align-items:center!important;
+}
+.csr-appointment-form{
+  width:min(900px,100%)!important;max-height:min(90dvh,900px)!important;
+  overflow:auto!important;padding:clamp(18px,3vw,30px)!important;
+  border:1px solid #dbe6f5!important;border-radius:22px!important;
+  background:#fff!important;box-shadow:0 28px 90px rgba(5,20,45,.32)!important;
+}
+.csr-appointment-form>h3{
+  font-size:clamp(21px,3vw,28px)!important;line-height:1.2!important;
+  letter-spacing:-.04em!important;margin:0 0 8px!important;color:#142747!important;
+}
+.csr-appointment-form>p{
+  margin:0 0 22px!important;padding:11px 13px!important;
+  border-radius:10px!important;background:#f2f6fc!important;
+  color:#5c6f8a!important;font-size:13px!important;line-height:1.5!important;
+}
+.csr-appointment-form>div[style*="grid-template-columns"]{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important;
+}
+.csr-appointment-form label{
+  display:flex!important;flex-direction:column!important;gap:7px!important;
+  min-width:0!important;color:#30425e!important;font-size:12px!important;font-weight:750!important;
+}
+.csr-appointment-form label input,.csr-appointment-form label select{
+  width:100%!important;min-width:0!important;min-height:46px!important;
+  box-sizing:border-box!important;padding:0 13px!important;
+  border:1px solid #d5dfec!important;border-radius:11px!important;
+  background:#fbfcff!important;color:#1b2c48!important;font:500 14px inherit!important;
+  box-shadow:inset 0 1px 2px rgba(20,40,70,.025)!important;
+}
+.csr-appointment-form label input:focus,.csr-appointment-form label select:focus{
+  outline:3px solid #dceaff!important;border-color:#377be8!important;background:#fff!important;
+}
+.csr-appointment-form label input::placeholder{color:#9aa8bb!important}
+.csr-appointment-form>div:last-of-type{
+  padding-top:17px!important;margin-top:20px!important;border-top:1px solid #e7edf5!important;
+}
+.csr-appointment-form>div:last-of-type button{
+  min-height:46px!important;padding:0 18px!important;border-radius:11px!important;font-weight:800!important;
+}
+.csr-appointment-form>div:last-of-type button[type="submit"]{
+  background:linear-gradient(120deg,#1558d6,#2679ed)!important;
+  border:1px solid #2169dc!important;box-shadow:0 5px 12px rgba(37,99,235,.18)!important;
+}
+.csr-appointment-form>div:last-of-type button[type="button"]{
+  background:#f1f5fa!important;color:#435570!important;border:1px solid #dce4ee!important;
+}
+@media(max-width:640px){
+  .csr-calendar-panel,.csr-agenda-panel{padding:13px!important;border-radius:15px!important}
+  .csr-calendar-grid{gap:4px!important}
+  .csr-calendar-grid button{min-height:54px!important;padding:5px 2px!important;border-radius:10px!important}
+  .csr-calendar-grid button span:first-child{font-size:13px!important}
+  .csr-calendar-panel>div:first-child{gap:10px!important}
+  .csr-calendar-panel>div:first-child>div:last-child{width:100%;display:flex;justify-content:space-between}
+  .csr-appointment-card{align-items:flex-start!important;gap:10px!important;padding:12px!important}
+  .csr-appointment-card>div:first-child{min-width:61px!important;padding:10px 5px!important}
+  .csr-appointment-form{max-height:calc(100dvh - 16px)!important;padding:17px!important;border-radius:17px!important}
+  .csr-appointment-form>div[style*="grid-template-columns"]{grid-template-columns:1fr!important;gap:12px!important}
+  .csr-appointment-form label input,.csr-appointment-form label select{min-height:45px!important}
+  .csr-appointment-form>div:last-of-type{display:grid!important;grid-template-columns:1fr 1.2fr!important;gap:9px!important}
+  .csr-appointment-form>div:last-of-type button{padding:0 10px!important;font-size:13px!important}
+}
+@media(min-width:641px){
+  .csr-appointment-form>div[style*="grid-template-columns"] label:first-child{grid-column:1/-1}
+}
