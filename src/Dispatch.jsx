@@ -65,6 +65,12 @@ export default function Dispatch({warehouseId}){
  }
  async function changeStatus(u,estado){
   setStatusOpen(null); if(estado===u.estado)return;
+  const previousRamp=u.rampa_id?ramps.find(r=>r.id===u.rampa_id):null;
+  if(estado==="documentacion"){
+   const note="Estatus operativo cambiado a Documentación. Rampa "+(previousRamp?.nombre||previousRamp?.codigo||"asignada")+" liberada para nueva unidad.";
+   await logMovement(u,estado,"estatus_operativo",note,{rampa_id:null,ubicacion_tipo:"patio",ubicacion_at:new Date().toISOString()});
+   return;
+  }
   await logMovement(u,estado,"estatus_operativo","Estatus operativo cambiado a "+(stateLabel[estado]||estado)+".");
  }
  async function registerDocument(u){
