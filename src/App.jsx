@@ -502,6 +502,7 @@ function CSR({units,onUpdate,warehouseId}){
  const [loadingAppointments,setLoadingAppointments]=useState(false);
  const [appointmentError,setAppointmentError]=useState("");
  const [showAddAppointment,setShowAddAppointment]=useState(false);
+ const [editingAppointment,setEditingAppointment]=useState(null);
  const [savingAppointment,setSavingAppointment]=useState(false);
  const [appointmentMessage,setAppointmentMessage]=useState("");
  const [newAppointment,setNewAppointment]=useState({tipo_operacion:"recibo",hora_inicio:"08:00",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});
@@ -539,21 +540,46 @@ function CSR({units,onUpdate,warehouseId}){
  const closeTime=selectedWeekday===6?13*60:18*60;
  const availableTimes=[];
  if(isBusinessDay){for(let m=8*60;m+30<=closeTime;m+=30){availableTimes.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));}}
- const occupiedTimes=new Set(appointments.filter(a=>a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at).map(a=>String(a.hora_inicio||"").slice(0,5)));
+ const occupiedTimes=new Set(appointments.filter(a=>a.fecha===selectedDay&&a.id!==editingAppointment?.id&&a.estado!=="cancelada"&&!a.cerrada_at).map(a=>String(a.hora_inicio||"").slice(0,5)));
  const openTimes=availableTimes.filter(t=>!occupiedTimes.has(t));
  const todayKey=dateKey(new Date());
+ async function editAppointment(a){
+  setAppointmentError("");setAppointmentMessage("");
+  const {data,error}=await supabase.from("cita_datos_precarga").select("linea_transporte,operador_nombre,tracto_numero,tracto_placas,caja_numero,caja_placas,observaciones").eq("cita_id",a.id).maybeSingle();
+  if(error){setAppointmentError("No se pudieron cargar los datos de la cita: "+error.message);return;}
+  const d=data||{};
+  setEditingAppointment(a);
+  setSelectedDay(a.fecha);
+  setMonth(new Date(Number(a.fecha.slice(0,4)),Number(a.fecha.slice(5,7))-1,1));
+  setNewAppointment({tipo_operacion:a.tipo_operacion||"recibo",hora_inicio:String(a.hora_inicio||"").slice(0,5),referencia:a.referencia||d.observaciones||"",cuenta_cliente:a.cuenta_cliente||"",pallets:String(a.pallets??"0"),unidades_solicitadas:String(a.unidades_solicitadas??"1"),linea_transporte:d.linea_transporte||"",operador_nombre:d.operador_nombre||"",tracto_numero:d.tracto_numero||"",tracto_placas:d.tracto_placas||"",caja_numero:d.caja_numero||"",caja_placas:d.caja_placas||""});
+  setShowAddAppointment(true);
+ }
  async function saveAppointment(e){
   e.preventDefault();setAppointmentError("");setAppointmentMessage("");
   if(!warehouseId){setAppointmentError("Selecciona un almacén antes de registrar la cita.");return;}
   if(selectedDay<todayKey){setAppointmentError("No puedes registrar una cita en una fecha pasada.");return;}
   if(!openTimes.includes(newAppointment.hora_inicio)){setAppointmentError("Ese horario ya tiene una cita registrada. Selecciona otro bloque disponible.");return;}
   const startMinutes=Number(newAppointment.hora_inicio.slice(0,2))*60+Number(newAppointment.hora_inicio.slice(3,5)),endMinutes=startMinutes+30;
-  const conflicts=appointments.filter(a=>a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at&&Number(String(a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_inicio||"00:00").slice(3,5))<endMinutes&&Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(3,5))>startMinutes);
+  const conflicts=appointments.filter(a=>a.id!==editingAppointment?.id&&a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at&&Number(String(a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_inicio||"00:00").slice(3,5))<endMinutes&&Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(3,5))>startMinutes);
   if(conflicts.length>0){setAppointmentError("Ese bloque ya está ocupado por una cita previa. Elige otra hora.");return;}
   setSavingAppointment(true);
   try{
    const auth=await supabase.auth.getUser(),user=auth.data?.user;
    if(!user?.id){setAppointmentError("Tu sesión expiró. Inicia sesión nuevamente.");return;}
+   if(editingAppointment){
+    const endTime=String(Math.floor(endMinutes/60)).padStart(2,"0")+":"+String(endMinutes%60).padStart(2,"0");
+    const updated=await supabase.from("citas").update({tipo_operacion:newAppointment.tipo_operacion,fecha:selectedDay,hora_inicio:newAppointment.hora_inicio,hora_fin:endTime,referencia:newAppointment.referencia.trim()||null,cuenta_cliente:newAppointment.cuenta_cliente.trim()||null,pallets:Number(newAppointment.pallets||0),unidades_solicitadas:Number(newAppointment.unidades_solicitadas||1),updated_at:new Date().toISOString()}).eq("id",editingAppointment.id).eq("almacen_id",warehouseId).select("id,folio").single();
+    if(updated.error){setAppointmentError("No se pudo actualizar la cita: "+updated.error.message);return;}
+    const p=await supabase.from("cita_datos_precarga").upsert({cita_id:editingAppointment.id,linea_transporte:newAppointment.linea_transporte.trim()||null,operador_nombre:newAppointment.operador_nombre.trim()||null,tracto_numero:newAppointment.tracto_numero.trim()||null,tracto_placas:newAppointment.tracto_placas.trim().toUpperCase()||null,caja_numero:newAppointment.caja_numero.trim()||null,caja_placas:newAppointment.caja_placas.trim().toUpperCase()||null,observaciones:newAppointment.referencia.trim()||null,actualizado_por:user.id},{onConflict:"cita_id"});
+    if(p.error){setAppointmentError("La cita se actualizó, pero no se pudieron guardar los datos de transporte: "+p.error.message);return;}
+    setAppointmentMessage("Cambios guardados · Folio "+(updated.data?.folio||editingAppointment.folio));
+    setShowAddAppointment(false);setEditingAppointment(null);
+    setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});
+    const start=new Date(month.getFullYear(),month.getMonth(),1),end=new Date(month.getFullYear(),month.getMonth()+1,1);
+    const fresh=await supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,pallets,estado,cerrada_at,unidades_solicitadas").eq("almacen_id",warehouseId).gte("fecha",dateKey(start)).lt("fecha",dateKey(end)).order("fecha").order("hora_inicio").limit(500);
+    if(!fresh.error)setAppointments((fresh.data||[]).filter(x=>x.estado!=="cancelada"&&!x.cerrada_at));
+    return;
+   }
    const fr=await supabase.rpc("generar_folio_cita",{p_fecha:selectedDay});
    if(fr.error){setAppointmentError("No se pudo generar el folio: "+fr.error.message);return;}
    const endTime=String(Math.floor(endMinutes/60)).padStart(2,"0")+":"+String(endMinutes%60).padStart(2,"0");
@@ -561,7 +587,7 @@ function CSR({units,onUpdate,warehouseId}){
    if(r.error){setAppointmentError("No se pudo guardar la cita: "+r.error.message);return;}
    const p=await supabase.from("cita_datos_precarga").upsert({cita_id:r.data.id,linea_transporte:newAppointment.linea_transporte.trim()||null,operador_nombre:newAppointment.operador_nombre.trim()||null,tracto_numero:newAppointment.tracto_numero.trim()||null,tracto_placas:newAppointment.tracto_placas.trim().toUpperCase()||null,caja_numero:newAppointment.caja_numero.trim()||null,caja_placas:newAppointment.caja_placas.trim().toUpperCase()||null,observaciones:newAppointment.referencia.trim()||null,actualizado_por:user.id},{onConflict:"cita_id"});
    if(p.error){setAppointmentError("La cita "+r.data.folio+" se creó, pero faltó guardar los datos previos: "+p.error.message);return;}
-   setAppointmentMessage("Cita registrada correctamente: "+r.data.folio);setShowAddAppointment(false);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});
+   setAppointmentMessage("Cita registrada correctamente: "+r.data.folio);setShowAddAppointment(false);setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});
    const start=new Date(month.getFullYear(),month.getMonth(),1),end=new Date(month.getFullYear(),month.getMonth()+1,1);
    const fresh=await supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,pallets,estado,cerrada_at,unidades_solicitadas").eq("almacen_id",warehouseId).gte("fecha",dateKey(start)).lt("fecha",dateKey(end)).order("fecha").order("hora_inicio").limit(500);
    if(!fresh.error)setAppointments((fresh.data||[]).filter(x=>x.estado!=="cancelada"&&!x.cerrada_at));
@@ -572,7 +598,7 @@ function CSR({units,onUpdate,warehouseId}){
  <section className="panel" style={{padding:20,marginBottom:16}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
    <div><h2 style={{margin:"0 0 5px",fontSize:21,color:"#172744"}}>Calendario de citas</h2><p style={{margin:0,color:"#71809a",fontSize:13}}>Citas del almacén · actualización automática cada minuto</p></div>
-   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");if(showAddAppointment){setShowAddAppointment(false);}else{setNewAppointment({tipo_operacion:"recibo",hora_inicio:openTimes[0]||"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});setShowAddAppointment(true);}}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
+   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");if(showAddAppointment){setShowAddAppointment(false);setEditingAppointment(null);}else{setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:openTimes[0]||"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});setShowAddAppointment(true);}}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
   </div>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:14}}>
    <button className="secondary" aria-label="Mes anterior" onClick={()=>shiftMonth(-1)}>‹</button>
@@ -595,10 +621,11 @@ function CSR({units,onUpdate,warehouseId}){
   </div>
   {appointmentError?<div style={{padding:12,marginBottom:10,borderRadius:10,background:"#fff1f0",color:"#a12622",fontSize:13}}>{appointmentError}</div>:null}
   {appointmentMessage?<div style={{padding:12,marginBottom:10,borderRadius:10,background:"#e8f7ee",color:"#247449",fontSize:13,fontWeight:700}}>{appointmentMessage}</div>:null}
-  {showAddAppointment&&<form onSubmit={saveAppointment} style={{border:"1px solid #d9e4f3",background:"#f8fbff",borderRadius:14,padding:16,marginBottom:16}}>
-   <h3 style={{margin:"0 0 5px",color:"#172744"}}>Nueva cita · {selectedLabel}</h3>
+  {showAddAppointment&&<div role="dialog" aria-modal="true" aria-label={editingAppointment?"Editar cita":"Agregar cita"} onMouseDown={e=>{if(e.target===e.currentTarget){setShowAddAppointment(false);setEditingAppointment(null);}}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,23,42,.58)",display:"flex",alignItems:"center",justifyContent:"center",padding:14,overflowY:"auto"}}><form onSubmit={saveAppointment} onClick={e=>e.stopPropagation()} style={{width:"min(780px,100%)",maxHeight:"calc(100vh - 28px)",overflowY:"auto",border:"1px solid #d9e4f3",background:"#f8fbff",borderRadius:14,padding:16,margin:"auto",boxShadow:"0 20px 60px rgba(15,23,42,.25)"}}>
+   <h3 style={{margin:"0 0 5px",color:"#172744"}}>{editingAppointment?"Editar cita · "+editingAppointment.folio:"Nueva cita · "+selectedLabel}</h3>
    <p style={{margin:"0 0 14px",fontSize:12,color:"#60718b"}}>{selectedWeekday===0?"Domingo: no hay ventana de citas.":selectedWeekday===6?"Ventana del sábado: 08:00–13:00.":"Ventana de lunes a viernes: 08:00–18:00."} · Bloques de 30 minutos · cada horario admite una sola cita.</p>
    {!isBusinessDay?<div style={{fontSize:13,color:"#a12622"}}>Este día no tiene ventana de citas. Selecciona de lunes a sábado.</div>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12}}>
+    <label>Fecha de cita<input type="date" required min={todayKey} value={selectedDay} onChange={e=>{const v=e.target.value;if(!v)return;setSelectedDay(v);const d=new Date(v+"T12:00:00");setMonth(new Date(d.getFullYear(),d.getMonth(),1));setNewAppointment({...newAppointment,hora_inicio:""});}}/></label>
     <label>Tipo de operación<select required value={newAppointment.tipo_operacion} onChange={e=>setNewAppointment({...newAppointment,tipo_operacion:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
     <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{openTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select></label>
     <label>Cuenta / cliente<input value={newAppointment.cuenta_cliente} onChange={e=>setNewAppointment({...newAppointment,cuenta_cliente:e.target.value})} placeholder="Nombre del cliente"/></label>
@@ -612,14 +639,14 @@ function CSR({units,onUpdate,warehouseId}){
     <label>Número de caja<input value={newAppointment.caja_numero} onChange={e=>setNewAppointment({...newAppointment,caja_numero:e.target.value})}/></label>
     <label>Placas de caja<input value={newAppointment.caja_placas} onChange={e=>setNewAppointment({...newAppointment,caja_placas:e.target.value.toUpperCase()})}/></label>
    </div>}
-   <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>{setShowAddAppointment(false);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});}}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando cita…":openTimes.length===0?"Sin horarios disponibles":"Guardar cita"}</button></div>
-  </form>}
+   <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>{setShowAddAppointment(false);setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});}}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando…":openTimes.length===0?"Sin horarios disponibles":editingAppointment?"Guardar cambios":"Guardar cita"}</button></div>
+  </form></div>}
   {!appointmentError&&selectedAppointments.length===0&&!loadingAppointments?<Empty text="No hay citas programadas para esta fecha."/>:null}
   {selectedAppointments.map(a=><article key={a.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 0",borderTop:"1px solid #edf0f5"}}>
    <div style={{minWidth:66,background:"#edf3fc",color:"#244f91",borderRadius:10,padding:"9px 6px",textAlign:"center",fontWeight:800,fontSize:13}}>{fmtTime(a.hora_inicio)}</div>
    <div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><strong>{a.folio||"Cita sin folio"}</strong><span style={{fontSize:10,fontWeight:800,padding:"4px 7px",borderRadius:20,background:a.tipo_operacion==="embarque"?"#fff1df":"#e8f7ee",color:a.tipo_operacion==="embarque"?"#a55a10":"#247449"}}>{a.tipo_operacion==="embarque"?"Embarque":"Recibo"}</span></div>
     <p style={{margin:"5px 0",fontSize:13,color:"#52627b"}}>{a.cuenta_cliente||a.referencia||"Sin referencia de cliente"}</p>
-    <small style={{color:"#71809a"}}>{a.hora_fin?"Hasta "+fmtTime(a.hora_fin)+" · ":""}{a.unidades_solicitadas!=null?a.unidades_solicitadas+" unidades · ":""}{a.estado==="borrador"?"Pendiente de confirmar":a.estado||"Programada"}</small>
+    <small style={{color:"#71809a"}}>{a.hora_fin?"Hasta "+fmtTime(a.hora_fin)+" · ":""}{a.unidades_solicitadas!=null?a.unidades_solicitadas+" unidades · ":""}{a.estado==="borrador"?"Pendiente de confirmar":a.estado||"Programada"}</small><div style={{marginTop:8}}><button type="button" className="secondary" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>editAppointment(a)}>✎ Editar cita</button></div>
    </div>
   </article>)}
  </section>
