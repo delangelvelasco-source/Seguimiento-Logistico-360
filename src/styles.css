@@ -506,3 +506,29 @@
 .m360-dock-info .m360-dock-folio{font-size:10px;color:#f0f5fb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
 .m360-dock-info small{font-size:9px;color:#9bacc0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:760px){.m360-dock-info{min-height:54px;padding:5px 4px;gap:3px}.m360-dock-carrier{gap:3px}.m360-dock-carrier-mark{flex-basis:16px;width:16px;height:16px;font-size:7px;border-radius:4px}.m360-dock-info .m360-dock-carrier-name,.m360-dock-info .m360-dock-folio{font-size:8px}.m360-dock-info small{font-size:8px}}
+
+/* Rediseño del tablero principal de Rampas: tarjetas tipo andén, coherentes con Monitor 360. */
+.ramp-yard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.ramp-yard-tile{min-width:0;overflow:hidden;border:1px solid #263a53;border-radius:12px;background:#101e2d;display:flex;flex-direction:column;box-shadow:0 3px 9px rgba(12,26,44,.12)}
+.ramp-yard-number{height:48px;display:grid;place-items:center;background:#08b968;color:#fff;font-size:22px;font-weight:900;letter-spacing:.04em}
+.ramp-yard-door{height:58px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:11px;background:linear-gradient(180deg,#64727b 0%,#344653 48%,#1d2b37 100%)}
+.ramp-yard-door:before{content:"";position:absolute;inset:0 16% 9px;border:3px solid #86939a;background:repeating-linear-gradient(90deg,#243541 0 10px,#41535f 11px 15px);box-shadow:inset 0 0 0 3px rgba(0,0,0,.22)}
+.ramp-yard-door span{position:relative;z-index:1;width:52px;height:22px;border:4px solid #f8fafc;transform:skew(-25deg);background:#263a48;box-shadow:0 1px 2px #000}
+.ramp-yard-info{padding:10px 11px 11px;display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;background:#0e1a28;color:#f0f5fb}
+.ramp-yard-info>strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ramp-yard-info>small{font-size:11px;color:#b7c5d7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ramp-yard-info em{font-style:normal;font-size:10px;font-weight:900;color:#9bb0c8}
+.ramp-yard-carrier{display:flex;align-items:center;gap:7px;min-width:0}
+.ramp-yard-mark{flex:0 0 26px;width:26px;height:26px;display:grid;place-items:center;border-radius:6px;background:#e8eef7;color:#1e4779;font-size:9px;font-weight:900}
+.ramp-yard-carrier b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ramp-yard-plates{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.ramp-yard-plates span{min-width:0;padding:5px 6px;border-radius:5px;background:#1b2a3c;color:#d3deeb;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ramp-yard-tile.ramp-free{border-color:#08b968}.ramp-yard-tile.ramp-free .ramp-yard-number{background:#08b968}
+.ramp-yard-tile.ramp-staging{border-color:#d7a63d}.ramp-yard-tile.ramp-staging .ramp-yard-number{background:#b88721}
+.ramp-yard-tile.ramp-working{border-color:#3988ee}.ramp-yard-tile.ramp-working .ramp-yard-number{background:#2779db}
+.ramp-yard-tile.ramp-leaving{border-color:#9b70e5}.ramp-yard-tile.ramp-leaving .ramp-yard-number{background:#7951bd}
+.ramp-yard-tile.ramp-wait{border-color:#3988ee}.ramp-yard-tile.ramp-wait .ramp-yard-number{background:#2779db}
+.ramp-yard-tile.ramp-down{border-color:#596779}.ramp-yard-tile.ramp-down .ramp-yard-number{background:#596779}
+.ramp-yard-tile .ramp-yard-action{margin:0 9px 9px;font-size:11px}
+@media(max-width:1000px){.ramp-yard-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
+@media(max-width:720px){.ramp-yard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ramp-yard-number{height:36px;font-size:17px}.ramp-yard-door{height:43px;padding-bottom:8px}.ramp-yard-door span{width:38px;height:16px;border-width:3px}.ramp-yard-info{padding:7px;gap:4px}.ramp-yard-info>strong{font-size:11px}.ramp-yard-info>small,.ramp-yard-info em{font-size:9px}.ramp-yard-carrier{gap:5px}.ramp-yard-mark{flex-basis:21px;width:21px;height:21px;font-size:8px}.ramp-yard-carrier b{font-size:10px}.ramp-yard-plates{grid-template-columns:1fr}.ramp-yard-plates span{font-size:8px;padding:4px}}
