@@ -497,3 +497,12 @@
 .m360-mobile-unit-details>div{min-width:0;background:#f7f8fb;border:1px solid #e7ebf2;border-radius:9px;padding:9px}
 .m360-mobile-unit-details>div:first-child{grid-column:1/-1}
 .m360-mobile-unit-details b{display:block;margin-top:4px;font-size:13px;color:#263750;overflow-wrap:anywhere}
+
+/* Monitor de rampas: mostrar primero la línea transportista en las posiciones ocupadas. */
+.m360-dock-info{gap:4px;min-height:49px}
+.m360-dock-carrier{display:flex;align-items:center;gap:5px;min-width:0}
+.m360-dock-carrier-mark{flex:0 0 19px;width:19px;height:19px;display:grid;place-items:center;border-radius:5px;background:#e8eef7;color:#1e4779;font-size:8px;font-weight:900;letter-spacing:-.03em}
+.m360-dock-info .m360-dock-carrier-name{font-size:10px;color:#f0f5fb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m360-dock-info .m360-dock-folio{font-size:10px;color:#f0f5fb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.m360-dock-info small{font-size:9px;color:#9bacc0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px){.m360-dock-info{min-height:54px;padding:5px 4px;gap:3px}.m360-dock-carrier{gap:3px}.m360-dock-carrier-mark{flex-basis:16px;width:16px;height:16px;font-size:7px;border-radius:4px}.m360-dock-info .m360-dock-carrier-name,.m360-dock-info .m360-dock-folio{font-size:8px}.m360-dock-info small{font-size:8px}}
