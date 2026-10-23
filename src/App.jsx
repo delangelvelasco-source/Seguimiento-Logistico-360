@@ -638,8 +638,10 @@ function CSR({units,onUpdate,warehouseId}){
       </button>
      </div>
     </div>
-    <label>Fecha de cita<input type="date" required min={todayKey} value={selectedDay} onChange={e=>{const v=e.target.value;if(!v)return;setSelectedDay(v);const d=new Date(v+"T12:00:00");setMonth(new Date(d.getFullYear(),d.getMonth(),1));setNewAppointment({...newAppointment,hora_inicio:""});}}/></label>
-    <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{openTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select><small className="csr-slot-note">{openTimes.length} horarios disponibles para esta fecha</small></label>
+    <div className="csr-date-time">
+     <label>Fecha de cita<input type="date" required min={todayKey} value={selectedDay} onChange={e=>{const v=e.target.value;if(!v)return;setSelectedDay(v);const d=new Date(v+"T12:00:00");setMonth(new Date(d.getFullYear(),d.getMonth(),1));setNewAppointment({...newAppointment,hora_inicio:""});}}/></label>
+     <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{openTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select><small className="csr-slot-note">{openTimes.length} horarios disponibles para esta fecha</small></label>
+    </div>
     <label className="csr-field-client">Cuenta / cliente <b>*</b><input value={newAppointment.cuenta_cliente} onChange={e=>setNewAppointment({...newAppointment,cuenta_cliente:e.target.value})} placeholder="Nombre del cliente"/></label>
     <label>Referencia<input value={newAppointment.referencia} onChange={e=>setNewAppointment({...newAppointment,referencia:e.target.value})} placeholder="SID, RID o referencia"/></label>
     <label className="csr-field-carrier">Línea de transporte<input value={newAppointment.linea_transporte} onChange={e=>setNewAppointment({...newAppointment,linea_transporte:e.target.value})} placeholder="Nombre de la línea"/></label>
