@@ -4,7 +4,7 @@ import { CalendarPlus, CheckCircle2, ClipboardCheck, FileCheck2, RefreshCw, Sear
 import { supabase } from "./lib/supabase";
 
 export default function CSR({warehouseId}){
- const [units,setUnits]=useState([]),[appointments,setAppointments]=useState([]),[csrUserId,setCsrUserId]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[operation,setOperation]=useState("recibo"),[selectedSlot,setSelectedSlot]=useState(""),[selectedAppointment,setSelectedAppointment]=useState(null),[appointmentForm,setAppointmentForm]=useState({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:"",pallets:""});
+ const [units,setUnits]=useState([]),[appointments,setAppointments]=useState([]),[csrUserId,setCsrUserId]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[query,setQuery]=useState(""),[operation,setOperation]=useState("recibo"),[selectedSlot,setSelectedSlot]=useState(""),[selectedAppointment,setSelectedAppointment]=useState(null),[appointmentSaving,setAppointmentSaving]=useState(false),[appointmentForm,setAppointmentForm]=useState({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:"",pallets:""});
  const [practice,setPractice]=useState({cliente:"WABCO",operacion:"recibo",fecha:new Date().toISOString().slice(0,10),hora:"10:00",unidades:"1",pallets:"0",referencia:"REF-WABCO-45821"});
  const [practiceAppointment,setPracticeAppointment]=useState(null),[qrData,setQrData]=useState("");
  const [practiceMsg,setPracticeMsg]=useState(""),[evidenceModal,setEvidenceModal]=useState(null),[evidenceLoading,setEvidenceLoading]=useState(false) ,[selectedEvidence,setSelectedEvidence]=useState(null);
@@ -112,6 +112,49 @@ export default function CSR({warehouseId}){
   setMessage("Solicitud de ventana adicional enviada para autorización.");
   return true;
  }
+ async function guardarCita(){
+  if(appointmentSaving)return;
+  setAppointmentSaving(true);setError("");setMessage("");
+  try{
+   const {data:{user},error:authError}=await supabase.auth.getUser();
+   if(authError)throw authError;
+   if(!user?.id)throw new Error("No se encontró la sesión CSR. Cierra sesión e inicia nuevamente.");
+   if(!selectedSlot)throw new Error("Selecciona primero una ventana horaria disponible.");
+   if(!appointmentForm.linea.trim())throw new Error("Captura la línea de transporte.");
+   if(appointmentForm.pallets===""||!Number.isFinite(Number(appointmentForm.pallets))||Number(appointmentForm.pallets)<0)throw new Error("Captura una cantidad válida de pallets.");
+   if(!appointmentForm.placaTracto.trim()&&!appointmentForm.placaCaja.trim())throw new Error("Captura al menos la placa del tracto o la placa de la caja.");
+   const d=new Date(selectedSlot);
+   if(Number.isNaN(d.getTime()))throw new Error("La fecha y hora seleccionadas no son válidas.");
+   const fecha=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+   const hora=`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+   const fin=new Date(d);fin.setMinutes(fin.getMinutes()+30);
+   const horaFin=`${String(fin.getHours()).padStart(2,"0")}:${String(fin.getMinutes()).padStart(2,"0")}`;
+   let cita,folio=selectedAppointment?.folio||"";
+   if(selectedAppointment){
+    const r=await supabase.from("citas").update({tipo_operacion:operation,fecha,hora_inicio:hora,hora_fin:horaFin,referencia:appointmentForm.referencia||null,cuenta_cliente:appointmentForm.cuentaCliente||null,pallets:Number(appointmentForm.pallets),csr_usuario_id:user.id,updated_at:new Date().toISOString()}).eq("id",selectedAppointment.id).select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,estado,unidades_solicitadas,pallets").single();
+    if(r.error)throw new Error("No se pudo actualizar la cita: "+r.error.message);
+    if(!r.data)throw new Error("La base de datos no confirmó la actualización de la cita.");
+    cita=r.data;
+   }else{
+    const fr=await supabase.rpc("generar_folio_cita",{p_fecha:fecha});
+    if(fr.error)throw new Error("No se pudo generar el folio: "+fr.error.message);
+    folio=fr.data;
+    const r=await supabase.from("citas").insert({almacen_id:warehouseId,csr_usuario_id:user.id,folio,tipo_operacion:operation,fecha,hora_inicio:hora,hora_fin:horaFin,referencia:appointmentForm.referencia||null,cuenta_cliente:appointmentForm.cuentaCliente||null,pallets:Number(appointmentForm.pallets),estado:"borrador",unidades_solicitadas:1}).select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,estado,unidades_solicitadas,pallets").single();
+    if(r.error)throw new Error("No se pudo guardar la cita: "+r.error.message);
+    if(!r.data)throw new Error("La base de datos no confirmó el registro de la cita.");
+    cita=r.data;
+   }
+   const precarga={linea_transporte:appointmentForm.linea.trim(),operador_nombre:appointmentForm.operador.trim()||null,contacto:appointmentForm.contacto.trim()||null,tracto_numero:appointmentForm.tracto.trim()||null,tracto_placas:appointmentForm.placaTracto.trim().toUpperCase()||null,caja_numero:appointmentForm.caja.trim()||null,caja_placas:appointmentForm.placaCaja.trim().toUpperCase()||null,observaciones:appointmentForm.referencia.trim()||null,cita_id:cita.id,actualizado_por:user.id};
+   const pr=await supabase.from("cita_datos_precarga").upsert(precarga,{onConflict:"cita_id"});
+   if(pr.error)throw new Error("La cita se guardó, pero los datos de transporte no: "+pr.error.message);
+   setMessage(selectedAppointment?`Cambios guardados · Folio ${cita.folio||selectedAppointment.folio}.`:`Cita guardada · Folio ${cita.folio||folio}.`);
+   navigator.clipboard?.writeText(cita.folio||folio).catch(()=>{});
+   setSelectedSlot("");setSelectedAppointment(null);
+   setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:"",pallets:""});
+   await load();
+  }catch(err){setError(err?.message||"Ocurrió un error inesperado al guardar la cita.");}
+  finally{setAppointmentSaving(false);}
+ }
  return <section id="csr" className="users-section"><div className="panel"><div className="csr-hero-banner"><div className="csr-hero-copy"><div className="csr-hero-brand"><span className="csr-hero-logo">360</span><div><strong>OP360</strong><small>CONTROL · VISIBILIDAD · EFICIENCIA</small></div></div><div className="eyebrow">CSR · PROGRAMACIÓN DE CITAS</div><p>Programa Recibos y Embarques en tiempo real y comparte el folio directamente con Caseta.</p><div className="csr-hero-tags"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 RECIBOS</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 EMBARQUES</button><span>🟢 DISPONIBLE</span><span>⚫ OCUPADO</span></div></div><button className="secondary-btn csr-hero-refresh" onClick={load}><RefreshCw size={15}/>Actualizar</button></div>
  <div id="csr-calendar" className="csr-operation-switch"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 Recibos</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 Embarques</button></div>
  {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}<WeeklyCalendar appointments={appointments} operation={operation} csrUserId={csrUserId} onDelete={deleteAppointment} onViewEvidence={verRegistroCaseta} onAdditionalWindow={solicitarVentanaExtra} onSlot={(slot,appointment)=>{setSelectedSlot(slot);setSelectedAppointment(appointment||null);setAppointmentForm({operador:appointment?.precarga?.operador_nombre||"",linea:appointment?.precarga?.linea_transporte||"",contacto:appointment?.precarga?.contacto||"",tracto:appointment?.precarga?.tracto_numero||"",placaTracto:appointment?.precarga?.tracto_placas||"",caja:appointment?.precarga?.caja_numero||"",placaCaja:appointment?.precarga?.caja_placas||"",referencia:appointment?.referencia||appointment?.precarga?.observaciones||"",cuentaCliente:appointment?.cuenta_cliente||"",pallets:appointment?.pallets??""})}}/>
@@ -131,16 +174,7 @@ export default function CSR({warehouseId}){
     <label>Número de tracto <span>(opcional)</span><input inputMode="numeric" placeholder="Número económico" value={appointmentForm.tracto} onChange={e=>setAppointmentForm({...appointmentForm,tracto:e.target.value})}/></label>
    </div>
   </div>
-  <div className="csr-action-row"><button type="button" className="secondary-btn" disabled={!appointmentForm.linea.trim()||appointmentForm.pallets===""||Number(appointmentForm.pallets)<0||(!appointmentForm.placaTracto.trim()&&!appointmentForm.placaCaja.trim())} onClick={()=>{const d=new Date(selectedSlot);const texto=selectedAppointment?.folio||"CITA";navigator.clipboard?.writeText(texto);setMessage("Cita copiada.");}}>Copiar cita</button><button className="login-btn" disabled={!appointmentForm.linea.trim()||appointmentForm.pallets===""||Number(appointmentForm.pallets)<0||(!appointmentForm.placaTracto.trim()&&!appointmentForm.placaCaja.trim())} onClick={async()=>{
-    setError("");setMessage("");const {data:{user}}=await supabase.auth.getUser();if(!user?.id){setError("No se encontró la sesión del usuario CSR. Cierra sesión e inicia nuevamente.");return}const d=new Date(selectedSlot);const fecha=d.toISOString().slice(0,10);const hora=d.toTimeString().slice(0,5);let folio=selectedAppointment?.folio||"";if(!selectedAppointment){const fr=await supabase.rpc("generar_folio_cita",{p_fecha:fecha});if(fr.error){setError("No se pudo generar el folio: "+fr.error.message);return}folio=fr.data;}
-    let cita,e,pe;
-    if(selectedAppointment){const r=await supabase.from("citas").update({tipo_operacion:operation,fecha,hora_inicio:hora,hora_fin:(()=>{const fin=new Date(d);fin.setMinutes(fin.getMinutes()+30);return fin.toTimeString().slice(0,5)})(),referencia:appointmentForm.referencia||null,cuenta_cliente:appointmentForm.cuentaCliente||null,pallets:appointmentForm.pallets===""?null:Number(appointmentForm.pallets),csr_usuario_id:user.id,updated_at:new Date().toISOString()}).eq("id",selectedAppointment.id).select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,estado,unidades_solicitadas,pallets").single();cita=r.data;e=r.error;}else{const r=await supabase.from("citas").insert({almacen_id:warehouseId,csr_usuario_id:user.id,folio,tipo_operacion:operation,fecha,hora_inicio:hora,hora_fin:(()=>{const fin=new Date(d);fin.setMinutes(fin.getMinutes()+30);return fin.toTimeString().slice(0,5)})(),referencia:appointmentForm.referencia||null,cuenta_cliente:appointmentForm.cuentaCliente||null,pallets:appointmentForm.pallets===""?null:Number(appointmentForm.pallets),estado:"borrador",unidades_solicitadas:1}).select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,estado,unidades_solicitadas,pallets").single();cita=r.data;e=r.error;}
-    if(e){setError("No se pudo guardar la cita: "+e.message);return}
-    const precarga={linea_transporte:appointmentForm.linea,operador_nombre:appointmentForm.operador||null,contacto:appointmentForm.contacto||null,tracto_numero:appointmentForm.tracto||null,tracto_placas:appointmentForm.placaTracto||null,caja_numero:appointmentForm.caja||null,caja_placas:appointmentForm.placaCaja||null,observaciones:appointmentForm.referencia||null};
-    const pr=await supabase.from("cita_datos_precarga").upsert({...precarga,cita_id:cita.id,actualizado_por:user.id},{onConflict:"cita_id"});pe=pr.error;
-    if(pe){setError("La cita se guardó, pero no se pudo actualizar la información para Caseta: "+pe.message);return}
-    setMessage(selectedAppointment?`Cita actualizada · Folio ${cita?.folio||selectedAppointment.folio}. Caseta verá la información actualizada.`:`Cita programada · Folio ${cita?.folio||folio}. La información quedó disponible para Caseta al ingresar el folio.`);const citaTexto=cita?.folio||folio;navigator.clipboard?.writeText(citaTexto).catch(()=>{});setSelectedSlot("");setSelectedAppointment(null);setAppointmentForm({operador:"",linea:"",contacto:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",cuentaCliente:"",pallets:""});await load();
-  }}>Registrar cita</button></div>
+  <div className="csr-action-row"><button type="button" className="secondary-btn" disabled={!appointmentForm.linea.trim()||appointmentForm.pallets===""||Number(appointmentForm.pallets)<0||(!appointmentForm.placaTracto.trim()&&!appointmentForm.placaCaja.trim())} onClick={()=>{const d=new Date(selectedSlot);const texto=selectedAppointment?.folio||"CITA";navigator.clipboard?.writeText(texto);setMessage("Cita copiada.");}}>Copiar cita</button><button className="login-btn" disabled={appointmentSaving||!appointmentForm.linea.trim()||appointmentForm.pallets===""||Number(appointmentForm.pallets)<0||(!appointmentForm.placaTracto.trim()&&!appointmentForm.placaCaja.trim())} onClick={guardarCita}>{appointmentSaving?"Guardando…":"Guardar cita"}</button></div>
  </div></div>}</div><EvidenceModal evidenceModal={evidenceModal} selectedEvidence={selectedEvidence} setSelectedEvidence={setSelectedEvidence} setEvidenceModal={setEvidenceModal}/></section>
 }
 
