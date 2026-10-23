@@ -61,6 +61,8 @@ export default function CSR({warehouseId}){
    <label>Línea de transporte<input value={form.linea} onChange={e=>setForm({...form,linea:e.target.value})}/></label>
    <label>Pallets<input type="number" min="0" value={form.pallets} onChange={e=>setForm({...form,pallets:e.target.value})}/></label>
    <label>Operador<input value={form.operador} onChange={e=>setForm({...form,operador:e.target.value})}/></label>
+   <label>Número de tracto<input value={form.tracto} onChange={e=>setForm({...form,tracto:e.target.value})} placeholder="Número económico"/></label>
+   <label>Número de caja<input value={form.caja} onChange={e=>setForm({...form,caja:e.target.value})} placeholder="Ej. R344"/></label>
    <label>Placa tracto<input value={form.placaTracto} onChange={e=>setForm({...form,placaTracto:e.target.value.toUpperCase()})}/></label>
    <label>Placa caja<input value={form.placaCaja} onChange={e=>setForm({...form,placaCaja:e.target.value.toUpperCase()})}/></label>
    <label>Referencia<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})}/></label>
