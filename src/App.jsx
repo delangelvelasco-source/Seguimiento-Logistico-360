@@ -241,8 +241,15 @@ export default function App(){
         if(unit?.almacen_id&&ramp.almacen_id&&unit.almacen_id!==ramp.almacen_id) throw new Error("La rampa pertenece a otro almacén.");
       }
       const safePatch={...patch,updated_at:new Date().toISOString()};
-      if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&patch.rampa_id) safePatch.ubicacion_tipo="rampa";
-      if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&!patch.rampa_id&&unit?.ubicacion_tipo==="rampa") safePatch.ubicacion_tipo="patio";
+      // Al entrar a Documentación, la unidad ya salió físicamente de la rampa.
+      // Liberar la asignación aquí centraliza la regla para todos los módulos que usan updateUnit.
+      if(patch.estado==="documentacion" && unit?.rampa_id){
+        safePatch.rampa_id=null;
+        safePatch.ubicacion_tipo="patio";
+      }else{
+        if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&patch.rampa_id) safePatch.ubicacion_tipo="rampa";
+        if(Object.prototype.hasOwnProperty.call(patch,"rampa_id")&&!patch.rampa_id&&unit?.ubicacion_tipo==="rampa") safePatch.ubicacion_tipo="patio";
+      }
       const {error:e}=await supabase.from("unidades").update(safePatch).eq("id",id);
       if(e) throw e;
       setNotice(message||"Actualizado.");
