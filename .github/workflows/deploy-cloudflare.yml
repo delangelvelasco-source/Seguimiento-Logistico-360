@@ -51,6 +51,11 @@ jobs:
         run: npm install
       - name: Build production bundle
         run: npm run build
+      - name: Verify Cloudflare authentication
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ steps.cloudflare_credentials.outputs.api_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare_credentials.outputs.account_id }}
+        run: npx --yes wrangler@4 whoami
       - name: Publish OP360 assets and Worker to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ steps.cloudflare_credentials.outputs.api_token }}
