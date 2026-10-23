@@ -2094,3 +2094,16 @@ footer{color:#71809a}
   .warehouse-building{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px}
   .dock{min-height:67px}
 }
+
+
+/* Modal de captura rápida de citas OP360 */
+.csr-scheduler-backdrop{position:fixed;inset:0;z-index:1400;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,10,22,.78);backdrop-filter:blur(6px);box-sizing:border-box;overflow-y:auto}
+.csr-scheduler-backdrop .csr-scheduler{width:min(760px,100%);max-height:calc(100vh - 36px);overflow-y:auto;margin:auto;padding:20px;border:1px solid #314968;border-radius:18px;background:#0e1b2c;box-shadow:0 24px 80px rgba(0,0,0,.45);box-sizing:border-box}
+.csr-scheduler-modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:14px;border-bottom:1px solid #263a54}
+.csr-scheduler-modal-head>div{display:flex;flex-direction:column;gap:5px}
+.csr-scheduler-modal-head strong{font-size:20px;color:#f3f7fc}
+.csr-scheduler-modal-head .eyebrow{font-size:10px;letter-spacing:.12em;color:#79aefb;font-weight:800}
+.csr-scheduler-backdrop .csr-scheduler>p{padding:10px 12px;border-radius:9px;background:#13253b;color:#c6d6e9;font-size:13px}
+.csr-scheduler-backdrop .csr-action-row{display:flex;gap:10px;margin-top:14px}
+.csr-scheduler-backdrop .csr-action-row button{flex:1;min-height:46px}
+@media(max-width:600px){.csr-scheduler-backdrop{padding:8px;align-items:flex-start}.csr-scheduler-backdrop .csr-scheduler{max-height:calc(100vh - 16px);padding:14px;border-radius:14px}.csr-scheduler-modal-head strong{font-size:17px}.csr-scheduler-modal-head{align-items:flex-start}.csr-scheduler-backdrop .csr-action-row{flex-direction:column}.csr-scheduler-backdrop .csr-action-row button{width:100%}}
