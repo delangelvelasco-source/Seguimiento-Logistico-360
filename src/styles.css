@@ -2107,3 +2107,5 @@ footer{color:#71809a}
 .csr-scheduler-backdrop .csr-action-row{display:flex;gap:10px;margin-top:14px}
 .csr-scheduler-backdrop .csr-action-row button{flex:1;min-height:46px}
 @media(max-width:600px){.csr-scheduler-backdrop{padding:8px;align-items:flex-start}.csr-scheduler-backdrop .csr-scheduler{max-height:calc(100vh - 16px);padding:14px;border-radius:14px}.csr-scheduler-modal-head strong{font-size:17px}.csr-scheduler-modal-head{align-items:flex-start}.csr-scheduler-backdrop .csr-action-row{flex-direction:column}.csr-scheduler-backdrop .csr-action-row button{width:100%}}
+
+.csr-edit-hint{display:inline-block;margin-top:7px;margin-right:5px;padding:4px 8px;border-radius:6px;background:#dbeafe;color:#1d4ed8;font-size:9px;font-weight:900;cursor:pointer;border:1px solid #93c5fd}.csr-edit-hint:hover{background:#bfdbfe}.csr-edit-hint:focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}
