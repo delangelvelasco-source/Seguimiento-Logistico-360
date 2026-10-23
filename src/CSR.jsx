@@ -9,6 +9,7 @@ export default function CSR({warehouseId}){
  const [error,setError]=useState("");
  const [message,setMessage]=useState("");
  const [operation,setOperation]=useState("recibo");
+ const [showAppointmentModal,setShowAppointmentModal]=useState(false);
  const [form,setForm]=useState({fecha:new Date().toISOString().slice(0,10),hora:"10:00",linea:"",operador:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",pallets:""});
  async function load(){
   if(!warehouseId)return;
@@ -46,14 +47,15 @@ export default function CSR({warehouseId}){
   if(r.error){setError(r.error.message);return;}
   const p=await supabase.from("cita_datos_precarga").upsert({cita_id:r.data.id,linea_transporte:form.linea,operador_nombre:form.operador||null,tracto_numero:form.tracto||null,tracto_placas:form.placaTracto||null,caja_numero:form.caja||null,caja_placas:form.placaCaja||null,observaciones:form.referencia||null,actualizado_por:user.id},{onConflict:"cita_id"});
   if(p.error){setError("Cita creada, pero faltó precarga: "+p.error.message);return;}
-  setMessage("Cita creada: "+r.data.folio);setForm({...form,linea:"",operador:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",pallets:""});await load();
+  setMessage("Cita creada: "+r.data.folio);setShowAppointmentModal(false);setForm({...form,linea:"",operador:"",tracto:"",placaTracto:"",caja:"",placaCaja:"",referencia:"",pallets:""});await load();
  }
  return <section id="csr" className="users-section"><div className="panel">
   <div className="panel-title"><div><strong>CSR · Programación de citas</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div>
   {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}
   {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
   <div className="csr-operation-switch"><button className={operation==="recibo"?"active":""} onClick={()=>setOperation("recibo")}>📥 Recibos</button><button className={operation==="embarque"?"active":""} onClick={()=>setOperation("embarque")}>📤 Embarques</button></div>
-  <div className="csr-scheduler"><h3>Programar cita · {operation==="recibo"?"Recibo":"Embarque"}</h3><div className="csr-form-grid">
+  <div className="csr-create-toolbar"><span>Selecciona el tipo de operación y abre la captura para registrar una cita.</span><button type="button" className="login-btn" onClick={()=>setShowAppointmentModal(true)}>＋ Nueva cita</button></div>
+  {showAppointmentModal&&<div className="csr-quick-modal" role="dialog" aria-modal="true" aria-label="Captura de nueva cita" onMouseDown={e=>{if(e.target===e.currentTarget)setShowAppointmentModal(false);}}>  <div className="csr-quick-capture"><div className="csr-quick-capture-head"><div><span>CAPTURA DE DATOS</span><h3>Nueva cita · {operation==="recibo"?"Recibo":"Embarque"}</h3></div><button type="button" className="secondary-btn" onClick={()=>setShowAppointmentModal(false)}>Cerrar ✕</button></div><div className="csr-form-grid">
    <label>Fecha<input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})}/></label>
    <label>Hora<input type="time" value={form.hora} onChange={e=>setForm({...form,hora:e.target.value})}/></label>
    <label>Línea de transporte<input value={form.linea} onChange={e=>setForm({...form,linea:e.target.value})}/></label>
@@ -62,7 +64,7 @@ export default function CSR({warehouseId}){
    <label>Placa tracto<input value={form.placaTracto} onChange={e=>setForm({...form,placaTracto:e.target.value.toUpperCase()})}/></label>
    <label>Placa caja<input value={form.placaCaja} onChange={e=>setForm({...form,placaCaja:e.target.value.toUpperCase()})}/></label>
    <label>Referencia<input value={form.referencia} onChange={e=>setForm({...form,referencia:e.target.value})}/></label>
-  </div><button className="login-btn" onClick={crearCita}>Registrar cita</button></div>
+  </div><button className="login-btn" onClick={async()=>{await crearCita();}}>Registrar cita</button></div></div>}
   <div className="panel"><div className="panel-title"><strong>Unidades pendientes de validación</strong></div>{loading?<div className="empty">Cargando…</div>:units.length?units.map(u=><div className="dispatch-card" key={u.id}><div className="dispatch-head"><strong>{u.folio}</strong><span className="tag">{u.estado}</span></div><div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre||"—"}</span><span><b>Línea</b>{u.linea_transporte||"—"}</span><span><b>Tracto</b>{u.tracto_placas||"—"}</span><span><b>Caja</b>{u.caja_placas||"—"}</span></div><div className="button-row"><button className="login-btn compact" onClick={()=>confirm(u)}><CheckCircle2 size={15}/>Validar</button><button className="secondary-btn" onClick={()=>flag(u)}><XCircle size={15}/>Revisión</button></div></div>):<div className="empty">No hay unidades pendientes.</div>}</div>
   <div className="panel"><div className="panel-title"><strong>Próximas citas</strong></div>{appointments.length?appointments.map(a=><div className="traffic-list" key={a.id}><div><b>{a.folio}</b><span>{a.fecha} · {String(a.hora_inicio||"").slice(0,5)} · {a.tipo_operacion}</span><em>{a.pallets??0} pallets</em></div></div>):<div className="empty">No hay citas próximas.</div>}</div>
  </div></section>;
