@@ -625,19 +625,31 @@ function CSR({units,onUpdate,warehouseId}){
    <h3 style={{margin:"0 0 5px",color:"#172744"}}>{editingAppointment?"Editar cita · "+editingAppointment.folio:"Nueva cita · "+selectedLabel}</h3>
    <p style={{margin:"0 0 14px",fontSize:12,color:"#60718b"}}>{selectedWeekday===0?"Domingo: no hay ventana de citas.":selectedWeekday===6?"Ventana del sábado: 08:00–13:00.":"Ventana de lunes a viernes: 08:00–18:00."} · Bloques de 30 minutos · cada horario admite una sola cita.</p>
    {!isBusinessDay?<div style={{fontSize:13,color:"#a12622"}}>Este día no tiene ventana de citas. Selecciona de lunes a sábado.</div>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12}}>
+    <div className="csr-operation-field">
+     <span className="csr-field-label">Tipo de operación <b>*</b></span>
+     <div className="csr-operation-options" role="group" aria-label="Tipo de operación">
+      <button type="button" className={newAppointment.tipo_operacion==="recibo"?"csr-operation-option selected":"csr-operation-option"} aria-pressed={newAppointment.tipo_operacion==="recibo"} onClick={()=>setNewAppointment({...newAppointment,tipo_operacion:"recibo"})}>
+       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 8h17v14H2zM19 12h6l5 6v4H19z" fill="currentColor" opacity=".18"/><path d="M3 9h15v13H3zM18 13h6l5 5v4H18z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><circle cx="8" cy="24" r="3" fill="currentColor"/><circle cx="24" cy="24" r="3" fill="currentColor"/><path d="M21 14v4h7" fill="none" stroke="currentColor" strokeWidth="2"/></svg>
+       <strong>Recibo</strong><small>Entrada al almacén</small>
+      </button>
+      <button type="button" className={newAppointment.tipo_operacion==="embarque"?"csr-operation-option selected":"csr-operation-option"} aria-pressed={newAppointment.tipo_operacion==="embarque"} onClick={()=>setNewAppointment({...newAppointment,tipo_operacion:"embarque"})}>
+       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 8h17v14H2zM19 12h6l5 6v4H19z" fill="currentColor" opacity=".18"/><path d="M3 9h15v13H3zM18 13h6l5 5v4H18z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><circle cx="8" cy="24" r="3" fill="currentColor"/><circle cx="24" cy="24" r="3" fill="currentColor"/><path d="M21 14v4h7" fill="none" stroke="currentColor" strokeWidth="2"/></svg>
+       <strong>Embarque</strong><small>Salida del almacén</small>
+      </button>
+     </div>
+    </div>
     <label>Fecha de cita<input type="date" required min={todayKey} value={selectedDay} onChange={e=>{const v=e.target.value;if(!v)return;setSelectedDay(v);const d=new Date(v+"T12:00:00");setMonth(new Date(d.getFullYear(),d.getMonth(),1));setNewAppointment({...newAppointment,hora_inicio:""});}}/></label>
-    <label>Tipo de operación<select required value={newAppointment.tipo_operacion} onChange={e=>setNewAppointment({...newAppointment,tipo_operacion:e.target.value})}><option value="recibo">Recibo</option><option value="embarque">Embarque</option></select></label>
-    <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{openTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select></label>
-    <label>Cuenta / cliente<input value={newAppointment.cuenta_cliente} onChange={e=>setNewAppointment({...newAppointment,cuenta_cliente:e.target.value})} placeholder="Nombre del cliente"/></label>
+    <label>Horario disponible<select required value={newAppointment.hora_inicio} onChange={e=>setNewAppointment({...newAppointment,hora_inicio:e.target.value})}>{openTimes.map(t=><option key={t} value={t}>{t}–{String(Math.floor((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)/60)).padStart(2,"0")+":"+String((Number(t.slice(0,2))*60+Number(t.slice(3,5))+30)%60).padStart(2,"0")}</option>)}</select><small className="csr-slot-note">{openTimes.length} horarios disponibles para esta fecha</small></label>
+    <label className="csr-field-client">Cuenta / cliente <b>*</b><input value={newAppointment.cuenta_cliente} onChange={e=>setNewAppointment({...newAppointment,cuenta_cliente:e.target.value})} placeholder="Nombre del cliente"/></label>
     <label>Referencia<input value={newAppointment.referencia} onChange={e=>setNewAppointment({...newAppointment,referencia:e.target.value})} placeholder="SID, RID o referencia"/></label>
+    <label className="csr-field-carrier">Línea de transporte<input value={newAppointment.linea_transporte} onChange={e=>setNewAppointment({...newAppointment,linea_transporte:e.target.value})} placeholder="Nombre de la línea"/></label>
+    <label>Operador<input value={newAppointment.operador_nombre} onChange={e=>setNewAppointment({...newAppointment,operador_nombre:e.target.value})} placeholder="Nombre del operador"/></label>
     <label>Pallets<input type="number" min="0" value={newAppointment.pallets} onChange={e=>setNewAppointment({...newAppointment,pallets:e.target.value})}/></label>
-    <label>Unidades solicitadas<input type="number" min="1" max="2" required value={newAppointment.unidades_solicitadas} onChange={e=>setNewAppointment({...newAppointment,unidades_solicitadas:e.target.value})}/></label>
-    <label>Línea de transporte<input value={newAppointment.linea_transporte} onChange={e=>setNewAppointment({...newAppointment,linea_transporte:e.target.value})} placeholder="Transportista"/></label>
-    <label>Operador<input value={newAppointment.operador_nombre} onChange={e=>setNewAppointment({...newAppointment,operador_nombre:e.target.value})}/></label>
-    <label>Número de tracto<input value={newAppointment.tracto_numero} onChange={e=>setNewAppointment({...newAppointment,tracto_numero:e.target.value})}/></label>
-    <label>Placas de tracto<input value={newAppointment.tracto_placas} onChange={e=>setNewAppointment({...newAppointment,tracto_placas:e.target.value.toUpperCase()})}/></label>
-    <label>Número de caja<input value={newAppointment.caja_numero} onChange={e=>setNewAppointment({...newAppointment,caja_numero:e.target.value})}/></label>
-    <label>Placas de caja<input value={newAppointment.caja_placas} onChange={e=>setNewAppointment({...newAppointment,caja_placas:e.target.value.toUpperCase()})}/></label>
+    <label>Unidades solicitadas <b>*</b><input type="number" min="1" max="2" required value={newAppointment.unidades_solicitadas} onChange={e=>setNewAppointment({...newAppointment,unidades_solicitadas:e.target.value})}/></label>
+    <label>Número de tracto<input value={newAppointment.tracto_numero} onChange={e=>setNewAppointment({...newAppointment,tracto_numero:e.target.value})} placeholder="Ej. 1234"/></label>
+    <label>Placas de tracto<input value={newAppointment.tracto_placas} onChange={e=>setNewAppointment({...newAppointment,tracto_placas:e.target.value.toUpperCase()})} placeholder="Ej. ABC-123"/></label>
+    <label>Número de caja<input value={newAppointment.caja_numero} onChange={e=>setNewAppointment({...newAppointment,caja_numero:e.target.value})} placeholder="Ej. 001"/></label>
+    <label>Placas de caja<input value={newAppointment.caja_placas} onChange={e=>setNewAppointment({...newAppointment,caja_placas:e.target.value.toUpperCase()})} placeholder="Ej. ABC-123"/></label>
    </div>}
    <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}}><button type="button" className="secondary" onClick={()=>{setShowAddAppointment(false);setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});}}>Cancelar</button><button type="submit" className="primary" disabled={savingAppointment||!isBusinessDay||openTimes.length===0}>{savingAppointment?"Guardando…":openTimes.length===0?"Sin horarios disponibles":editingAppointment?"Guardar cambios":"Guardar cita"}</button></div>
   </form></div>}
