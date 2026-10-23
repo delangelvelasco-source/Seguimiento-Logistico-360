@@ -361,7 +361,49 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  };
  const salida=units.filter(u=>u.salida_autorizada===true&&u.estado==="liberada"&&!u.salida_caseta_at);
  useEffect(()=>{let alive=true;async function loadSeals(){const ids=salida.map(u=>u.id);if(!ids.length){setSealsByUnit({});return;}setSealLoading(true);const {data,error}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",ids);if(alive&&!error){const grouped={};for(const seal of (data||[])){(grouped[seal.unidad_id]||(grouped[seal.unidad_id]=[])).push(seal);}setSealsByUnit(grouped);}if(alive)setSealLoading(false);}loadSeals();return()=>{alive=false}},[casetaTab,units.map(u=>u.id+":"+u.salida_autorizada+":"+u.salida_caseta_at).join("|")]);
- async function verifyExit(u){const expected=(sealsByUnit[u.id]||[]).filter(x=>x.origen==="dispatch").map(x=>String(x.numero_fisico||"").trim()).filter(Boolean);const typed=window.prompt("Captura el sello físico para "+u.folio+". Si la unidad no trae sello, escribe NA."+(expected.length?"\\nSellos registrados por Dispatch: "+expected.join(", "):"\\nDispatch no tiene sellos registrados."),"");if(typed===null)return;const physical=typed.trim().toUpperCase();const noSeal=physical==="NA";if(!physical){window.alert("Captura un número de sello o NA si no trae sello.");return;}const match=noSeal?expected.length===0:expected.includes(physical);const {data:userData}=await supabase.auth.getUser();const now=new Date().toISOString();const {error}=await supabase.from("sellos_unidad").insert({unidad_id:u.id,numero_fisico:physical,numero_documentado:expected.join(", ")||null,origen:"guardia",resultado:noSeal?"no_aplica":match?"coincide":"discrepancia",requiere_revision:!match&&!noSeal,motivo_revision:noSeal?"Unidad declarada sin sello":match?null:"Sello físico no coincide con los registrados por Dispatch",colocado_por:userData?.user?.id||null,verificado_por:userData?.user?.id||null,verificado_at:now,observaciones:noSeal?"Guardia confirma que la unidad no trae sello.":match?"Sello verificado por guardia; coincide con Dispatch.":"Salida retenida: validar discrepancia de sellos.",created_by:userData?.user?.id||null,updated_at:now});if(error){window.alert("No se pudo guardar la validación: "+error.message);return;}if(!match&&!noSeal){window.alert("NO COINCIDE o no existe sello de Dispatch. La salida queda pendiente para revisión.");const {data}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",[u.id]);setSealsByUnit(prev=>({...prev,[u.id]:data||[]}));return;}const {error:updateError}=await supabase.from("unidades").update({salida_caseta_at:now,guardia_salida_usuario_id:userData?.user?.id||null,updated_at:now}).eq("id",u.id).eq("salida_autorizada",true);if(updateError){window.alert("Sello validado, pero no se pudo registrar la salida: "+updateError.message);return;}window.alert(noSeal?"Se registró NA: unidad sin sello. Salida registrada para "+u.folio+".":"Sello coincide. Salida registrada para "+u.folio+".");await onUpdate(u.id,{salida_caseta_at:now,guardia_salida_usuario_id:userData?.user?.id||null},"Salida validada para "+u.folio+".");const {data:refreshSeals}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",[u.id]);setSealsByUnit(prev=>({...prev,[u.id]:refreshSeals||[]}));}
+  async function verifyExit(u){
+    const expected=(sealsByUnit[u.id]||[])
+      .filter(x=>x.origen==="dispatch")
+      .map(x=>String(x.numero_fisico||"").trim())
+      .filter(Boolean);
+    const box=u.caja_numero||u.caja_placas||"SIN CAJA";
+    const line=u.linea_transporte||"SIN LÍNEA DE TRANSPORTE";
+    const typed=window.prompt(
+      "Captura el sello físico para la caja "+box+" · Línea de transporte: "+line+". Si la unidad no trae sello, escribe NA."+
+      (expected.length?"\nSellos registrados por Dispatch: "+expected.join(", "):"\nDispatch no tiene sellos registrados."),
+      ""
+    );
+    if(typed===null)return;
+    const physical=typed.trim().toUpperCase();
+    const noSeal=physical==="NA";
+    if(!physical){window.alert("Captura un número de sello o NA si no trae sello.");return;}
+    const match=noSeal?expected.length===0:expected.includes(physical);
+    const {data:userData}=await supabase.auth.getUser();
+    const now=new Date().toISOString();
+    const {error}=await supabase.from("sellos_unidad").insert({
+      unidad_id:u.id,numero_fisico:physical,numero_documentado:expected.join(", ")||null,
+      origen:"guardia",resultado:noSeal?"no_aplica":match?"coincide":"discrepancia",
+      requiere_revision:!match&&!noSeal,
+      motivo_revision:noSeal?"Unidad declarada sin sello":match?null:"Sello físico no coincide con los registrados por Dispatch",
+      colocado_por:userData?.user?.id||null,verificado_por:userData?.user?.id||null,
+      verificado_at:now,
+      observaciones:noSeal?"Guardia confirma que la unidad no trae sello.":match?"Sello verificado por guardia; coincide con Dispatch.":"Salida retenida: validar discrepancia de sellos.",
+      created_by:userData?.user?.id||null,updated_at:now
+    });
+    if(error){window.alert("No se pudo guardar la validación: "+error.message);return;}
+    if(!match&&!noSeal){
+      window.alert("NO COINCIDE o no existe sello de Dispatch. La salida queda pendiente para revisión.");
+      const {data}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",[u.id]);
+      setSealsByUnit(prev=>({...prev,[u.id]:data||[]}));
+      return;
+    }
+    const {error:updateError}=await supabase.from("unidades").update({salida_caseta_at:now,guardia_salida_usuario_id:userData?.user?.id||null,updated_at:now}).eq("id",u.id).eq("salida_autorizada",true);
+    if(updateError){window.alert("Sello validado, pero no se pudo registrar la salida: "+updateError.message);return;}
+    window.alert(noSeal?"Se registró NA: unidad sin sello. Salida registrada para "+u.folio+".":"Sello coincide. Salida registrada para "+u.folio+".");
+    await onUpdate(u.id,{salida_caseta_at:now,guardia_salida_usuario_id:userData?.user?.id||null},"Salida validada para "+u.folio+".");
+    const {data:refreshSeals}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",[u.id]);
+    setSealsByUnit(prev=>({...prev,[u.id]:refreshSeals||[]}));
+  }
 
  return <><Page title="Caseta" sub="Registro de ingreso y control de salida del almacén."/>
  <div className="m360-ops-tabs caseta-tabs"><button type="button" className={casetaTab==="ingreso"?"selected":""} onClick={()=>setCasetaTab("ingreso")}>Registrar ingreso</button><button type="button" className={casetaTab==="salida"?"selected":""} onClick={()=>setCasetaTab("salida")}>Registrar salida <b>{salida.length}</b></button></div>
