@@ -11,7 +11,7 @@ export default function Operacion({warehouseId}) {
     if (!warehouseId) return;
     setLoading(true); setError("");
     const [u,r] = await Promise.all([
-      supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,operacion_tipo,cita_confirmada,sin_cita,rampa_id,ubicacion_tipo,ubicacion_at,operacion_inicio_at,operacion_fin_at,desentrampe_at,created_at,pallets,operacion_360_id").eq("almacen_id",warehouseId).in("estado",ACTIVE_STATES).order("created_at",{ascending:false}).limit(50),
+      supabase.from("unidades").select("id,folio,operador_nombre,linea_transporte,tracto_placas,caja_placas,estado,operacion_tipo,cita_confirmada,sin_cita,rampa_id,ubicacion_tipo,ubicacion_at,operacion_inicio_at,operacion_fin_at,desentrampe_at,dispatch_registro_at,csr_confirmacion_at,created_at,pallets,operacion_360_id").eq("almacen_id",warehouseId).in("estado",ACTIVE_STATES).not("dispatch_registro_at","is",null).not("csr_confirmacion_at","is",null).order("created_at",{ascending:false}).limit(50),
       supabase.from("rampas").select("id,nombre,codigo,estado,activa,motivo").eq("almacen_id",warehouseId).eq("activa",true).eq("estado","operativa").order("nombre")
     ]);
     if(u.error) setError(u.error.message); else setUnits(u.data||[]);
@@ -67,18 +67,18 @@ export default function Operacion({warehouseId}) {
 
   return <section id="operacion" className="users-section"><div className="panel">
     <div className="panel-title"><div><Wrench size={19}/><strong>Operación · Rampa y proceso</strong></div><button className="secondary-btn" onClick={load} disabled={loading}><RefreshCw size={15}/>Actualizar</button></div>
-    <p className="section-copy">Asigna únicamente rampas operativas, inicia el proceso y registra el desentrampe. Las rampas bloqueadas no aparecen para nuevas asignaciones.</p>
+    <p className="section-copy">Aquí aparecen únicamente las unidades del almacén que Dispatch ya validó y que CSR confirmó. Después puedes asignar rampa, iniciar el proceso y registrar el desentrampe.</p>
     {error&&<div className="notice error"><strong>Error</strong><span>{error}</span></div>}
     {message&&<div className="notice success"><CheckCircle2 size={17}/><strong>{message}</strong></div>}
     <div className="operation-summary"><div><span>Rampas operativas</span><strong>{ramps.length}</strong></div><div><span>Rampas ocupadas</span><strong>{[...occupiedRampIds].filter(id=>ramps.some(r=>r.id===id)).length}</strong></div><div><span>Unidades en operación</span><strong>{units.filter(u=>u.estado==="en_operacion").length}</strong></div></div>
     <div className="dispatch-toolbar"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar unidad, operador, línea o placa"/></div>
-    {loading?<div className="empty">Cargando Operación…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><OperationCard key={u.id} u={u} ramps={ramps} occupiedRampIds={occupiedRampIds} saving={saving===u.id} onAssign={assignRamp} onStart={startOperation} onFinish={finishOperation}/>)}</div>:<div className="empty">No hay unidades listas para Operación.</div>}
+    {loading?<div className="empty">Cargando Operación…</div>:filtered.length?<div className="dispatch-list">{filtered.map(u=><OperationCard key={u.id} u={u} ramps={ramps} occupiedRampIds={occupiedRampIds} saving={saving===u.id} onAssign={assignRamp} onStart={startOperation} onFinish={finishOperation}/>)}</div>:<div className="empty">No hay unidades con validación de Dispatch y confirmación de CSR pendientes de operación.</div>}
   </div></section>
 }
 
 function OperationCard({u,ramps,occupiedRampIds,saving,onAssign,onStart,onFinish}) {
   const elapsed=u.operacion_inicio_at?duration(u.operacion_inicio_at,u.operacion_fin_at):"—";
-  return <div className="operation-card"><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span></div><span className="tag">{u.estado}</span></div>
+  return <div className="operation-card"><div className="dispatch-head"><div><strong>{u.folio}</strong><span>{u.operacion_tipo||"Operación"} · {u.cita_confirmada?"Cita confirmada":"Sin cita"}</span><div className="button-row" style={{marginTop:8}}><span className="tag" style={{background:"#e8f7ee",color:"#17663a"}}>✓ Dispatch validado</span><span className="tag" style={{background:"#e8f0ff",color:"#214f9b"}}>✓ CSR confirmado</span></div></div><span className="tag">{u.estado}</span></div>
     <div className="dispatch-data"><span><b>Operador</b>{u.operador_nombre}</span><span><b>Línea</b>{u.linea_transporte}</span><span><b>Tracto</b>{u.tracto_placas}</span><span><b>Ubicación</b>{u.ubicacion_tipo||"patio"}</span><span><b>Pallets</b>{u.pallets ?? "—"}</span></div>
     <div className="operation-controls"><label>Rampa<select value={u.rampa_id||""} onChange={e=>onAssign(u,e.target.value)} disabled={saving||u.estado==="en_operacion"}><option value="">Seleccionar rampa…</option>{ramps.map(r=><option key={r.id} value={r.id} disabled={occupiedRampIds.has(r.id)&&r.id!==u.rampa_id}>{r.nombre||r.codigo}{occupiedRampIds.has(r.id)&&r.id!==u.rampa_id?" · Ocupada":""}</option>)}</select></label><div className="operation-timer"><Clock3 size={17}/><div><span>Tiempo de operación</span><strong>{elapsed}</strong></div></div></div>
     <div className="button-row">{u.estado==="rampa_asignada"&&<button className="login-btn compact" onClick={()=>onStart(u)} disabled={saving}><Play size={15}/>{saving?"Guardando…":"Iniciar operación"}</button>}{u.estado==="en_operacion"&&<button className="login-btn compact" onClick={()=>onFinish(u)} disabled={saving}><SquareCheckBig size={15}/>{saving?"Guardando…":"Registrar desentrampe"}</button>}{u.estado==="en_operacion"&&<span className="operation-live"><TimerReset size={15}/>Proceso en curso</span>}</div>
