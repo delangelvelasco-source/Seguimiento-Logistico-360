@@ -492,7 +492,10 @@ function Traffic({units,counts,reload}){
  ];
  const visibleUnits=units.filter(u=>!["cancelada","incidencia"].includes(u.estado));
  const active=visibleUnits.filter(u=>u.estado!=="liberada");
- const filtered=visibleUnits.filter(u=>{
+ // La vista principal muestra solo trabajo pendiente; las unidades finalizadas
+ // se consultan únicamente al seleccionar la etapa Liberadas.
+ const listUnits=stage==="liberada"?visibleUnits.filter(u=>u.estado==="liberada"):active;
+ const filtered=listUnits.filter(u=>{
   const q=search.trim().toLowerCase();
   const matchesStage=stage==="todos"||u.estado===stage;
   const hay=q===""||[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].some(v=>String(v||"").toLowerCase().includes(q));
@@ -515,9 +518,9 @@ function Traffic({units,counts,reload}){
 
  <div className="traffic-toolbar">
   <div className="traffic-search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar folio, operador, transporte o placas…"/>{search&&<button onClick={()=>setSearch("")}>×</button>}</div>
-  <div className="traffic-filter-label">{stage==="todos"?"Todas las unidades":(stateLabels[stage]||stage)} · {filtered.length}</div>
+  <div className="traffic-filter-label">{stage==="todos"?"En proceso":(stateLabels[stage]||stage)} · {filtered.length}</div>
  </div>
- <div className="panel traffic-list"><PanelHead title="Unidades en flujo"/>
+ <div className="panel traffic-list"><PanelHead title={stage==="liberada"?"Unidades liberadas · Historial":"Unidades activas en flujo"}/>
   {filtered.length===0?<Empty text="No hay unidades en esta etapa."/>:<div className="traffic-cards">{filtered.map(u=>{
     const next=stages.findIndex(x=>x[0]===u.estado);
     const nextLabel=next>=0&&next<stages.length-1?stages[next+1][2]:"";
