@@ -10,6 +10,7 @@ export default function Caseta({ warehouseId }) {
   const setForm=setAccessForm;
   const [loading,setLoading]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
   const [recent,setRecent]=useState([]);
+  const [peopleInside,setPeopleInside]=useState({unidad:0,visitante:0,proveedor:0,personal_interno:0,eventual:0,otro:0});
   const [showOtherAccess,setShowOtherAccess]=useState(false);
   const [exitLoading,setExitLoading]=useState("");
   const videoRef=useRef(null);
@@ -43,6 +44,22 @@ export default function Caseta({ warehouseId }) {
     // El almacén recibido por App ya está validado para el usuario.
     // No hacemos consultas de perfil cada segundo: el monitor debe ser ligero.
     const targetWarehouseId=warehouseId;
+
+    // Conteo exacto en base de datos: solo accesos que siguen dentro del almacén.
+    const tiposContador=["unidad","visitante","proveedor","personal_interno","eventual","otro"];
+    const conteos=await Promise.all(tiposContador.map(async tipo=>{
+      const {count,error}=await supabase.from("accesos_caseta")
+        .select("id",{count:"exact",head:true})
+        .eq("almacen_id",targetWarehouseId)
+        .eq("tipo_acceso",tipo)
+        .eq("estado","dentro");
+      return [tipo,error?null:(count||0)];
+    }));
+    setPeopleInside(prev=>conteos.reduce((acc,[tipo,cantidad])=>{
+      if(cantidad!==null)acc[tipo]=cantidad;
+      else acc[tipo]=prev[tipo]||0;
+      return acc;
+    },{...prev}));
 
     let filas=null;
     let ultimoError=null;
@@ -646,6 +663,20 @@ export default function Caseta({ warehouseId }) {
       <div className="caseta-hero-title"><div className="eyebrow">CONTROL DE ACCESO</div><h2>Caseta</h2><p>Registro de unidades, visitantes y proveedores</p></div>
       <div className="caseta-hero-status"><div className="caseta-active"><span className="dot"/> Caseta activa</div><strong>MTY-II | Las Torres</strong></div>
       <div className="caseta-clock" aria-label="Hora actual">{horaActual}</div>
+    </div>
+
+    <div className="caseta-people-counter" aria-label="Personas actualmente dentro" style={{marginTop:"18px",marginBottom:"18px",padding:"18px 20px",background:"var(--card, #fff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:"18px",boxShadow:"0 8px 24px rgba(15,23,42,.05)"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",flexWrap:"wrap",marginBottom:"14px"}}>
+        <div><div style={{fontSize:"11px",fontWeight:800,letterSpacing:".12em",color:"#64748b"}}>AFORO ACTUAL</div><h3 style={{margin:"4px 0 0",fontSize:"19px",color:"var(--text, #0f172a)"}}>Personas dentro de las instalaciones</h3></div>
+        <div style={{display:"flex",alignItems:"baseline",gap:"7px",background:"#eaf4ff",color:"#075985",borderRadius:"12px",padding:"9px 14px"}}><strong style={{fontSize:"28px",lineHeight:1}}>{Object.values(peopleInside).reduce((sum,n)=>sum+n,0)}</strong><span style={{fontSize:"12px",fontWeight:700}}>en total</span></div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(135px,1fr))",gap:"10px"}}>
+        {[["unidad","Transportistas","🚛","#e8f2ff"],["visitante","Visitantes","👤","#f1eaff"],["proveedor","Proveedores","📦","#fff2df"],["personal_interno","Personal interno","👥","#e6f8ef"],["eventual","Eventuales","🕒","#fff0f0"],["otro","Otros","＋","#edf2f7"]].map(([tipo,label,emoji,color])=><div key={tipo} style={{display:"flex",alignItems:"center",gap:"10px",minWidth:0,padding:"12px",border:"1px solid var(--border, #e2e8f0)",borderRadius:"13px",background:"var(--surface, #fff)"}}>
+          <span style={{width:"38px",height:"38px",display:"grid",placeItems:"center",flexShrink:0,borderRadius:"11px",background:color,fontSize:"19px"}}>{emoji}</span>
+          <div style={{minWidth:0}}><div style={{fontSize:"12px",fontWeight:650,color:"var(--muted, #64748b)",lineHeight:1.25}}>{label}</div><strong style={{display:"block",fontSize:"24px",lineHeight:1.2,color:"var(--text, #0f172a)"}}>{peopleInside[tipo]||0}</strong></div>
+        </div>)}
+      </div>
+      <p style={{margin:"12px 0 0",fontSize:"11px",color:"var(--muted, #64748b)"}}>Se actualiza con los ingresos registrados y disminuye al registrar la salida.</p>
     </div>
 
     <div className="access-selector">
