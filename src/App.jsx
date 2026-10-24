@@ -136,45 +136,6 @@ export default function App(){
     setRamps(data||[]);
   }
 
- async function loadAccessRecords(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
-   if(!warehouseId) return;
-   setAccessLoading(true);
-   const {data,error}=await supabase.from("accesos_caseta")
-     .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,motivo,telefono,entrada_at,salida_at,estado,created_at,tracto_placas,caja_placas,operacion_tipo")
-     .eq("almacen_id",warehouseId).eq("estado","dentro").neq("tipo_acceso","unidad").is("salida_at",null)
-     .order("created_at",{ascending:false}).limit(200);
-   if(!error) setAccessRecords(data||[]);
-   setAccessLoading(false);
- }
-
- async function registerAccessExit(record){
-   if(!record?.id||accessExitBusy) return;
-   const name=record.nombre||"la persona";
-   if(!window.confirm("¿Confirmas la salida de "+name+"?")) return;
-   setAccessExitBusy(record.id);setAccessMessage("");
-   try{
-     const now=new Date().toISOString();
-     const {data,error}=await supabase.from("accesos_caseta")
-       .update({salida_at:now,estado:"salio",updated_at:now})
-       .eq("id",record.id).eq("estado","dentro").is("salida_at",null)
-       .select("id,nombre,salida_at").maybeSingle();
-     if(error) throw error;
-     if(!data) throw new Error("No se pudo confirmar la salida. Actualiza la lista e inténtalo de nuevo.");
-     setAccessRecords(prev=>prev.filter(x=>x.id!==record.id));
-     setAccessMessage("Salida registrada para "+(data.nombre||name)+".");
-     await loadAccessRecords();
-   }catch(err){setAccessMessage(err.message||"No se pudo registrar la salida.");}
-   finally{setAccessExitBusy("");}
- }
-
-  useEffect(()=>{
-    const warehouseId=profile?.almacen_id||warehouses?.[0]?.id;
-    if(!profile||!warehouseId||module!=="caseta") return;
-    loadAccessRecords(warehouseId);
-    const timer=setInterval(()=>loadAccessRecords(warehouseId),10000);
-    return ()=>clearInterval(timer);
-  },[profile?.id,profile?.almacen_id,warehouses.length,module]);
-
   async function loadUsers(){
     const {data}=await supabase.from("usuarios").select("id,nombre,rol,activo,almacen_id,username,created_at").order("created_at",{ascending:false});
     setUsers(data||[]);
@@ -399,6 +360,44 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  const [accessRecords,setAccessRecords]=useState([]);
  const [accessLoading,setAccessLoading]=useState(false);
  const [accessExitBusy,setAccessExitBusy]=useState("");
+ async function loadAccessRecords(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
+   if(!warehouseId) return;
+   setAccessLoading(true);
+   const {data,error}=await supabase.from("accesos_caseta")
+     .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,motivo,telefono,entrada_at,salida_at,estado,created_at,tracto_placas,caja_placas,operacion_tipo")
+     .eq("almacen_id",warehouseId).eq("estado","dentro").neq("tipo_acceso","unidad").is("salida_at",null)
+     .order("created_at",{ascending:false}).limit(200);
+   if(!error) setAccessRecords(data||[]);
+   setAccessLoading(false);
+ }
+
+ async function registerAccessExit(record){
+   if(!record?.id||accessExitBusy) return;
+   const name=record.nombre||"la persona";
+   if(!window.confirm("¿Confirmas la salida de "+name+"?")) return;
+   setAccessExitBusy(record.id);setAccessMessage("");
+   try{
+     const now=new Date().toISOString();
+     const {data,error}=await supabase.from("accesos_caseta")
+       .update({salida_at:now,estado:"salio",updated_at:now})
+       .eq("id",record.id).eq("estado","dentro").is("salida_at",null)
+       .select("id,nombre,salida_at").maybeSingle();
+     if(error) throw error;
+     if(!data) throw new Error("No se pudo confirmar la salida. Actualiza la lista e inténtalo de nuevo.");
+     setAccessRecords(prev=>prev.filter(x=>x.id!==record.id));
+     setAccessMessage("Salida registrada para "+(data.nombre||name)+".");
+     await loadAccessRecords();
+   }catch(err){setAccessMessage(err.message||"No se pudo registrar la salida.");}
+   finally{setAccessExitBusy("");}
+ }
+
+  useEffect(()=>{
+    const warehouseId=profile?.almacen_id||warehouses?.[0]?.id;
+    if(!profile||!warehouseId||module!=="caseta") return;
+    loadAccessRecords(warehouseId);
+    const timer=setInterval(()=>loadAccessRecords(warehouseId),10000);
+    return ()=>clearInterval(timer);
+  },[profile?.id,profile?.almacen_id,warehouses.length,module]);
  const [sealsByUnit,setSealsByUnit]=useState({});
  const [sealLoading,setSealLoading]=useState(false);
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
