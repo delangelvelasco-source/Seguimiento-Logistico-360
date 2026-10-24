@@ -656,6 +656,14 @@ export default function Caseta({ warehouseId }) {
       <button type="button" className={accessType==="eventual"?"access-type active eventual":"access-type eventual"} onClick={()=>setAccessType("eventual")}><UserRoundCheck size={22}/><span><b>Eventuales</b><small>Acceso temporal</small></span></button>
     </div>
 
+    <div className="caseta-recent-exact" style={{marginTop:"18px"}}>
+      <div className="recent-exact-head">
+        <div><div className="exact-icon"><Users size={22}/></div><div><h3>Personas registradas · {accessType==="unidad"?"Transportistas":accessType==="visitante"?"Visitantes":accessType==="proveedor"?"Proveedores":accessType==="personal_interno"?"Personal interno":accessType==="eventual"?"Eventuales":"Otros accesos"}</h3><p>Listado del tipo seleccionado, actualizado con los registros de Caseta.</p></div></div>
+        <div className="recent-exact-actions"><span>{recent.filter(u=>u.tipo_acceso===accessType).length} registros</span><button type="button" className="secondary-btn" onClick={()=>load(true)} disabled={refreshLoading}><RefreshCw size={15}/>{refreshLoading?"Actualizando…":"Actualizar"}</button></div>
+      </div>
+      {recent.filter(u=>u.tipo_acceso===accessType).length?<div className="exact-table-wrap"><table className="exact-table"><thead><tr><th>Folio</th><th>Nombre</th><th>Empresa</th><th>Motivo / destino</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>{ordenarCola(recent.filter(u=>u.tipo_acceso===accessType)).map(u=><tr key={"selected-"+u.id}><td><strong>{u.folio}</strong></td><td>{u.nombre||"—"}</td><td>{u.empresa||"—"}</td><td>{u.motivo||u.area_destino||u.persona_visita||u.operacion_tipo||"—"}</td><td>{u.entrada_at?new Date(u.entrada_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td><td>{u.salida_at?new Date(u.salida_at).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</td><td><span className={"exact-status "+(u.estado==="dentro"?"inside":"exited")}><span/>{u.estado==="dentro"?"Dentro":"Salió"}</span></td></tr>)}</tbody></table></div>:<div className="exact-empty"><Users size={24}/><strong>No hay registros de esta categoría</strong><span>Cuando se registre un nuevo acceso de este tipo, aparecerá aquí.</span></div>}
+    </div>
+
     <div className="caseta-steps"><div className="caseta-step-item active"><span>1</span><strong>Datos de acceso</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>2</span><strong>Evidencia</strong></div><div className="caseta-step-line"/><div className="caseta-step-item"><span>3</span><strong>Registrar ingreso</strong></div></div>
 
     <div className="caseta-exact-grid">
