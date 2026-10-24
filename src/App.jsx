@@ -41,7 +41,7 @@ const stateLabels = {
 };
 
 function today(){ return new Date().toISOString().slice(0,10); }
-function folio(){ const d=today().replaceAll("-","").slice(2); return "T-"+d+"-"+Math.floor(10000+Math.random()*90000); }
+
 function clsState(s){ return "state state-"+String(s||"").replaceAll("_","-"); }
 
 export default function App(){
@@ -183,7 +183,9 @@ export default function App(){
       const warehouseId=profile?.almacen_id||warehouses[0]?.id;
       if(!warehouseId) throw new Error("No hay almacén asignado.");
       if(!platePhoto || !idPhoto) throw new Error("Debes tomar la foto de placas y la foto de ID.");
-      const f=folio();
+      const {data:folioGenerado,error:folioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:"unidad"});
+      if(folioError || !folioGenerado) throw folioError||new Error("No se pudo generar el folio de la unidad.");
+      const f=folioGenerado;
       const {data:u,error:e1}=await supabase.from("unidades").insert({
         folio:f, operador_nombre:form.operador_nombre.trim(), linea_transporte:form.linea_transporte.trim(), tipo_unidad:form.tipo_unidad||"tractocamion",
         tracto_numero:form.tracto_numero.trim(), tracto_placas:form.tracto_placas.trim().toUpperCase(),
@@ -424,7 +426,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
      if(!name) throw new Error("Captura el nombre completo.");
      const accessTypeMap={visitante:"visitante",proveedor:"proveedor",personal_interno:"personal_interno",eventual:"eventual",otro:"otro"};
      const {error}=await supabase.from("accesos_caseta").insert({
-       folio:"A-"+today().replaceAll("-","").slice(2)+"-"+Math.floor(10000+Math.random()*90000),
+       folio:null,
        almacen_id:warehouseId,tipo_acceso:accessTypeMap[accessType]||"otro",nombre:name,
        empresa:accessForm.empresa.trim()||null,telefono:accessForm.telefono.trim()||null,
        persona_visita:accessForm.persona_visita.trim()||null,motivo:accessForm.motivo.trim(),
