@@ -499,6 +499,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
   <section className="caseta-access-picker">
    <div className="caseta-access-heading"><div><span className="caseta-section-kicker">TIPO DE REGISTRO</span><h2>¿Qué tipo de acceso vas a registrar?</h2><p>Selecciona una opción para abrir el formulario correspondiente.</p></div><span className="caseta-access-count">6 opciones</span></div>
    <div className="caseta-access-options">{accessOptions.map(option=><button type="button" key={option.id} className={"caseta-access-option "+(accessType===option.id?"selected":"")} onClick={()=>{setAccessType(option.id);setAccessMessage("");}} aria-pressed={accessType===option.id}><span className="caseta-access-option-icon">{option.icon}</span><span className="caseta-access-option-copy"><strong>{option.label}</strong><small>{option.desc}</small></span><span className="caseta-access-chevron">›</span></button>)}</div>
+   {!accessType&&<div className="caseta-select-hint">Selecciona uno de los botones para mostrar únicamente el formulario de ese tipo de acceso.</div>}
   </section>
   {accessType&&(accessType==="transportista"?<div className="grid2 caseta-modern-grid">
   <form className="panel caseta-form-panel" onSubmit={submit}>
