@@ -489,7 +489,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
   {sealLoading&&<p>Consultando sellos…</p>}
   {salida.length===0?<Empty text="No hay unidades liberadas por Dispatch pendientes de validar en este almacén."/>:salida.slice(0,100).map(u=>{const seals=sealsByUnit[u.id]||[];const expected=seals.filter(x=>x.origen==="dispatch");const guard=seals.filter(x=>x.origen==="guardia");const lastGuard=guard[guard.length-1];const alreadyVerified=guard.some(x=>x.resultado==="coincide"||x.resultado==="no_aplica");return <div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>{u.operacion_tipo==="embarque"?"Embarque":"Recibo"} · Sellos de Dispatch: {expected.length?expected.map(x=>x.numero_fisico).join(", "):"SIN REGISTRO"}{lastGuard?" · Última validación: "+lastGuard.resultado:""}</small><div className="actions"><button className="primary" type="button" disabled={busy||sealLoading} onClick={()=>verifyExit(u)}>{alreadyVerified?"Completar salida":"Validar sello y registrar salida"}</button></div></div></div>})}
  </div>}
- </>;
+ </div></>;
 }
 
 function Traffic({units,counts,reload}){
