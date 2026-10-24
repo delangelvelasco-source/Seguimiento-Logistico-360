@@ -1027,3 +1027,5 @@
 .caseta-access-info-note{margin-top:16px;padding:13px;border-radius:11px;background:#f2f7fd;color:#5c6f86;font-size:12px;line-height:1.5}
 @media(max-width:900px){.caseta-access-options{grid-template-columns:repeat(2,minmax(0,1fr))}.caseta-access-picker{padding:17px}}
 @media(max-width:560px){.caseta-access-options{grid-template-columns:1fr}.caseta-access-option{padding:12px}.caseta-access-heading h2{font-size:18px}.caseta-access-count{font-size:10px}.caseta-other-fields{grid-template-columns:1fr}.caseta-full-field{grid-column:auto}}
+
+.caseta-select-hint{margin-top:14px;padding:13px 15px;border:1px dashed #c9d9ec;border-radius:12px;background:#f7faff;color:#60758e;font-size:12px;line-height:1.5;text-align:center}
