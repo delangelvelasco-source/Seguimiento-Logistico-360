@@ -723,7 +723,7 @@ function CSR({units,onUpdate,warehouseId}){
   e.preventDefault();setAppointmentError("");setAppointmentMessage("");
   if(!warehouseId){setAppointmentError("Selecciona un almacén antes de registrar la cita.");return;}
   if(selectedDay<todayKey){setAppointmentError("No puedes registrar una cita en una fecha pasada.");return;}
-  if(!openTimes.includes(newAppointment.hora_inicio)){setAppointmentError("Ese horario ya tiene una cita registrada. Selecciona otro bloque disponible.");return;}
+  if(!editingAppointment&&!openTimes.includes(newAppointment.hora_inicio)){setAppointmentError("Ese horario ya tiene una cita registrada. Selecciona otro bloque disponible.");return;}
   const startMinutes=Number(newAppointment.hora_inicio.slice(0,2))*60+Number(newAppointment.hora_inicio.slice(3,5)),endMinutes=startMinutes+30;
   const conflicts=appointments.filter(a=>a.id!==editingAppointment?.id&&a.fecha===selectedDay&&a.estado!=="cancelada"&&!a.cerrada_at&&Number(String(a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_inicio||"00:00").slice(3,5))<endMinutes&&Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(0,2))*60+Number(String(a.hora_fin||a.hora_inicio||"00:00").slice(3,5))>startMinutes);
   if(conflicts.length>0){setAppointmentError("Ese bloque ya está ocupado por una cita previa. Elige otra hora.");return;}
@@ -756,7 +756,7 @@ function CSR({units,onUpdate,warehouseId}){
    const start=new Date(month.getFullYear(),month.getMonth(),1),end=new Date(month.getFullYear(),month.getMonth()+1,1);
    const fresh=await supabase.from("citas").select("id,folio,tipo_operacion,fecha,hora_inicio,hora_fin,referencia,cuenta_cliente,pallets,estado,cerrada_at,unidades_solicitadas").eq("almacen_id",warehouseId).gte("fecha",dateKey(start)).lt("fecha",dateKey(end)).order("fecha").order("hora_inicio").limit(500);
    if(!fresh.error)setAppointments((fresh.data||[]).filter(x=>x.estado!=="cancelada"&&!x.cerrada_at));
-  }catch(err){setAppointmentError("Ocurrió un error al registrar la cita. Intenta nuevamente.");}
+  }catch(err){setAppointmentError("No se pudieron guardar los cambios: "+(err?.message||String(err)||"error inesperado"));}
   finally{setSavingAppointment(false);}
  }
  return <><Page title="CSR" sub="Calendario de citas y validación documental."/>
