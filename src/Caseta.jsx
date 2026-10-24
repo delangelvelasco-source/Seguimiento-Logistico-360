@@ -231,11 +231,12 @@ export default function Caseta({ warehouseId }) {
         resultado={ok:true,folio:actualizado.folio,estado:actualizado.estado,salida_at:actualizado.salida_at};
       }
       const {error:gafeteError}=await supabase.rpc("liberar_gafete_caseta",{p_acceso_id:acceso.id});
+      const recordatorioSalida="Recordatorio: no olviden recoger el gafete y entregar la identificación a nuestro visitante.";
       if(gafeteError){
         // La salida ya quedó registrada; solo informamos el problema del control interno del gafete.
-        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado. El gafete requiere liberación manual.`);
+        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado. El gafete requiere liberación manual. ${recordatorioSalida}`);
       }else{
-        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado.`);
+        setMessage(`Salida registrada correctamente. Folio ${resultado.folio||acceso.folio} cerrado. ${recordatorioSalida}`);
       }
       await load();
     }catch(err){
