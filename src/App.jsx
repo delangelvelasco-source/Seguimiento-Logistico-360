@@ -425,8 +425,10 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
      const name=accessForm.nombre.trim();
      if(!name) throw new Error("Captura el nombre completo.");
      const accessTypeMap={visitante:"visitante",proveedor:"proveedor",personal_interno:"personal_interno",eventual:"eventual",otro:"otro"};
+     const {data:accessFolio,error:accessFolioError}=await supabase.rpc("generar_folio_caseta",{p_tipo:accessTypeMap[accessType]||"otro"});
+     if(accessFolioError || !accessFolio) throw accessFolioError||new Error("No se pudo generar el folio de acceso.");
      const {error}=await supabase.from("accesos_caseta").insert({
-       folio:null,
+       folio:accessFolio,
        almacen_id:warehouseId,tipo_acceso:accessTypeMap[accessType]||"otro",nombre:name,
        empresa:accessForm.empresa.trim()||null,telefono:accessForm.telefono.trim()||null,
        persona_visita:accessForm.persona_visita.trim()||null,motivo:accessForm.motivo.trim(),
