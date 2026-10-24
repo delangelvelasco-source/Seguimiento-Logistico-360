@@ -925,3 +925,74 @@
  .m360-date-compact small{font-size:9px!important}
  .m360-date-compact b{font-size:12px!important}
 }
+
+
+/* Caseta moderna para op360.lat: referencia visual Pages, con jerarquía y controles compactos */
+.caseta-modern{display:flex!important;flex-direction:column!important;gap:16px!important;max-width:100%!important}
+.caseta-hero{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;gap:20px!important;
+ padding:22px 26px!important;border-radius:20px!important;color:#fff!important;
+ background:radial-gradient(circle at 85% 0%,rgba(255,255,255,.17),transparent 35%),linear-gradient(115deg,#123d78 0%,#087bc4 55%,#1594d1 100%)!important;
+ box-shadow:0 12px 28px rgba(16,74,130,.19)!important;overflow:hidden!important
+}
+.caseta-hero-brand{display:flex!important;align-items:center!important;gap:15px!important;min-width:0!important}
+.caseta-hero-icon{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 52px!important;width:52px!important;height:52px!important;border:1px solid rgba(255,255,255,.3)!important;border-radius:15px!important;background:rgba(255,255,255,.14)!important;font-size:26px!important;font-weight:900!important}
+.caseta-hero-brand small{display:block!important;font-size:10px!important;letter-spacing:.15em!important;font-weight:900!important;color:#cbe8ff!important}
+.caseta-hero-brand h1{margin:4px 0!important;font-size:clamp(25px,2.4vw,34px)!important;line-height:1.05!important;letter-spacing:-.04em!important;color:#fff!important}
+.caseta-hero-brand p{margin:0!important;font-size:12px!important;color:#e1f2ff!important}
+.caseta-hero-status{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:7px!important;min-width:145px!important;padding:12px 15px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:14px!important;background:rgba(7,35,76,.2)!important;font-size:11px!important;font-weight:850!important;white-space:nowrap!important}
+.caseta-status-dot{display:inline-block!important;width:8px!important;height:8px!important;border-radius:50%!important;background:#56e4a0!important;box-shadow:0 0 0 4px rgba(86,228,160,.15)!important}
+.caseta-hero-status strong{font-size:10px!important;color:#c9e8ff!important;font-weight:650!important}
+.caseta-workflow{display:flex!important;align-items:center!important;justify-content:center!important;gap:14px!important;padding:7px 12px!important}
+.caseta-workflow>div{display:flex!important;align-items:center!important;gap:9px!important;color:#8796aa!important;font-size:11px!important;font-weight:800!important;white-space:nowrap!important}
+.caseta-workflow>div>span{display:flex!important;align-items:center!important;justify-content:center!important;width:30px!important;height:30px!important;border:2px solid #d7e1ed!important;border-radius:50%!important;background:#fff!important;color:#71849b!important;font-size:12px!important}
+.caseta-workflow>div.active{color:#1769b4!important}
+.caseta-workflow>div.active>span{border-color:#2583dc!important;background:#e8f4ff!important;color:#1769b4!important;box-shadow:0 0 0 4px rgba(37,131,220,.08)!important}
+.caseta-workflow>i{height:2px!important;width:clamp(22px,6vw,76px)!important;background:#dce5ef!important}
+.caseta-tabs{display:flex!important;gap:9px!important;padding:5px!important;border:1px solid #e1eaf4!important;border-radius:14px!important;background:#f4f8fc!important}
+.caseta-tabs>button{flex:1!important;min-height:43px!important;border-radius:10px!important;font-size:12px!important;font-weight:850!important;color:#63758d!important;background:transparent!important;border:1px solid transparent!important}
+.caseta-tabs>button.selected{background:#fff!important;border-color:#d7e5f5!important;color:#155da6!important;box-shadow:0 3px 8px rgba(24,65,110,.07)!important}
+.caseta-tabs>button b{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:22px!important;height:22px!important;margin-left:5px!important;border-radius:7px!important;background:#e8f2ff!important;color:#1b65b4!important}
+.caseta-modern-grid{align-items:start!important;gap:16px!important}
+.caseta-form-panel,.caseta-modern-grid>.panel{padding:20px!important;border:1px solid #e0e9f3!important;border-radius:18px!important;background:#fff!important;box-shadow:0 7px 22px rgba(22,51,87,.045)!important;min-width:0!important}
+.caseta-panel-title{display:flex!important;align-items:center!important;gap:12px!important;margin:0 0 18px!important;padding:0 0 16px!important;border-bottom:1px solid #edf2f7!important}
+.caseta-panel-title>span{display:flex!important;align-items:center!important;justify-content:center!important;width:39px!important;height:39px!important;flex:0 0 39px!important;border-radius:12px!important;background:#e9f4ff!important;color:#1769b4!important;font-size:12px!important;font-weight:950!important}
+.caseta-panel-title h3{margin:0 0 4px!important;font-size:15px!important;letter-spacing:-.02em!important;color:#183653!important}
+.caseta-panel-title p{margin:0!important;font-size:11px!important;line-height:1.45!important;color:#8090a5!important}
+.caseta-form-panel .formgrid{gap:13px!important}
+.caseta-form-panel .formgrid label{display:flex!important;flex-direction:column!important;gap:6px!important;font-size:11px!important;font-weight:800!important;color:#50647e!important;min-width:0!important}
+.caseta-form-panel input:not([type=file]),.caseta-form-panel select{width:100%!important;min-width:0!important;min-height:42px!important;padding:10px 12px!important;border:1px solid #dce5f0!important;border-radius:10px!important;background:#fbfdff!important;color:#1c3656!important;font-size:12px!important;outline:none!important;box-shadow:none!important}
+.caseta-form-panel input:focus,.caseta-form-panel select:focus{border-color:#69a9e9!important;background:#fff!important;box-shadow:0 0 0 3px rgba(50,133,211,.12)!important}
+.caseta-form-panel .inline-field{display:flex!important;gap:8px!important;min-width:0!important}
+.caseta-form-panel .inline-field button{flex:0 0 auto!important;min-height:42px!important;border-radius:10px!important}
+.caseta-form-panel .evidence-grid{gap:10px!important;margin-top:15px!important}
+.caseta-form-panel .evidence-tile{min-height:135px!important;border:1px dashed #b9cfe6!important;border-radius:13px!important;background:linear-gradient(180deg,#f9fcff,#f1f7fd)!important;padding:14px!important;gap:7px!important}
+.caseta-form-panel .evidence-tile:hover{border-color:#368bd5!important;background:#eef7ff!important}
+.caseta-form-panel .evidence-icon{display:flex!important;align-items:center!important;justify-content:center!important;width:36px!important;height:36px!important;border-radius:10px!important;background:#e1f0ff!important;font-size:19px!important}
+.caseta-form-panel .evidence-tile strong{font-size:12px!important;color:#254564!important}
+.caseta-form-panel .evidence-tile small{font-size:10px!important;line-height:1.4!important;color:#7b8da3!important}
+.caseta-form-panel .form-note{padding:10px 12px!important;border-radius:10px!important;background:#f4f8fc!important;color:#6d7f95!important;font-size:10px!important;line-height:1.5!important}
+.caseta-form-panel>button.primary{width:100%!important;min-height:47px!important;border-radius:12px!important;background:linear-gradient(100deg,#0878d4,#168ee2)!important;box-shadow:0 5px 12px rgba(8,120,212,.18)!important;font-size:12px!important;font-weight:900!important}
+.caseta-modern-grid>.panel>h3{margin:0 0 15px!important;padding-bottom:14px!important;border-bottom:1px solid #edf2f7!important;font-size:15px!important;color:#183653!important}
+.caseta-modern .exit-panel{padding:20px!important;border:1px solid #e0e9f3!important;border-radius:18px!important;background:#fff!important}
+.caseta-modern .exit-panel>h3{font-size:16px!important;color:#183653!important}
+.caseta-modern .exit-panel>.section-copy{font-size:12px!important;line-height:1.5!important;color:#72849a!important}
+.caseta-modern .unit-card{border:1px solid #e1eaf3!important;border-radius:13px!important;background:#fbfdff!important;padding:14px!important;margin-top:10px!important}
+@media(max-width:900px){
+ .caseta-hero{padding:18px!important}
+ .caseta-hero-status{min-width:125px!important}
+ .caseta-modern-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:600px){
+ .caseta-hero{align-items:flex-start!important;flex-direction:column!important;gap:14px!important;padding:16px!important;border-radius:16px!important}
+ .caseta-hero-icon{width:42px!important;height:42px!important;flex-basis:42px!important;font-size:22px!important}
+ .caseta-hero-status{width:100%!important;flex-direction:row!important;align-items:center!important;flex-wrap:wrap!important;min-width:0!important;padding:9px 11px!important}
+ .caseta-hero-status strong{margin-left:auto!important}
+ .caseta-workflow{justify-content:space-between!important;gap:6px!important;padding:4px 0!important}
+ .caseta-workflow>div{gap:5px!important;font-size:9px!important}
+ .caseta-workflow>div>span{width:25px!important;height:25px!important}
+ .caseta-workflow>i{width:12px!important}
+ .caseta-tabs>button{font-size:10px!important;padding:0 7px!important}
+ .caseta-form-panel,.caseta-modern-grid>.panel{padding:14px!important}
+ .caseta-form-panel .evidence-tile{min-height:112px!important}
+}
