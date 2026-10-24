@@ -704,3 +704,13 @@
  .csr-appointment-form .csr-operation-options{gap:9px}
  .csr-appointment-form .csr-date-time{gap:13px}
 }
+
+
+/* Tiempos operativos en el tablero de Tráfico */
+.traffic-time-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0 4px}
+.traffic-time-item{min-width:0;display:flex;flex-direction:column;gap:5px;padding:10px 12px;border:1px solid #e4eaf2;border-radius:11px;background:#f8fafc}
+.traffic-time-item>span{font-size:9px;font-weight:850;letter-spacing:.08em;color:#718096}
+.traffic-time-item>strong{font-size:16px;line-height:1.25;color:#172744;font-variant-numeric:tabular-nums}
+.traffic-time-item>small{font-size:10px;font-weight:750}
+.traffic-time-item .time-ok{color:#16845b}.traffic-time-item .time-warning{color:#b7791f}.traffic-time-item .time-late{color:#c53030}.traffic-time-item .time-pending{color:#718096}
+@media(max-width:700px){.traffic-time-grid{grid-template-columns:1fr;gap:6px}.traffic-time-item{padding:8px 10px;display:grid;grid-template-columns:1fr auto;align-items:center}.traffic-time-item>span{grid-column:1/-1}.traffic-time-item>strong{font-size:14px}.traffic-time-item>small{grid-column:1/-1}}

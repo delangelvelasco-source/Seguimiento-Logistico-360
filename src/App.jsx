@@ -481,6 +481,11 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
 function Traffic({units,counts,reload}){
  const [stage,setStage]=useState("todos");
  const [search,setSearch]=useState("");
+ const [clockNow,setClockNow]=useState(Date.now());
+ useEffect(()=>{const id=setInterval(()=>setClockNow(Date.now()),60000);return ()=>clearInterval(id)},[]);
+ const elapsed=(start,end=clockNow)=>{if(!start)return null;const ms=end-new Date(start).getTime();if(!Number.isFinite(ms)||ms<0)return 0;return Math.floor(ms/60000)};
+ const durationLabel=mins=>mins==null?"Pendiente":mins<60?mins+" min":Math.floor(mins/60)+" h "+String(mins%60).padStart(2,"0")+" min";
+ const timeStatus=(mins,limit)=>mins==null?["Pendiente","time-pending"]:mins>limit*2?["Demorada","time-late"]:mins>limit?["Atención","time-warning"]:["En tiempo","time-ok"];
  const stages=[
   ["en_caseta","1","CASETA","Ingreso"],
   ["validando","2","VALIDACIÓN","Dispatch"],
@@ -527,6 +532,7 @@ function Traffic({units,counts,reload}){
     return <div className="traffic-card" key={u.id}>
       <div className="traffic-card-top"><div><strong>{u.folio||"Sin folio"}</strong><span>{u.operador_nombre||"Sin operador"} · {u.linea_transporte||"Sin transporte"}</span></div><span className={"traffic-state "+clsState(u.estado)}>{stateLabels[u.estado]||u.estado}</span></div>
       <div className="traffic-card-data"><span><small>TRACTO</small><b>{u.tracto_placas||"—"}</b></span><span><small>CAJA</small><b>{u.caja_placas||"—"}</b></span><span><small>OPERACIÓN</small><b>{u.operacion_tipo==="embarque"?"Embarque":"Recibo"}</b></span><span><small>RAMPA</small><b>{u.rampa_id?"Asignada":"—"}</b></span></div>
+      {(()=>{const yardStart=u.created_at;const rampStart=u.csr_confirmacion_at||null;const operationStart=u.operacion_inicio_at||null;const exit=u.salida_caseta_at||null;const yardMins=elapsed(yardStart,rampStart?new Date(rampStart).getTime():clockNow);const rampMins=rampStart?elapsed(rampStart,operationStart?new Date(operationStart).getTime():exit?new Date(exit).getTime():clockNow):null;const warehouseMins=elapsed(yardStart,exit?new Date(exit).getTime():clockNow);const yardStatus=timeStatus(yardMins,30);const rampStatus=timeStatus(rampMins,60);const warehouseStatus=timeStatus(warehouseMins,240);return <div className="traffic-time-grid"><div className="traffic-time-item"><span>TIEMPO EN PATIO</span><strong>{durationLabel(yardMins)}</strong><small className={yardStatus[1]}>{yardStatus[0]}{rampStart?" · hasta asignación de rampa":""}</small></div><div className="traffic-time-item"><span>TIEMPO EN RAMPA</span><strong>{durationLabel(rampMins)}</strong><small className={rampStatus[1]}>{rampStatus[0]}{operationStart?" · hasta inicio de operación":""}</small></div><div className="traffic-time-item"><span>DURACIÓN EN ALMACÉN</span><strong>{durationLabel(warehouseMins)}</strong><small className={warehouseStatus[1]}>{warehouseStatus[0]}{exit?" · estancia cerrada":" · estancia en curso"}</small></div></div>})()}
       <div className="traffic-card-next"><span>{nextLabel?<>Siguiente: <b>{nextLabel}</b></>:"Flujo concluido"}</span><span>Actualización automática</span></div>
     </div>
   })}</div>}
