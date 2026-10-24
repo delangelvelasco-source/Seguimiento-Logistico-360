@@ -92,9 +92,18 @@ export default function App(){
   },[session]);
 
   useEffect(()=>{
-    if(!profile) return;
-    const timer=setInterval(()=>{ loadUnits(); loadRamps(); },10000);
-    return ()=>clearInterval(timer);
+    const warehouseId=profile?.almacen_id||warehouses?.[0]?.id;
+    if(!profile||!warehouseId) return;
+    let alive=true;
+    const refresh=()=>{if(alive){loadUnits(warehouseId);loadRamps(warehouseId);}};
+    // Realtime pushes updates between Caseta, Tráfico, Rampas, Operación and Monitor.
+    const channel=supabase.channel("op360-live-"+warehouseId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"unidades",filter:"almacen_id=eq."+warehouseId},refresh)
+      .on("postgres_changes",{event:"*",schema:"public",table:"rampas",filter:"almacen_id=eq."+warehouseId},refresh)
+      .subscribe();
+    // Polling remains as a fallback if Realtime drops or is not enabled.
+    const timer=setInterval(refresh,10000);
+    return ()=>{alive=false;clearInterval(timer);supabase.removeChannel(channel);};
   },[profile?.id,profile?.almacen_id,warehouses.length]);
 
   async function loadApp(uid){
