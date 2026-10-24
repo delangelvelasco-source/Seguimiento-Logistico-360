@@ -490,8 +490,9 @@ function Traffic({units,counts,reload}){
   ["documentacion","6","SALIDA","Documentación"],
   ["liberada","✓","LIBERADAS","Finalizadas"]
  ];
- const active=units.filter(u=>!["cancelada","incidencia"].includes(u.estado));
- const filtered=active.filter(u=>{
+ const visibleUnits=units.filter(u=>!["cancelada","incidencia"].includes(u.estado));
+ const active=visibleUnits.filter(u=>u.estado!=="liberada");
+ const filtered=visibleUnits.filter(u=>{
   const q=search.trim().toLowerCase();
   const matchesStage=stage==="todos"||u.estado===stage;
   const hay=q===""||[u.folio,u.operador_nombre,u.linea_transporte,u.tracto_placas,u.caja_placas].some(v=>String(v||"").toLowerCase().includes(q));
@@ -503,7 +504,7 @@ function Traffic({units,counts,reload}){
   <div className="traffic-command-actions"><button className="secondary" onClick={reload}>↻ Actualizar</button></div>
  </div>
  <div className="traffic-flow">
-  <button className={"flow-stage "+(stage==="todos"?"selected":"")} onClick={()=>setStage("todos")}><span className="flow-num">ALL</span><b>TODAS</b><small>{active.length} unidades</small></button>
+  <button className={"flow-stage "+(stage==="todos"?"selected":"")} onClick={()=>setStage("todos")}><span className="flow-num">ALL</span><b>TODAS</b><small>{visibleUnits.length} en total</small></button>
   {stages.map(([key,num,label,sub],i)=><React.Fragment key={key}>
    {i>0&&<span className="flow-arrow">→</span>}
    <button className={"flow-stage "+(stage===key?"selected":"")} onClick={()=>setStage(key)}>
