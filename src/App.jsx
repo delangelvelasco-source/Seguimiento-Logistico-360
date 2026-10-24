@@ -360,7 +360,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  const [accessRecords,setAccessRecords]=useState([]);
  const [accessLoading,setAccessLoading]=useState(false);
  const [accessExitBusy,setAccessExitBusy]=useState("");
- async function loadAccessRecords(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
+ async function loadAccessRecords(warehouseId=profile?.almacen_id){
    if(!warehouseId) return;
    setAccessLoading(true);
    const {data,error}=await supabase.from("accesos_caseta")
@@ -392,12 +392,12 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  }
 
   useEffect(()=>{
-    const warehouseId=profile?.almacen_id||warehouses?.[0]?.id;
+    const warehouseId=profile?.almacen_id;
     if(!profile||!warehouseId) return;
     loadAccessRecords(warehouseId);
     const timer=setInterval(()=>loadAccessRecords(warehouseId),10000);
     return ()=>clearInterval(timer);
-  },[profile?.id,profile?.almacen_id,warehouses.length,module]);
+  },[profile?.id,profile?.almacen_id]);
  const [sealsByUnit,setSealsByUnit]=useState({});
  const [sealLoading,setSealLoading]=useState(false);
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
