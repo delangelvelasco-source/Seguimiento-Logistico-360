@@ -141,7 +141,7 @@ export default function App(){
    setAccessLoading(true);
    const {data,error}=await supabase.from("accesos_caseta")
      .select("id,folio,tipo_acceso,nombre,empresa,persona_visita,motivo,telefono,entrada_at,salida_at,estado,created_at,tracto_placas,caja_placas,operacion_tipo")
-     .eq("almacen_id",warehouseId).eq("estado","dentro").is("salida_at",null)
+     .eq("almacen_id",warehouseId).eq("estado","dentro").neq("tipo_acceso","unidad").is("salida_at",null)
      .order("created_at",{ascending:false}).limit(200);
    if(!error) setAccessRecords(data||[]);
    setAccessLoading(false);
