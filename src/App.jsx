@@ -116,7 +116,7 @@ export default function App(){
   async function loadUnits(warehouseId=profile?.almacen_id||warehouses?.[0]?.id){
     if(!warehouseId) return;
     const {data,error:e}=await supabase.from("unidades")
-      .select("id,folio,operador_nombre,linea_transporte,tracto_numero,tracto_placas,caja_numero,caja_placas,contacto,cita_at,estado,rampa_id,ubicacion_tipo,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
+      .select("id,folio,operador_nombre,linea_transporte,tracto_numero,tracto_placas,caja_numero,caja_placas,contacto,cita_at,estado,rampa_id,rampa_asignada_at,csr_confirmacion_at,operacion_inicio_at,operacion_fin_at,ubicacion_tipo,almacen_id,operacion_tipo,numero_sellos,salida_autorizada,salida_caseta_at,created_at,updated_at")
       .eq("almacen_id",warehouseId).order("created_at",{ascending:false}).limit(500);
     if(!e) setUnits(data||[]);
   }
