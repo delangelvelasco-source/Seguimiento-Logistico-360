@@ -452,11 +452,16 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
     setSealsByUnit(prev=>({...prev,[u.id]:refreshSeals||[]}));
   }
 
- return <><Page title="Caseta" sub="Registro de ingreso y control de salida del almacén."/>
- <div className="m360-ops-tabs caseta-tabs"><button type="button" className={casetaTab==="ingreso"?"selected":""} onClick={()=>setCasetaTab("ingreso")}>Registrar ingreso</button><button type="button" className={casetaTab==="salida"?"selected":""} onClick={()=>setCasetaTab("salida")}>Registrar salida <b>{salida.length}</b></button></div>
- {casetaTab==="ingreso"&&<div className="grid2">
-  <form className="panel" onSubmit={submit}>
-   <h3>Registrar unidad</h3>
+ return <><div className="caseta-modern">
+ <section className="caseta-hero">
+  <div className="caseta-hero-brand"><span className="caseta-hero-icon">↔</span><div><small>CONTROL DE ACCESO · OP360</small><h1>Caseta</h1><p>Registro de unidades y control de entrada y salida</p></div></div>
+  <div className="caseta-hero-status"><span className="caseta-status-dot"/> Caseta operativa<strong>Control de acceso</strong></div>
+ </section>
+ <div className="caseta-workflow"><div className={casetaTab==="ingreso"?"active":""}><span>1</span><b>Datos de acceso</b></div><i/><div className={casetaTab==="ingreso"?"active":""}><span>2</span><b>Evidencia</b></div><i/><div className={casetaTab==="salida"?"active":""}><span>3</span><b>Registrar salida</b></div></div>
+ <div className="m360-ops-tabs caseta-tabs"><button type="button" className={casetaTab==="ingreso"?"selected":""} onClick={()=>setCasetaTab("ingreso")}>＋ Registrar ingreso</button><button type="button" className={casetaTab==="salida"?"selected":""} onClick={()=>setCasetaTab("salida")}>↗ Registrar salida <b>{salida.length}</b></button></div>
+ {casetaTab==="ingreso"&&<div className="grid2 caseta-modern-grid">
+  <form className="panel caseta-form-panel" onSubmit={submit}>
+   <div className="caseta-panel-title"><span>01</span><div><h3>Datos del transportista</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
    <div className="formgrid">
     <label>No. de cita (folio) opcional><div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
     <label>Operador *{f("operador_nombre",true)}</label><label>Línea de transporte / empresa *{f("linea_transporte",true)}</label><label>Tipo de unidad *<select required value={form.tipo_unidad||"tractocamion"} onChange={e=>setForm({...form,tipo_unidad:e.target.value})}><option value="contenedor">Contenedor</option><option value="tractocamion">Tráiler / tractocamión</option><option value="plataforma">Plataforma</option><option value="esquita">Esquita</option><option value="rabon">Rabón</option><option value="camion_3_5">Camión 3.5 toneladas</option><option value="van">Van</option><option value="particular">Vehículo particular</option><option value="otro">Otro</option></select></label>
