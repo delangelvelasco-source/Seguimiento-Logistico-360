@@ -353,7 +353,7 @@ function Login({login,setLogin,submit,busy,error}){
 
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const [casetaTab,setCasetaTab]=useState("ingreso");
- const [accessType,setAccessType]=useState("transportista");
+ const [accessType,setAccessType]=useState("");
  const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",telefono:"",persona_visita:"",motivo:""});
  const [accessBusy,setAccessBusy]=useState(false);
  const [accessMessage,setAccessMessage]=useState("");
@@ -500,7 +500,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    <div className="caseta-access-heading"><div><span className="caseta-section-kicker">TIPO DE REGISTRO</span><h2>¿Qué tipo de acceso vas a registrar?</h2><p>Selecciona una opción para abrir el formulario correspondiente.</p></div><span className="caseta-access-count">6 opciones</span></div>
    <div className="caseta-access-options">{accessOptions.map(option=><button type="button" key={option.id} className={"caseta-access-option "+(accessType===option.id?"selected":"")} onClick={()=>{setAccessType(option.id);setAccessMessage("");}} aria-pressed={accessType===option.id}><span className="caseta-access-option-icon">{option.icon}</span><span className="caseta-access-option-copy"><strong>{option.label}</strong><small>{option.desc}</small></span><span className="caseta-access-chevron">›</span></button>)}</div>
   </section>
-  {accessType==="transportista"?<div className="grid2 caseta-modern-grid">
+  {accessType&&(accessType==="transportista"?<div className="grid2 caseta-modern-grid">
   <form className="panel caseta-form-panel" onSubmit={submit}>
    <div className="caseta-panel-title"><span>01</span><div><h3>Datos del transportista</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
    <div className="formgrid">
@@ -539,7 +539,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    <button className="primary" disabled={accessBusy}>{accessBusy?"Registrando…":"Registrar ingreso de "+(accessOptions.find(x=>x.id===accessType)?.label.toLowerCase()||"acceso")}</button>
   </form>
   <div className="panel caseta-access-info"><h3>Control de acceso</h3><p>Verifica la identidad y el motivo de la visita antes de confirmar el registro.</p><div className="caseta-access-info-row"><span>Tipo seleccionado</span><b>{accessOptions.find(x=>x.id===accessType)?.label}</b></div><div className="caseta-access-info-row"><span>Almacén</span><b>{profile?.almacen_id?"Asignado a tu usuario":"Sin almacén asignado"}</b></div><div className="caseta-access-info-note">El registro queda asociado al usuario de caseta que lo captura.</div></div>
- </div>}
+ </div>)}
  </>}
  {casetaTab==="salida"&&<div className="panel exit-panel"><h3>Unidades liberadas por Dispatch · Validación de sellos</h3><p className="section-copy">Captura el sello físico que presenta el guardia. La salida solo se registra si coincide con un sello registrado por Dispatch.</p>
   {sealLoading&&<p>Consultando sellos…</p>}
