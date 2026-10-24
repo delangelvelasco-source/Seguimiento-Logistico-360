@@ -596,23 +596,19 @@ function CSR({units,onUpdate,warehouseId}){
  }
  return <><Page title="CSR" sub="Calendario de citas y validación documental."/>
  <section className="panel csr-calendar-panel" style={{padding:20,marginBottom:16}}>
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
-   <div><h2 style={{margin:"0 0 5px",fontSize:21,color:"#172744"}}>Calendario de citas</h2><p style={{margin:0,color:"#71809a",fontSize:13}}>Citas del almacén · actualización automática cada minuto</p></div>
-   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");if(showAddAppointment){setShowAddAppointment(false);setEditingAppointment(null);}else{setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:openTimes[0]||"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});setShowAddAppointment(true);}}}>{showAddAppointment?"Cerrar":"＋ Agregar cita"}</button></div>
+  <div className="csr-calendar-heading">
+   <div className="csr-calendar-heading-copy"><span className="csr-calendar-eyebrow">PLANIFICACIÓN · OP360</span><h2>Calendario de citas</h2><p>Consulta la agenda del almacén y selecciona un día para gestionar sus citas.</p></div>
+   <div className="csr-calendar-actions"><span className="csr-live-indicator"><i/> Actualización automática</span><button className="secondary" onClick={()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelectedDay(dateKey(d));}}>Hoy</button><button className="primary" onClick={()=>{setAppointmentError("");setAppointmentMessage("");if(showAddAppointment){setShowAddAppointment(false);setEditingAppointment(null);}else{setEditingAppointment(null);setNewAppointment({tipo_operacion:"recibo",hora_inicio:openTimes[0]||"",referencia:"",cuenta_cliente:"",pallets:"0",unidades_solicitadas:"1",linea_transporte:"",operador_nombre:"",tracto_numero:"",tracto_placas:"",caja_numero:"",caja_placas:""});setShowAddAppointment(true);}}}>{showAddAppointment?"Cerrar":"＋ Nueva cita"}</button></div>
   </div>
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:14}}>
-   <button className="secondary" aria-label="Mes anterior" onClick={()=>shiftMonth(-1)}>‹</button>
-   <strong style={{fontSize:17,textTransform:"capitalize"}}>{month.toLocaleDateString("es-MX",{month:"long",year:"numeric"})}</strong>
-   <button className="secondary" aria-label="Mes siguiente" onClick={()=>shiftMonth(1)}>›</button>
-  </div>
-  <div className="csr-calendar-grid" style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:5}}>
-   {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d=><div key={d} style={{textAlign:"center",fontSize:11,fontWeight:800,color:"#71809a",padding:"7px 0"}}>{d}</div>)}
-   {Array.from({length:firstDay},(_,i)=><div key={"blank"+i}/>)}
-   {Array.from({length:monthDays},(_,i)=>{const day=i+1;const key=dateKey(new Date(month.getFullYear(),month.getMonth(),day));const active=key===selectedDay;const count=dayCounts[key]||0;const todayKey=dateKey(new Date());return <button key={key} type="button" onClick={()=>setSelectedDay(key)} aria-label={day+" citas "+count} style={{minHeight:58,padding:"7px 2px",borderRadius:12,border:active?"2px solid #315fa8":key===todayKey?"1px solid #315fa8":"1px solid #e2e8f0",background:active?"#eaf1fc":"#fff",color:"#172744",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,boxShadow:active?"0 3px 10px #315fa81c":"none"}}>
-    <span style={{fontSize:14,fontWeight:active?800:600}}>{day}</span>{count>0?<span style={{fontSize:10,fontWeight:800,background:"#315fa8",color:"#fff",borderRadius:20,minWidth:18,padding:"2px 5px"}}>{count}</span>:<span style={{height:14,fontSize:9,color:"#9aa6b8"}}>·</span>}
+  <div className="csr-month-navigation"><button className="csr-month-arrow" aria-label="Mes anterior" onClick={()=>shiftMonth(-1)}>‹</button><div><span>VISTA MENSUAL</span><strong>{month.toLocaleDateString("es-MX",{month:"long",year:"numeric"})}</strong></div><button className="csr-month-arrow" aria-label="Mes siguiente" onClick={()=>shiftMonth(1)}>›</button></div>
+  <div className="csr-calendar-grid">
+   {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d=><div className="csr-calendar-weekday" key={d}>{d}</div>)}
+   {Array.from({length:firstDay},(_,i)=><div className="csr-calendar-blank" key={"blank"+i}/>)}
+   {Array.from({length:monthDays},(_,i)=>{const day=i+1;const key=dateKey(new Date(month.getFullYear(),month.getMonth(),day));const active=key===selectedDay;const count=dayCounts[key]||0;const todayKey=dateKey(new Date());return <button className={"csr-calendar-day"+(active?" is-selected":"")+(key===todayKey?" is-today":"")+(count>0?" has-appointments":"")} key={key} type="button" onClick={()=>setSelectedDay(key)} aria-pressed={active} aria-label={day+" citas "+count}>
+    <span className="csr-calendar-day-number">{day}</span>{count>0?<span className="csr-calendar-count">{count}<small>{count===1?"cita":"citas"}</small></span>:<span className="csr-calendar-empty-mark" aria-hidden="true"/>}
    </button>})}
   </div>
-  <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:12,fontSize:11,color:"#71809a"}}><span>● Citas programadas</span><span style={{color:"#315fa8"}}>Borde azul: día seleccionado</span></div>
+  <div className="csr-calendar-legend"><span><i className="csr-legend-count"/> Día con citas</span><span><i className="csr-legend-selected"/> Día seleccionado</span><span><i className="csr-legend-today"/> Hoy</span></div>
  </section>
  <section className="panel csr-agenda-panel" style={{padding:20,marginBottom:16}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:14}}>

@@ -704,3 +704,65 @@
  .csr-appointment-form .csr-operation-options{gap:9px}
  .csr-appointment-form .csr-date-time{gap:13px}
 }
+
+
+/* Rediseño del calendario de citas CSR */
+.csr-calendar-panel{padding:clamp(16px,2.4vw,28px)!important;border-radius:22px!important;background:#f7f9fc!important;border:1px solid #e2e8f0!important;box-shadow:0 12px 36px rgba(15,35,65,.07)!important}
+.csr-calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:4px 2px 22px;border-bottom:1px solid #e5ebf3;margin-bottom:18px}
+.csr-calendar-heading-copy{min-width:240px}
+.csr-calendar-eyebrow{display:block;margin-bottom:8px;color:#3767b1;font-size:10px;font-weight:850;letter-spacing:.16em}
+.csr-calendar-heading-copy h2{margin:0 0 7px!important;color:#14233c!important;font-size:clamp(22px,2.2vw,29px)!important;font-weight:850!important;letter-spacing:-.045em!important}
+.csr-calendar-heading-copy p{margin:0!important;color:#718096!important;font-size:13px!important;line-height:1.5}
+.csr-calendar-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.csr-calendar-actions .primary,.csr-calendar-actions .secondary{min-height:40px!important;border-radius:11px!important;padding:0 15px!important;font-weight:750!important}
+.csr-live-indicator{display:inline-flex;align-items:center;gap:7px;margin-right:4px;color:#62728a;font-size:11px;font-weight:700}
+.csr-live-indicator i{width:7px;height:7px;border-radius:50%;background:#22a06b;box-shadow:0 0 0 4px #22a06b1c}
+.csr-month-navigation{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:12px;margin:0 0 16px;padding:14px 16px;border:1px solid #e5ebf3;border-radius:15px;background:#fff}
+.csr-month-navigation>div{text-align:center;display:flex;flex-direction:column;gap:3px}
+.csr-month-navigation>div span{font-size:9px;font-weight:850;letter-spacing:.15em;color:#8290a5}
+.csr-month-navigation>div strong{font-size:20px;font-weight:850;letter-spacing:-.035em;text-transform:capitalize;color:#182a46}
+.csr-month-arrow{width:40px;height:40px;border:1px solid #e1e8f1;border-radius:12px;background:#f8fafc;color:#2c4b78;font-size:25px;line-height:1;cursor:pointer}
+.csr-month-arrow:hover{background:#eaf2ff;border-color:#b8cef0}
+.csr-calendar-grid{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:8px!important}
+.csr-calendar-weekday{padding:8px 0 5px;text-align:center;color:#7d8ba0;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.csr-calendar-blank{min-height:76px}
+.csr-calendar-grid button.csr-calendar-day{position:relative;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;min-width:0!important;min-height:88px!important;padding:12px 4px 9px!important;border:1px solid #e3eaf3!important;border-radius:14px!important;background:#fff!important;color:#243550!important;box-shadow:0 2px 5px rgba(18,38,66,.025)!important;cursor:pointer}
+.csr-calendar-grid button.csr-calendar-day:hover{transform:translateY(-2px);border-color:#a9c5ee!important;background:#f6f9ff!important;box-shadow:0 7px 16px rgba(37,85,150,.08)!important}
+.csr-calendar-day .csr-calendar-day-number{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;color:#33435b;font-size:13px;font-weight:750}
+.csr-calendar-grid button.csr-calendar-day.is-today .csr-calendar-day-number{color:#2463b7;background:#eaf2ff}
+.csr-calendar-grid button.csr-calendar-day.is-selected{border:2px solid #2c68c7!important;background:linear-gradient(180deg,#f0f6ff,#fff)!important;box-shadow:0 5px 15px rgba(44,104,199,.12)!important}
+.csr-calendar-grid button.csr-calendar-day.is-selected .csr-calendar-day-number{background:#245fba;color:#fff}
+.csr-calendar-count{display:flex;align-items:center;gap:4px;max-width:100%;padding:4px 7px;border-radius:8px;background:#eaf2ff;color:#245cae;font-size:11px;font-weight:850;line-height:1}
+.csr-calendar-count small{font-size:9px;font-weight:750}
+.csr-calendar-grid button.csr-calendar-day.is-selected .csr-calendar-count{background:#245fba;color:#fff}
+.csr-calendar-empty-mark{display:block;width:5px;height:5px;margin-top:4px;border-radius:50%;background:#dce4ef}
+.csr-calendar-legend{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:17px;padding-top:14px;border-top:1px solid #e6ecf4;color:#718096;font-size:11px;font-weight:650}
+.csr-calendar-legend span{display:inline-flex;align-items:center;gap:7px}
+.csr-calendar-legend i{display:inline-block;width:9px;height:9px;border-radius:3px}
+.csr-legend-count{background:#d9e8ff;border:1px solid #a9c8f7}
+.csr-legend-selected{background:#245fba}
+.csr-legend-today{background:#eaf2ff;border:1px solid #8bb4ef}
+.csr-agenda-panel{border-radius:20px!important}
+.csr-agenda-panel>div:first-child h2{font-size:20px!important}
+@media(max-width:700px){
+ .csr-calendar-panel{padding:14px!important;border-radius:17px!important}
+ .csr-calendar-heading{align-items:flex-start;padding-bottom:15px;margin-bottom:13px}
+ .csr-calendar-heading-copy{min-width:0}
+ .csr-calendar-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .csr-live-indicator{grid-column:1/-1}
+ .csr-calendar-actions .primary,.csr-calendar-actions .secondary{width:100%;justify-content:center}
+ .csr-month-navigation{padding:10px;grid-template-columns:38px 1fr 38px;gap:6px}
+ .csr-month-navigation>div strong{font-size:17px}
+ .csr-month-arrow{width:36px;height:36px}
+ .csr-calendar-grid{gap:4px!important}
+ .csr-calendar-weekday{font-size:9px;letter-spacing:0;padding:5px 0}
+ .csr-calendar-blank{min-height:58px}
+ .csr-calendar-grid button.csr-calendar-day{min-height:64px!important;padding:7px 1px 5px!important;border-radius:9px!important;gap:4px!important}
+ .csr-calendar-day .csr-calendar-day-number{width:24px;height:24px;font-size:12px}
+ .csr-calendar-count{padding:4px 5px;font-size:10px}
+ .csr-calendar-count small{display:none}
+ .csr-calendar-legend{gap:10px;font-size:10px}
+}
+@media(min-width:1100px){
+ .csr-calendar-grid button.csr-calendar-day{min-height:96px!important}
+}
