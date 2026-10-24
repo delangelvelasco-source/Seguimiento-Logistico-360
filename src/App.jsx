@@ -500,7 +500,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    <div className="caseta-access-options">{accessOptions.map(option=><button type="button" key={option.id} className={"caseta-access-option "+(accessType===option.id?"selected":"")} onClick={()=>{setAccessType(option.id);setAccessMessage("");}} aria-pressed={accessType===option.id}><span className="caseta-access-option-icon">{option.icon}</span><span className="caseta-access-option-copy"><strong>{option.label}</strong><small>{option.desc}</small></span><span className="caseta-access-chevron">›</span></button>)}</div>
   </section>
   {accessType==="transportista"?<div className="grid2 caseta-modern-grid">
-  <form className="panel caseta-form-panel" onSubmit={submit>
+  <form className="panel caseta-form-panel" onSubmit={submit}>
    <div className="caseta-panel-title"><span>01</span><div><h3>Datos del transportista</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
    <div className="formgrid">
     <label>No. de cita (folio) opcional><div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
