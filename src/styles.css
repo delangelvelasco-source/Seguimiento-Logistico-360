@@ -894,3 +894,34 @@
   background:#fff0ec!important;border:1px solid #f4c4bb!important;
   border-radius:7px!important;padding:5px 7px!important;
 }
+
+
+/* Encabezado reducido para monitor de caseta */
+.m360-header-compact{
+  min-height:62px!important;padding:10px 18px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:16px!important;border-bottom:1px solid #e7edf5!important;
+}
+.m360-header-compact .m360-brand{gap:10px!important}
+.m360-header-compact .m360-logo{
+  width:34px!important;height:34px!important;min-width:34px!important;
+  border-radius:10px!important;font-size:12px!important;
+}
+.m360-header-compact .m360-brand>div:last-child{gap:2px!important}
+.m360-header-compact .m360-brand b{font-size:14px!important;letter-spacing:-.02em!important}
+.m360-header-compact .m360-brand span{font-size:10px!important;color:#71829a!important}
+.m360-date-compact{
+  display:flex!important;flex-direction:column!important;align-items:flex-end!important;
+  gap:3px!important;margin:0!important;padding:0!important;background:transparent!important;
+}
+.m360-date-compact small{font-size:10px!important;color:#71829a!important}
+.m360-date-compact b{font-size:14px!important;font-weight:850!important;color:#193555!important}
+.m360-header-compact .m360-online{display:none!important}
+@media(max-width:600px){
+ .m360-header-compact{padding:9px 12px!important;min-height:54px!important}
+ .m360-header-compact .m360-logo{width:30px!important;height:30px!important;min-width:30px!important}
+ .m360-header-compact .m360-brand b{font-size:12px!important}
+ .m360-header-compact .m360-brand span{font-size:9px!important}
+ .m360-date-compact small{font-size:9px!important}
+ .m360-date-compact b{font-size:12px!important}
+}
