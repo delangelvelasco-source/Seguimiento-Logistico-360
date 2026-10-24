@@ -880,3 +880,9 @@
 @media(max-width:900px){
  .traffic-card-data>span.traffic-operation-type{padding-left:0!important;border-left:0!important}
 }
+
+
+/* Operación en Tráfico: mostrar únicamente Recibo o Embarque */
+.traffic-operation-type>b{display:block!important;width:max-content!important;max-width:100%!important;padding:0!important;border:0!important;background:transparent!important;font-size:12px!important;line-height:1.35!important;letter-spacing:0!important;font-weight:850!important;color:#243c5c!important}
+.traffic-operation-type>em,.traffic-operation-type>b>i{display:none!important}
+.traffic-operation-type.traffic-load,.traffic-operation-type.traffic-unload{gap:5px!important}
