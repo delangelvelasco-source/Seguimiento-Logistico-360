@@ -393,7 +393,7 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
 
   useEffect(()=>{
     const warehouseId=profile?.almacen_id||warehouses?.[0]?.id;
-    if(!profile||!warehouseId||module!=="caseta") return;
+    if(!profile||!warehouseId) return;
     loadAccessRecords(warehouseId);
     const timer=setInterval(()=>loadAccessRecords(warehouseId),10000);
     return ()=>clearInterval(timer);
