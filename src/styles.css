@@ -996,3 +996,34 @@
  .caseta-form-panel,.caseta-modern-grid>.panel{padding:14px!important}
  .caseta-form-panel .evidence-tile{min-height:112px!important}
 }
+
+
+/* Caseta: selector de tipo de acceso y formularios no vehiculares */
+.caseta-access-picker{margin:0 0 22px;background:#fff;border:1px solid #e3eaf3;border-radius:18px;padding:22px;box-shadow:0 8px 28px rgba(17,42,76,.045)}
+.caseta-access-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.caseta-section-kicker{display:block;color:#2674d8;font-size:10px;font-weight:850;letter-spacing:.14em;margin-bottom:7px}
+.caseta-access-heading h2{margin:0;color:#142b49;font-size:20px;line-height:1.25;font-weight:800}
+.caseta-access-heading p{margin:7px 0 0;color:#6d7d92;font-size:13px}
+.caseta-access-count{flex:none;border-radius:999px;background:#edf5ff;color:#2768b5;padding:7px 11px;font-size:11px;font-weight:800}
+.caseta-access-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.caseta-access-option{display:flex;align-items:center;gap:12px;min-width:0;text-align:left;padding:15px 13px;border:1px solid #e0e7f0;border-radius:14px;background:#fff;color:#20344e;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s}
+.caseta-access-option:hover{border-color:#8ab9f2;background:#f8fbff}
+.caseta-access-option.selected{border-color:#2878dc;background:#eef6ff;box-shadow:inset 0 0 0 1px #2878dc}
+.caseta-access-option-icon{display:flex;align-items:center;justify-content:center;flex:none;width:43px;height:43px;border-radius:12px;background:#f0f4f9;font-size:21px}
+.caseta-access-option.selected .caseta-access-option-icon{background:#d9eaff}
+.caseta-access-option-copy{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.caseta-access-option-copy strong{font-size:13px;font-weight:800}
+.caseta-access-option-copy small{font-size:11px;line-height:1.35;color:#718096}
+.caseta-access-chevron{font-size:24px;color:#91a0b3;line-height:1}
+.caseta-access-option.selected .caseta-access-chevron{color:#2878dc}
+.caseta-other-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+.caseta-full-field{grid-column:1/-1}
+.caseta-other-fields textarea{width:100%;min-height:84px;resize:vertical;border:1px solid #d8e1ec;border-radius:10px;padding:11px 12px;font:inherit;color:#20344e;background:#fff}
+.caseta-access-info{align-self:start}
+.caseta-access-info>p{font-size:13px;line-height:1.6;color:#6d7d92}
+.caseta-access-info-row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #edf1f6;font-size:12px}
+.caseta-access-info-row span{color:#718096}
+.caseta-access-info-row b{color:#1e3552;text-align:right}
+.caseta-access-info-note{margin-top:16px;padding:13px;border-radius:11px;background:#f2f7fd;color:#5c6f86;font-size:12px;line-height:1.5}
+@media(max-width:900px){.caseta-access-options{grid-template-columns:repeat(2,minmax(0,1fr))}.caseta-access-picker{padding:17px}}
+@media(max-width:560px){.caseta-access-options{grid-template-columns:1fr}.caseta-access-option{padding:12px}.caseta-access-heading h2{font-size:18px}.caseta-access-count{font-size:10px}.caseta-other-fields{grid-template-columns:1fr}.caseta-full-field{grid-column:auto}}
