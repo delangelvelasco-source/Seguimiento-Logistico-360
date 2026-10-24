@@ -353,6 +353,10 @@ function Login({login,setLogin,submit,busy,error}){
 
 function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto,setIdPhoto,citaLookup,buscarCita,profile,onUpdate,platePreview,setPlatePreview,idPreview,setIdPreview}){
  const [casetaTab,setCasetaTab]=useState("ingreso");
+ const [accessType,setAccessType]=useState("transportista");
+ const [accessForm,setAccessForm]=useState({nombre:"",empresa:"",telefono:"",persona_visita:"",motivo:""});
+ const [accessBusy,setAccessBusy]=useState(false);
+ const [accessMessage,setAccessMessage]=useState("");
  const [sealsByUnit,setSealsByUnit]=useState({});
  const [sealLoading,setSealLoading]=useState(false);
  const f=(k,required=false,type="text")=><input type={type} required={required} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>;
@@ -368,6 +372,37 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    };
    reader.readAsDataURL(file);
  };
+
+ async function registerOtherAccess(e){
+   e.preventDefault();
+   setAccessBusy(true);setAccessMessage("");
+   try{
+     const warehouseId=profile?.almacen_id;
+     if(!warehouseId) throw new Error("No hay almacén asignado a este usuario.");
+     const name=accessForm.nombre.trim();
+     if(!name) throw new Error("Captura el nombre completo.");
+     const accessTypeMap={visitante:"visitante",proveedor:"proveedor",personal_interno:"personal_interno",eventual:"eventual",otro:"otro"};
+     const details=[accessForm.empresa.trim(),accessForm.persona_visita.trim()?"Visita a: "+accessForm.persona_visita.trim():"",accessForm.motivo.trim()?"Motivo: "+accessForm.motivo.trim():""].filter(Boolean).join(" | ");
+     const {error}=await supabase.from("accesos_caseta").insert({
+       folio:"A-"+today().replaceAll("-","").slice(2)+"-"+Math.floor(10000+Math.random()*90000),
+       almacen_id:warehouseId,tipo_acceso:accessTypeMap[accessType]||"otro",nombre:name,
+       empresa:details||null,telefono:accessForm.telefono.trim()||null,registrado_por:profile.id
+     });
+     if(error) throw error;
+     setAccessMessage("Ingreso registrado correctamente.");
+     setAccessForm({nombre:"",empresa:"",telefono:"",persona_visita:"",motivo:""});
+   }catch(err){setAccessMessage(err.message||"No se pudo registrar el acceso.");}
+   finally{setAccessBusy(false);}
+ }
+ const accessOptions=[
+  {id:"transportista",label:"Transportista",icon:"🚚",desc:"Unidad, operador, placas y cita"},
+  {id:"visitante",label:"Visitante",icon:"🪪",desc:"Visita personal o administrativa"},
+  {id:"proveedor",label:"Proveedor",icon:"📦",desc:"Entrega de materiales o servicios"},
+  {id:"personal_interno",label:"Personal interno",icon:"👷",desc:"Acceso de colaborador"},
+  {id:"eventual",label:"Eventuales",icon:"🦺",desc:"Personal temporal o contratista"},
+  {id:"otro",label:"Otros",icon:"＋",desc:"Otro tipo de acceso"}
+ ];
+
  const salida=units.filter(u=>u.salida_autorizada===true&&u.estado==="liberada"&&!u.salida_caseta_at);
  useEffect(()=>{let alive=true;async function loadSeals(){const ids=salida.map(u=>u.id);if(!ids.length){setSealsByUnit({});return;}setSealLoading(true);const {data,error}=await supabase.from("sellos_unidad").select("id,unidad_id,numero_fisico,numero_documentado,origen,resultado,observaciones").in("unidad_id",ids);if(alive&&!error){const grouped={};for(const seal of (data||[])){(grouped[seal.unidad_id]||(grouped[seal.unidad_id]=[])).push(seal);}setSealsByUnit(grouped);}if(alive)setSealLoading(false);}loadSeals();return()=>{alive=false}},[casetaTab,units.map(u=>u.id+":"+u.salida_autorizada+":"+u.salida_caseta_at).join("|")]);
   async function verifyExit(u){
@@ -459,8 +494,13 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
  </section>
  <div className="caseta-workflow"><div className={casetaTab==="ingreso"?"active":""}><span>1</span><b>Datos de acceso</b></div><i/><div className={casetaTab==="ingreso"?"active":""}><span>2</span><b>Evidencia</b></div><i/><div className={casetaTab==="salida"?"active":""}><span>3</span><b>Registrar salida</b></div></div>
  <div className="m360-ops-tabs caseta-tabs"><button type="button" className={casetaTab==="ingreso"?"selected":""} onClick={()=>setCasetaTab("ingreso")}>＋ Registrar ingreso</button><button type="button" className={casetaTab==="salida"?"selected":""} onClick={()=>setCasetaTab("salida")}>↗ Registrar salida <b>{salida.length}</b></button></div>
- {casetaTab==="ingreso"&&<div className="grid2 caseta-modern-grid">
-  <form className="panel caseta-form-panel" onSubmit={submit}>
+ {casetaTab==="ingreso"&&<>
+  <section className="caseta-access-picker">
+   <div className="caseta-access-heading"><div><span className="caseta-section-kicker">TIPO DE REGISTRO</span><h2>¿Qué tipo de acceso vas a registrar?</h2><p>Selecciona una opción para abrir el formulario correspondiente.</p></div><span className="caseta-access-count">6 opciones</span></div>
+   <div className="caseta-access-options">{accessOptions.map(option=><button type="button" key={option.id} className={"caseta-access-option "+(accessType===option.id?"selected":"")} onClick={()=>{setAccessType(option.id);setAccessMessage("");}} aria-pressed={accessType===option.id}><span className="caseta-access-option-icon">{option.icon}</span><span className="caseta-access-option-copy"><strong>{option.label}</strong><small>{option.desc}</small></span><span className="caseta-access-chevron">›</span></button>)}</div>
+  </section>
+  {accessType==="transportista"?<div className="grid2 caseta-modern-grid">
+  <form className="panel caseta-form-panel" onSubmit={submit>
    <div className="caseta-panel-title"><span>01</span><div><h3>Datos del transportista</h3><p>Captura la información necesaria para autorizar el acceso.</p></div></div>
    <div className="formgrid">
     <label>No. de cita (folio) opcional><div className="inline-field"><input type="text" value={form.folio_cita} onChange={e=>setForm({...form,folio_cita:e.target.value})} onBlur={buscarCita} placeholder="Ej. C-1002-1"/><button type="button" className="secondary" onClick={buscarCita} disabled={citaLookup.loading}>{citaLookup.loading?"Buscando…":"Buscar"}</button></div>{citaLookup.message&&<small className={citaLookup.found?"lookup-ok":"lookup-note"}>{citaLookup.message}</small>}</label>
@@ -484,7 +524,22 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
    <button className="primary" disabled={busy}>{busy?"Guardando y enviando evidencia…":"Registrar y enviar a Dispatch"}</button>
   </form>
   <div className="panel"><h3>Últimos ingresos</h3><UnitTable units={units.slice(0,8)}/></div>
+ </div>:<div className="grid2 caseta-modern-grid caseta-other-grid">
+  <form className="panel caseta-form-panel" onSubmit={registerOtherAccess}>
+   <div className="caseta-panel-title"><span>01</span><div><h3>Registro de {accessOptions.find(x=>x.id===accessType)?.label.toLowerCase()||"acceso"}</h3><p>Captura los datos de la persona y el motivo de su ingreso.</p></div></div>
+   <div className="formgrid caseta-other-fields">
+    <label>Nombre completo *<input required autoComplete="name" value={accessForm.nombre} onChange={e=>setAccessForm({...accessForm,nombre:e.target.value})} placeholder="Nombre y apellidos"/></label>
+    <label>Empresa / departamento<input value={accessForm.empresa} onChange={e=>setAccessForm({...accessForm,empresa:e.target.value})} placeholder="Empresa o área"/></label>
+    <label>Teléfono de contacto<input type="tel" value={accessForm.telefono} onChange={e=>setAccessForm({...accessForm,telefono:e.target.value})} placeholder="Teléfono"/></label>
+    <label>Persona que visita / responsable<input value={accessForm.persona_visita} onChange={e=>setAccessForm({...accessForm,persona_visita:e.target.value})} placeholder="Nombre del responsable"/></label>
+    <label className="caseta-full-field">Motivo de acceso *<textarea required rows="3" value={accessForm.motivo} onChange={e=>setAccessForm({...accessForm,motivo:e.target.value})} placeholder="Describe brevemente el motivo del ingreso"/></label>
+   </div>
+   {accessMessage&&<div className={accessMessage.includes("correctamente")?"alert ok":"form-error"}>{accessMessage}</div>}
+   <button className="primary" disabled={accessBusy}>{accessBusy?"Registrando…":"Registrar ingreso de "+(accessOptions.find(x=>x.id===accessType)?.label.toLowerCase()||"acceso")}</button>
+  </form>
+  <div className="panel caseta-access-info"><h3>Control de acceso</h3><p>Verifica la identidad y el motivo de la visita antes de confirmar el registro.</p><div className="caseta-access-info-row"><span>Tipo seleccionado</span><b>{accessOptions.find(x=>x.id===accessType)?.label}</b></div><div className="caseta-access-info-row"><span>Almacén</span><b>{profile?.almacen_id?"Asignado a tu usuario":"Sin almacén asignado"}</b></div><div className="caseta-access-info-note">El registro queda asociado al usuario de caseta que lo captura.</div></div>
  </div>}
+ </>}
  {casetaTab==="salida"&&<div className="panel exit-panel"><h3>Unidades liberadas por Dispatch · Validación de sellos</h3><p className="section-copy">Captura el sello físico que presenta el guardia. La salida solo se registra si coincide con un sello registrado por Dispatch.</p>
   {sealLoading&&<p>Consultando sellos…</p>}
   {salida.length===0?<Empty text="No hay unidades liberadas por Dispatch pendientes de validar en este almacén."/>:salida.slice(0,100).map(u=>{const seals=sealsByUnit[u.id]||[];const expected=seals.filter(x=>x.origen==="dispatch");const guard=seals.filter(x=>x.origen==="guardia");const lastGuard=guard[guard.length-1];const alreadyVerified=guard.some(x=>x.resultado==="coincide"||x.resultado==="no_aplica");return <div className="unit-card" key={"salida-"+u.id}><UnitMain u={u}/><div><small>{u.operacion_tipo==="embarque"?"Embarque":"Recibo"} · Sellos de Dispatch: {expected.length?expected.map(x=>x.numero_fisico).join(", "):"SIN REGISTRO"}{lastGuard?" · Última validación: "+lastGuard.resultado:""}</small><div className="actions"><button className="primary" type="button" disabled={busy||sealLoading} onClick={()=>verifyExit(u)}>{alreadyVerified?"Completar salida":"Validar sello y registrar salida"}</button></div></div></div>})}
