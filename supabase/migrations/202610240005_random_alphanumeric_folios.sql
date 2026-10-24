@@ -10,7 +10,7 @@ REVOKE ALL ON public.folios_codigos_emitidos FROM anon, authenticated;
 CREATE OR REPLACE FUNCTION public.folio_consecutivo_corto(p_tipo text)
 RETURNS text
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
@@ -49,6 +49,9 @@ BEGIN
   RAISE EXCEPTION 'No fue posible generar un folio único después de 100 intentos';
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.folio_consecutivo_corto(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.folio_consecutivo_corto(text) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.generar_folio_caseta(p_tipo text DEFAULT 'otro')
 RETURNS text
