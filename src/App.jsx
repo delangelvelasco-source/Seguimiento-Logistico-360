@@ -382,11 +382,12 @@ function Caseta({form,setForm,submit,units,busy,platePhoto,setPlatePhoto,idPhoto
      const name=accessForm.nombre.trim();
      if(!name) throw new Error("Captura el nombre completo.");
      const accessTypeMap={visitante:"visitante",proveedor:"proveedor",personal_interno:"personal_interno",eventual:"eventual",otro:"otro"};
-     const details=[accessForm.empresa.trim(),accessForm.persona_visita.trim()?"Visita a: "+accessForm.persona_visita.trim():"",accessForm.motivo.trim()?"Motivo: "+accessForm.motivo.trim():""].filter(Boolean).join(" | ");
      const {error}=await supabase.from("accesos_caseta").insert({
        folio:"A-"+today().replaceAll("-","").slice(2)+"-"+Math.floor(10000+Math.random()*90000),
        almacen_id:warehouseId,tipo_acceso:accessTypeMap[accessType]||"otro",nombre:name,
-       empresa:details||null,telefono:accessForm.telefono.trim()||null,registrado_por:profile.id
+       empresa:accessForm.empresa.trim()||null,telefono:accessForm.telefono.trim()||null,
+       persona_visita:accessForm.persona_visita.trim()||null,motivo:accessForm.motivo.trim(),
+       registrado_por:profile.id
      });
      if(error) throw error;
      setAccessMessage("Ingreso registrado correctamente.");
