@@ -851,3 +851,32 @@
  .traffic-card{padding:12px!important}
  .traffic-time-grid{grid-template-columns:1fr!important}
 }
+
+
+/* Identificación inmediata de carga vs. descarga en el tablero de Tráfico */
+.traffic-card-data>span.traffic-operation-type{
+  gap:5px!important;padding:0 10px!important;border-left:2px solid #eaf0f7!important;
+}
+.traffic-operation-type>b{
+  display:inline-flex!important;align-items:center!important;gap:6px!important;
+  width:max-content!important;max-width:100%!important;padding:6px 9px!important;
+  border-radius:8px!important;font-size:11px!important;line-height:1.15!important;
+  letter-spacing:.045em!important;font-weight:950!important;
+}
+.traffic-operation-type>b>i{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:18px!important;height:18px!important;border-radius:5px!important;
+  font-style:normal!important;font-size:15px!important;font-weight:950!important;
+}
+.traffic-operation-type>em{
+  font-size:10px!important;line-height:1.2!important;font-style:normal!important;
+  font-weight:750!important;color:#71829a!important;
+}
+.traffic-operation-type.traffic-load>b{background:#e5f7ee!important;color:#08794f!important}
+.traffic-operation-type.traffic-load>b>i{background:#bcebd4!important;color:#08794f!important}
+.traffic-operation-type.traffic-unload>b{background:#fff0df!important;color:#a34b0b!important}
+.traffic-operation-type.traffic-unload>b>i{background:#ffddb5!important;color:#a34b0b!important}
+.traffic-time-item:has(span:first-child) strong{font-variant-numeric:tabular-nums!important}
+@media(max-width:900px){
+ .traffic-card-data>span.traffic-operation-type{padding-left:0!important;border-left:0!important}
+}
