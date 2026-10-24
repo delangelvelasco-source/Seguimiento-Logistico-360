@@ -815,3 +815,39 @@
  .traffic-time-item>strong{font-size:17px!important}
  .traffic-card-next{align-items:flex-start!important;flex-direction:column!important}
 }
+
+
+/* OP360 · Vista de alta capacidad: hasta 30 unidades en patio y rampas */
+.traffic-list{min-width:0!important}
+.traffic-cards{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-items:start!important;
+  gap:12px!important;
+}
+.traffic-card{min-width:0!important;height:100%!important;padding:14px 15px 11px!important}
+.traffic-card-top{padding-bottom:10px!important}
+.traffic-card-data{gap:9px!important;padding:11px 0 2px!important}
+.traffic-card-data>span{padding-left:8px!important}
+.traffic-time-grid{gap:7px!important;margin:9px 0 3px!important}
+.traffic-time-item{min-height:77px!important;padding:10px 11px!important;gap:5px!important;border-radius:11px!important}
+.traffic-time-item>span{font-size:8px!important;letter-spacing:.08em!important}
+.traffic-time-item>strong{font-size:18px!important}
+.traffic-time-item>small{font-size:9px!important;line-height:1.25!important}
+.traffic-card-next{margin-top:8px!important;padding-top:8px!important;font-size:9px!important}
+@media(min-width:1500px){
+ .traffic-cards{gap:14px!important}
+ .traffic-card{padding:15px 16px 12px!important}
+}
+@media(max-width:1199px){
+ .traffic-cards{grid-template-columns:minmax(0,1fr)!important}
+ .traffic-time-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(max-width:900px){
+ .traffic-time-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:600px){
+ .traffic-cards{gap:10px!important}
+ .traffic-card{padding:12px!important}
+ .traffic-time-grid{grid-template-columns:1fr!important}
+}
